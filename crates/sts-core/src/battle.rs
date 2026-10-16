@@ -29,22 +29,65 @@ impl CardInst {
         &gen::CARDS[self.sid]
     }
 
-    /// 从静态表新建（cost_for_turn = cost；resetAttributes 语义）。
+    /// 生效费用（upgradeBaseCost 为绝对值，记录 02 §3）。
+    pub fn eff_cost(&self) -> i32 {
+        let st = self.st();
+        if self.upgraded && st.up_flags & gen::UPF_COST != 0 {
+            st.up_cost
+        } else {
+            st.cost
+        }
+    }
+
+    pub fn eff_damage(&self) -> i32 {
+        let st = self.st();
+        if self.upgraded && st.up_flags & gen::UPF_DMG != 0 {
+            st.base_damage + st.up_damage
+        } else {
+            st.base_damage
+        }
+    }
+
+    pub fn eff_block(&self) -> i32 {
+        let st = self.st();
+        if self.upgraded && st.up_flags & gen::UPF_BLOCK != 0 {
+            st.base_block + st.up_block
+        } else {
+            st.base_block
+        }
+    }
+
+    pub fn eff_magic(&self) -> i32 {
+        let st = self.st();
+        if self.upgraded && st.up_flags & gen::UPF_MAGIC != 0 {
+            st.base_magic + st.up_magic
+        } else {
+            st.base_magic
+        }
+    }
+
+    /// `canUpgrade`（记录 02 §3）：默认单次；CURSE/STATUS 不可。
+    pub fn can_upgrade(&self) -> bool {
+        !matches!(self.st().kind, CardType::Curse | CardType::Status) && !self.upgraded
+    }
+
+    /// 从静态表新建（cost_for_turn = 生效费用；升级费用卡同步，原版 upgradeBaseCost 联动语义）。
     pub fn new(sid: usize, upgraded: bool, uuid: u64) -> Self {
-        let cost = gen::CARDS[sid].cost;
-        Self {
+        let mut tmp = Self {
             uuid,
             sid,
             upgraded,
             times_upgraded: if upgraded { 1 } else { 0 },
-            cost_for_turn: cost,
+            cost_for_turn: 0,
             misc: 0,
-        }
+        };
+        tmp.cost_for_turn = tmp.eff_cost();
+        tmp
     }
 
     /// `resetAttributes`（回合末，记录 09 §5 末）：costForTurn 还原、临时标志清零。
     pub fn reset_attributes(&mut self) {
-        self.cost_for_turn = self.st().cost;
+        self.cost_for_turn = self.eff_cost();
     }
 }
 
@@ -156,6 +199,9 @@ pub struct RelicCtx {
     pub has_turnip: bool,
     pub has_calipers: bool,
     pub has_barricade_power: bool, // Barricade/Blur 走 power 判定（此处简化占位）
+    pub has_medical_kit: bool,     // 状态牌可打出
+    pub has_blue_candle: bool,     // 诅咒可打出
+    pub has_runic_pyramid: bool,   // 回合末不弃牌
 }
 
 impl BattleState {
@@ -256,16 +302,32 @@ impl BattleState {
         self.mgr.monster_attacks_queued = false;
     }
 
+    /// `canUse`（AbstractCard:1167-1175 的当前可达子集，记录 02 §5）：
+    /// STATUS 需 Medical Kit、CURSE 需 Blue Candle（cost < -1 时）、能量段。
+    /// TODO 3.x：cardPlayable 目标存活校验、powers canPlayCard、Entangled、手牌 canPlay。
+    pub fn can_use(&self, card: &CardInst) -> Result<(), &'static str> {
+        let st = card.st();
+        if card.cost_for_turn < -1 {
+            match st.kind {
+                CardType::Status if !self.relics_ctx.has_medical_kit => return Err("无法打出（需要医疗包）"),
+                CardType::Curse if !self.relics_ctx.has_blue_candle => return Err("无法打出（需要蓝蜡烛）"),
+                _ => {}
+            }
+        }
+        if st.cost != -1 && self.energy < card.cost_for_turn {
+            return Err("没有足够的能量");
+        }
+        Ok(())
+    }
+
     /// 玩家出牌入口（UI 层 playCard 等价：入 cardQueue，不立即结算——记录 09 §1 阶段 A）。
     /// 返回 Err(原因) 对应原版 canUse 失败（气泡文案，文字 UI 显示）。
     pub fn play_card(&mut self, hand_index: usize, target: Option<usize>) -> Result<(), &'static str> {
         let Some(card) = self.hand.group.get(hand_index) else {
             return Err("无此手牌");
         };
-        // hasEnoughEnergy 的能量段（记录 02 §5；其余检查随批次补全）
-        if self.energy < card.cost_for_turn {
-            return Err("没有足够的能量");
-        }
+        self.can_use(card)?;
+        // X 费（cost=-1）与普通卡一致：energyOnUse 快照当前能量（CardQueueItem 构造语义）
         let item = CardQueueItem {
             card: Some(card.uuid),
             target,
@@ -661,12 +723,41 @@ impl BattleState {
         }
     }
 
-    /// DiscardAtEndOfTurnAction（记录 09 §5）：retain→limbo→回手（TODO retain 完整化）；
-    /// 全部弃至弃牌堆（Runic Pyramid/Equilibrium TODO 3.x）。
+    /// DiscardAtEndOfTurnAction（记录 09 §5 的即时等价）：
+    /// 1) retain/selfRetain → limbo；2) ethereal → 消耗堆（基类 triggerOnEndOfPlayerTurn）；
+    /// 3) 其余弃牌（Runic Pyramid/Equilibrium TODO 3.x）；4) limbo 回手（RestoreRetained）。
     fn exec_discard_at_end_of_turn(&mut self) {
-        // ethereal 消耗（基类 triggerOnEndOfPlayerTurn）—— TODO 2.4 钩子；此处先直接处理弃牌
-        while let Some(c) = self.hand.group.pop() {
-            self.discard_pile.add_top(c);
+        // 1) 保留卡移入 limbo
+        let mut i = 0;
+        while i < self.hand.group.len() {
+            let st = self.hand.group[i].st();
+            if st.flags & (gen::FLAG_RETAIN | gen::FLAG_SELF_RETAIN) != 0 {
+                let c = self.hand.group.remove(i);
+                self.limbo.add_top(c);
+            } else {
+                i += 1;
+            }
+        }
+        // 2) 虚无卡消耗（消耗钩子序 relics→powers→card TODO 3.x）
+        let mut i = 0;
+        while i < self.hand.group.len() {
+            if self.hand.group[i].st().flags & gen::FLAG_ETHEREAL != 0 {
+                let c = self.hand.group.remove(i);
+                self.exhaust_pile.add_top(c);
+            } else {
+                i += 1;
+            }
+        }
+        // 3) 其余弃牌
+        if !self.relics_ctx.has_runic_pyramid {
+            while let Some(c) = self.hand.group.pop() {
+                self.discard_pile.add_top(c);
+            }
+        }
+        // 4) RestoreRetainedCardsAction：limbo 回手（retain=false + onRetained TODO 3.x）
+        while let Some(mut c) = self.limbo.group.pop() {
+            c.reset_attributes();
+            self.hand.add_top(c);
         }
     }
 
@@ -685,8 +776,8 @@ impl BattleState {
         let card = self.hand.group[hand_pos].clone();
         let st = card.st();
 
-        // canUse 能量段（play_card 已查；此处复核——autoplay/免费 TODO）
-        if self.energy < card.cost_for_turn {
+        // canUse 复核（autoplay 卡豁免路径 TODO 2.4：dontTriggerOnUseCard + 强制 UseCard）
+        if self.can_use(&card).is_err() {
             return;
         }
         // onPlayCard 钩子链（记录 09 §1-4）：玩家 powers → 怪物 powers → 遗物 → 架势 →
@@ -724,8 +815,8 @@ impl BattleState {
         let mut out = Vec::new();
         match st.kind {
             CardType::Attack => {
-                if st.base_damage > 0 {
-                    let base_eff = st.base_damage;
+                let base_eff = card.eff_damage();
+                if base_eff > 0 {
                     if let Some(mi) = target {
                         // calculateCardDamage（打出瞬间重算，记录 09 §1 阶段 C-2）
                         let info = DamageInfo::from_card(
@@ -739,12 +830,12 @@ impl BattleState {
                             target: TargetRef::Monster(mi),
                             info,
                         });
-                        // 首张正式转译卡：Bash = 8 伤 + 易伤 2（cards/red/Bash.java use()）
+                        // 首批正式转译卡（use() 效果；Bash 升级后 magic 2→3）
                         if st.id == "Bash" {
                             out.push(GameAction::ApplyPower {
                                 target: TargetRef::Monster(mi),
                                 source: Some(TargetRef::Player),
-                                power: Power::new(PowerKind::Vulnerable, 2),
+                                power: Power::new(PowerKind::Vulnerable, card.eff_magic()),
                                 from_monster: false,
                             });
                         }
@@ -752,10 +843,10 @@ impl BattleState {
                     // 无目标攻击（ALL_ENEMY 矩阵，记录 09 §7）—— TODO 2.4
                 }
             }
-            CardType::Skill if st.base_block > 0 => {
+            CardType::Skill if card.eff_block() > 0 => {
                 out.push(GameAction::GainBlock {
                     target: TargetRef::Player,
-                    amount: st.base_block,
+                    amount: card.eff_block(),
                 });
             }
             _ => {}

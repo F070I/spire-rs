@@ -40,8 +40,8 @@ CARD_TARGET_MAP = {"ENEMY": "Enemy", "ALL_ENEMY": "AllEnemy", "SELF": "Self_",
 
 
 def strip_line_comments(src: str) -> str:
-    """去掉 `/* 123 */` 反编译行号注释与 // 注释（保守：不处理字符串内的 //）。"""
-    src = re.sub(r"/\*\s*\d+\s*\*/", " ", src)
+    """去掉 `/* 123 */` 与 `/*    */` 反编译注释（保守：不处理字符串内的块注释）。"""
+    src = re.sub(r"/\*.*?\*/", " ", src)
     return src
 
 
@@ -170,6 +170,73 @@ FLAG_FIELDS = [
 TAG_RE = re.compile(r"tags\.add\(\s*(?:AbstractCard\.)?CardTags\.(\w+)\s*\)")
 
 
+def find_method_body(src: str, signature: str) -> str | None:
+    """定位方法签名后的大括号体（括号感知）。"""
+    m = re.search(re.escape(signature), src)
+    if not m:
+        return None
+    i = src.find("{", m.end())
+    if i < 0:
+        return None
+    depth = 0
+    j = i
+    while j < len(src):
+        if src[j] == "{":
+            depth += 1
+        elif src[j] == "}":
+            depth -= 1
+            if depth == 0:
+                return src[i + 1 : j]
+        j += 1
+    return None
+
+
+UP_RE = re.compile(r"upgrade(Damage|Block|MagicNumber|BaseCost|Heal|Draw|Discard)\(([^()]*)\)")
+
+
+def parse_upgrade(src: str) -> dict:
+    """解析 upgrade() 方法体：字面量 delta → 静态表；其余 → custom_upgrade（批次 3 人工转译）。"""
+    out = {"up_damage": None, "up_block": None, "up_magic": None, "up_cost": None, "custom_upgrade": False}
+    body = find_method_body(src, "public void upgrade()")
+    if body is None:
+        out["custom_upgrade"] = True
+        return out
+    seen = {"Damage": [], "Block": [], "MagicNumber": [], "BaseCost": []}
+    for m in UP_RE.finditer(body):
+        field, raw = m.group(1), m.group(2).strip()
+        if field == "BaseCost":
+            if re.fullmatch(r"-?\d+", raw):
+                seen[field].append(int(raw))
+            else:
+                out["custom_upgrade"] = True
+            continue
+        if re.fullmatch(r"-?\d+", raw):
+            seen[field].append(int(raw))
+        else:
+            out["custom_upgrade"] = True  # 如 SearingBlow 的 4 + timesUpgraded
+    for field, key in [("Damage", "up_damage"), ("Block", "up_block"), ("MagicNumber", "up_magic")]:
+        if len(seen[field]) == 1:
+            out[key] = seen[field][0]
+        elif len(seen[field]) > 1:
+            out["custom_upgrade"] = True
+    if len(seen["BaseCost"]) == 1:
+        out["up_cost"] = seen["BaseCost"][0]
+    # 启发式：先剥离标准调用与样板 → 去掉分号空白 → 移除变空的 if(!upgraded) 包装；
+    # 仍有实质内容（其他调用/字段赋值/文本改写）→ custom（批次 3 人工转译）
+    cleaned = UP_RE.sub("", body)
+    cleaned = re.sub(
+        r"upgradeName\(\)|initializeTitle\(\)|initializeDescription\(\)|"
+        r"this\.upgraded\s*=\s*true|timesUpgraded\s*\+\+",
+        "",
+        cleaned,
+    )
+    cleaned = re.sub(r"[;\s]", "", cleaned)
+    cleaned = re.sub(r"if\(!this\.upgraded\)\{\}", "", cleaned)
+    if cleaned:
+        out["custom_upgrade"] = True
+    return out
+
+
 def parse_card_file(path: Path, color_dir: str) -> dict | None:
     src = strip_line_comments(path.read_text(encoding="utf-8", errors="replace"))
     cls = path.stem
@@ -225,6 +292,7 @@ def parse_card_file(path: Path, color_dir: str) -> dict | None:
         if re.search(rf"this\.{f}\s*=\s*true\s*;", src):
             rec["flags"].append(f)
     rec["tags"] = sorted(set(TAG_RE.findall(src)))
+    rec.update(parse_upgrade(src))
     return rec
 
 
@@ -397,6 +465,12 @@ pub struct CardStatic {
     pub base_magic: i32,
     pub flags: u16,
     pub tags: u16,
+    pub up_damage: i32,
+    pub up_block: i32,
+    pub up_magic: i32,
+    pub up_cost: i32, // 0 = 费用不变；>0 = 升级后的绝对费用（upgradeBaseCost）
+    pub up_flags: u8, // bit0/1/2/3 = 有 dmg/block/magic/cost 升级
+    pub custom_upgrade: bool,
 }
 
 pub const FLAG_EXHAUST: u16 = 1 << 0;
@@ -414,10 +488,16 @@ pub const TAG_STRIKE: u16 = 1 << 1;
 pub const TAG_EMPTY: u16 = 1 << 2;
 pub const TAG_STARTER_DEFEND: u16 = 1 << 3;
 pub const TAG_STARTER_STRIKE: u16 = 1 << 4;
+
+pub const UPF_DMG: u8 = 1 << 0;
+pub const UPF_BLOCK: u8 = 1 << 1;
+pub const UPF_MAGIC: u8 = 1 << 2;
+pub const UPF_COST: u8 = 1 << 3;
 """
 
 
 def gen_cards(cards: list[dict], loc_eng: dict, loc_zhs: dict, outdir: Path):
+    UPF_DMG, UPF_BLOCK, UPF_MAGIC, UPF_COST = 1, 2, 4, 8
     lines = [CARD_TABLE_HEAD, "\npub const CARDS: &[CardStatic] = &[\n"]
     misses = []
     for c in cards:
@@ -442,12 +522,22 @@ def gen_cards(cards: list[dict], loc_eng: dict, loc_zhs: dict, outdir: Path):
         for t in c["tags"]:
             if t in tm:
                 tags |= 1 << tm[t]
+        uf = 0
+        if c.get("up_damage") is not None:
+            uf |= UPF_DMG
+        if c.get("up_block") is not None:
+            uf |= UPF_BLOCK
+        if c.get("up_magic") is not None:
+            uf |= UPF_MAGIC
+        if c.get("up_cost") is not None:
+            uf |= UPF_COST
         cost = c["cost"] if c["cost"] is not None else "-1 /* 动态/未解析 */"
         lines.append(
             "    CardStatic {{ id: {id}, class: {cls}, color_dir: {cd}, cost: {cost}, "
             "kind: CardType::{kind}, color: CardColor::{color}, rarity: CardRarity::{rar}, target: CardTarget::{tgt}, "
             "name_en: {ne}, name_zhs: {nz}, desc_en: {de}, desc_zhs: {dz}, "
-            "base_damage: {bd}, base_block: {bb}, base_magic: {bm}, flags: {f:#06x}, tags: {t:#04x} }},\n".format(
+            "base_damage: {bd}, base_block: {bb}, base_magic: {bm}, flags: {f:#06x}, tags: {t:#04x}, "
+            "up_damage: {ud}, up_block: {ub}, up_magic: {um}, up_cost: {uc}, up_flags: {uf}, custom_upgrade: {cu} }},\n".format(
                 id=rust_str(c["id"]), cls=rust_str(c["class"]), cd=rust_str(c["color_dir"]), cost=cost,
                 kind=camel(c["type"] or "Attack"), color=camel(c["color"] or "Colorless"), rar=camel(c["rarity"] or "Common"),
                 tgt=CARD_TARGET_MAP.get(c["target"] or "SELF", "Self_"),
@@ -459,6 +549,11 @@ def gen_cards(cards: list[dict], loc_eng: dict, loc_zhs: dict, outdir: Path):
                 bb=c["base_block"] if c["base_block"] is not None else -1,
                 bm=c["base_magic"] if c["base_magic"] is not None else -1,
                 f=flags, t=tags,
+                ud=c.get("up_damage") if c.get("up_damage") is not None else 0,
+                ub=c.get("up_block") if c.get("up_block") is not None else 0,
+                um=c.get("up_magic") if c.get("up_magic") is not None else 0,
+                uc=c.get("up_cost") if c.get("up_cost") is not None else 0,
+                uf=uf, cu=("true" if c.get("custom_upgrade", False) else "false"),
             )
         )
     lines.append("];\n")
@@ -551,7 +646,8 @@ pub use cards::{CardStatic, CARDS};
 pub use cards::{
     FLAG_ETHEREAL, FLAG_EXHAUST, FLAG_EXHAUST_ON_USE_ONCE, FLAG_INNATE, FLAG_PURGE_ON_USE,
     FLAG_RETAIN, FLAG_RETURN_TO_HAND, FLAG_SELF_RETAIN, FLAG_SHUFFLE_BACK, TAG_EMPTY,
-    TAG_HEALING, TAG_STARTER_DEFEND, TAG_STARTER_STRIKE, TAG_STRIKE,
+    TAG_HEALING, TAG_STARTER_DEFEND, TAG_STARTER_STRIKE, TAG_STRIKE, UPF_BLOCK, UPF_COST,
+    UPF_DMG, UPF_MAGIC,
 };
 pub use events::{EVENTS, EventId};
 pub use keywords::{KEYWORDS, Keyword};

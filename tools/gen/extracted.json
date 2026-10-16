@@ -18,7 +18,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Armaments",
@@ -38,7 +43,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Barricade",
@@ -58,7 +68,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 2,
+   "custom_upgrade": false
   },
   {
    "class": "Bash",
@@ -78,7 +93,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "BattleTrance",
@@ -98,7 +118,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Berserk",
@@ -118,7 +143,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": -1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "BloodForBlood",
@@ -138,7 +168,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 4,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 3,
+   "custom_upgrade": true
   },
   {
    "class": "Bloodletting",
@@ -158,7 +193,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Bludgeon",
@@ -178,7 +218,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 10,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "BodySlam",
@@ -198,7 +243,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "Brutality",
@@ -220,7 +270,12 @@
     "isInnate"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "BurningPact",
@@ -240,7 +295,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Carnage",
@@ -262,7 +322,12 @@
     "isEthereal"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 8,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Clash",
@@ -282,7 +347,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 4,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Cleave",
@@ -302,7 +372,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Clothesline",
@@ -322,7 +397,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Combust",
@@ -342,7 +422,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Corruption",
@@ -362,7 +447,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 2,
+   "custom_upgrade": false
   },
   {
    "class": "DarkEmbrace",
@@ -382,7 +472,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 1,
+   "custom_upgrade": false
   },
   {
    "class": "Defend_Red",
@@ -404,7 +499,12 @@
    "tags": [
     "STARTER_DEFEND"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "DemonForm",
@@ -424,7 +524,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Disarm",
@@ -446,7 +551,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "DoubleTap",
@@ -466,7 +576,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Dropkick",
@@ -486,7 +601,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "DualWield",
@@ -506,7 +626,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Entrench",
@@ -526,7 +651,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 1,
+   "custom_upgrade": true
   },
   {
    "class": "Evolve",
@@ -546,7 +676,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Exhume",
@@ -568,7 +703,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "Feed",
@@ -592,7 +732,12 @@
    "tags": [
     "HEALING"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "FeelNoPain",
@@ -612,7 +757,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "FiendFire",
@@ -634,7 +784,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "FireBreathing",
@@ -654,7 +809,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 4,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "FlameBarrier",
@@ -674,7 +834,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 4,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Flex",
@@ -694,7 +859,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "GhostlyArmor",
@@ -716,7 +886,12 @@
     "isEthereal"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Havoc",
@@ -736,7 +911,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "Headbutt",
@@ -756,7 +936,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "HeavyBlade",
@@ -776,7 +961,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Hemokinesis",
@@ -796,7 +986,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 5,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Immolate",
@@ -816,7 +1011,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 7,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Impervious",
@@ -838,7 +1038,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 10,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "InfernalBlade",
@@ -860,7 +1065,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "Inflame",
@@ -880,7 +1090,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Intimidate",
@@ -902,7 +1117,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "IronWave",
@@ -922,7 +1142,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": 2,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Juggernaut",
@@ -942,7 +1167,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "LimitBreak",
@@ -964,7 +1194,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Metallicize",
@@ -984,7 +1219,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Offering",
@@ -1006,7 +1246,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "PerfectedStrike",
@@ -1028,7 +1273,12 @@
    "tags": [
     "STRIKE"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "PommelStrike",
@@ -1050,7 +1300,12 @@
    "tags": [
     "STRIKE"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 1,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "PowerThrough",
@@ -1070,7 +1325,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 5,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Pummel",
@@ -1092,7 +1352,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Rage",
@@ -1112,7 +1377,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Rampage",
@@ -1132,7 +1402,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 3,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Reaper",
@@ -1156,7 +1431,12 @@
    "tags": [
     "HEALING"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 1,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "RecklessCharge",
@@ -1176,7 +1456,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Rupture",
@@ -1196,7 +1481,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "SearingBlow",
@@ -1216,7 +1506,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "SecondWind",
@@ -1236,7 +1531,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 2,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "SeeingRed",
@@ -1258,7 +1558,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "Sentinel",
@@ -1278,7 +1583,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "SeverSoul",
@@ -1298,7 +1608,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 6,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Shockwave",
@@ -1320,7 +1635,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "ShrugItOff",
@@ -1340,7 +1660,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "SpotWeakness",
@@ -1360,7 +1685,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Strike_Red",
@@ -1383,7 +1713,12 @@
     "STARTER_STRIKE",
     "STRIKE"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "SwordBoomerang",
@@ -1403,7 +1738,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "ThunderClap",
@@ -1423,7 +1763,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "TrueGrit",
@@ -1443,7 +1788,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 2,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "TwinStrike",
@@ -1465,7 +1815,12 @@
    "tags": [
     "STRIKE"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Uppercut",
@@ -1485,7 +1840,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Warcry",
@@ -1507,7 +1867,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Whirlwind",
@@ -1527,7 +1892,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "WildStrike",
@@ -1549,7 +1919,12 @@
    "tags": [
     "STRIKE"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 5,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Accuracy",
@@ -1569,7 +1944,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Acrobatics",
@@ -1589,7 +1969,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Adrenaline",
@@ -1611,7 +1996,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "AfterImage",
@@ -1633,7 +2023,12 @@
     "isInnate"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Alchemize",
@@ -1657,7 +2052,12 @@
    "tags": [
     "HEALING"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "AllOutAttack",
@@ -1677,7 +2077,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 4,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "AThousandCuts",
@@ -1697,7 +2102,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Backflip",
@@ -1717,7 +2127,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Backstab",
@@ -1740,7 +2155,12 @@
     "isInnate"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 4,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Bane",
@@ -1760,7 +2180,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "BladeDance",
@@ -1780,7 +2205,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Blur",
@@ -1800,7 +2230,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "BouncingFlask",
@@ -1820,7 +2255,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "BulletTime",
@@ -1840,7 +2280,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 2,
+   "custom_upgrade": false
   },
   {
    "class": "Burst",
@@ -1860,7 +2305,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "CalculatedGamble",
@@ -1882,7 +2332,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Caltrops",
@@ -1902,7 +2357,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Catalyst",
@@ -1924,7 +2384,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Choke",
@@ -1944,7 +2409,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "CloakAndDagger",
@@ -1964,7 +2434,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Concentrate",
@@ -1984,7 +2459,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": -1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "CorpseExplosion",
@@ -2004,7 +2484,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 3,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "CripplingPoison",
@@ -2026,7 +2511,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 3,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "DaggerSpray",
@@ -2046,7 +2536,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "DaggerThrow",
@@ -2066,7 +2561,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Dash",
@@ -2086,7 +2586,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "DeadlyPoison",
@@ -2106,7 +2611,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Defend_Green",
@@ -2128,7 +2638,12 @@
    "tags": [
     "STARTER_DEFEND"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Deflect",
@@ -2148,7 +2663,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "DieDieDie",
@@ -2170,7 +2690,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 4,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Distraction",
@@ -2192,7 +2717,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "DodgeAndRoll",
@@ -2212,7 +2742,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 2,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Doppelganger",
@@ -2234,7 +2769,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "EndlessAgony",
@@ -2256,7 +2796,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Envenom",
@@ -2276,7 +2821,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 1,
+   "custom_upgrade": false
   },
   {
    "class": "EscapePlan",
@@ -2296,7 +2846,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 2,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Eviscerate",
@@ -2316,7 +2871,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Expertise",
@@ -2336,7 +2896,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Finisher",
@@ -2356,7 +2921,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Flechettes",
@@ -2376,7 +2946,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "FlyingKnee",
@@ -2396,7 +2971,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Footwork",
@@ -2416,7 +2996,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "GlassKnife",
@@ -2436,7 +3021,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 4,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "GrandFinale",
@@ -2456,7 +3046,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 10,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "HeelHook",
@@ -2476,7 +3071,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "InfiniteBlades",
@@ -2498,7 +3098,12 @@
     "isInnate"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "LegSweep",
@@ -2518,7 +3123,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Malaise",
@@ -2540,7 +3150,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "MasterfulStab",
@@ -2560,7 +3175,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 4,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Neutralize",
@@ -2580,7 +3200,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 1,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Nightmare",
@@ -2602,7 +3227,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 2,
+   "custom_upgrade": false
   },
   {
    "class": "NoxiousFumes",
@@ -2622,7 +3252,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Outmaneuver",
@@ -2642,7 +3277,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "PhantasmalKiller",
@@ -2662,7 +3302,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "PiercingWail",
@@ -2684,7 +3329,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "PoisonedStab",
@@ -2704,7 +3354,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Predator",
@@ -2724,7 +3379,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 5,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Prepared",
@@ -2744,7 +3404,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "QuickSlash",
@@ -2764,7 +3429,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 4,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Reflex",
@@ -2784,7 +3454,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "RiddleWithHoles",
@@ -2804,7 +3479,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 1,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Setup",
@@ -2824,7 +3504,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "Skewer",
@@ -2844,7 +3529,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Slice",
@@ -2864,7 +3554,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "SneakyStrike",
@@ -2886,7 +3581,12 @@
    "tags": [
     "STRIKE"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 4,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "StormOfSteel",
@@ -2906,7 +3606,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Strike_Green",
@@ -2929,7 +3634,12 @@
     "STARTER_STRIKE",
     "STRIKE"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "SuckerPunch",
@@ -2949,7 +3659,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Survivor",
@@ -2969,7 +3684,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Tactician",
@@ -2989,7 +3709,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Terror",
@@ -3011,7 +3736,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "ToolsOfTheTrade",
@@ -3031,7 +3761,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "Unload",
@@ -3051,7 +3786,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 4,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "WellLaidPlans",
@@ -3071,7 +3811,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "WraithForm",
@@ -3091,7 +3836,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Aggregate",
@@ -3111,7 +3861,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": -1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "AllForOne",
@@ -3131,7 +3886,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 4,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Amplify",
@@ -3151,7 +3911,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "AutoShields",
@@ -3171,7 +3936,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 4,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "BallLightning",
@@ -3191,7 +3961,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Barrage",
@@ -3211,7 +3986,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "BeamCell",
@@ -3231,7 +4011,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 1,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "BiasedCognition",
@@ -3251,7 +4036,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Blizzard",
@@ -3271,7 +4061,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "BootSequence",
@@ -3294,7 +4089,12 @@
     "isInnate"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Buffer",
@@ -3314,7 +4114,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Capacitor",
@@ -3334,7 +4139,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Chaos",
@@ -3354,7 +4164,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Chill",
@@ -3377,7 +4192,12 @@
     "isInnate"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Claw",
@@ -3397,7 +4217,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "ColdSnap",
@@ -3417,7 +4242,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "CompileDriver",
@@ -3437,7 +4267,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "ConserveBattery",
@@ -3457,7 +4292,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Consume",
@@ -3477,7 +4317,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Coolheaded",
@@ -3497,7 +4342,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "CoreSurge",
@@ -3519,7 +4369,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 4,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "CreativeAI",
@@ -3539,7 +4394,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 2,
+   "custom_upgrade": false
   },
   {
    "class": "Darkness",
@@ -3559,7 +4419,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Defend_Blue",
@@ -3581,7 +4446,12 @@
    "tags": [
     "STARTER_DEFEND"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Defragment",
@@ -3601,7 +4471,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "DoomAndGloom",
@@ -3621,7 +4496,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 4,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "DoubleEnergy",
@@ -3643,7 +4523,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "Dualcast",
@@ -3663,7 +4548,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "EchoForm",
@@ -3685,7 +4575,12 @@
     "isEthereal"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Electrodynamics",
@@ -3705,7 +4600,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Equilibrium",
@@ -3725,7 +4625,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Fission",
@@ -3747,7 +4652,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "ForceField",
@@ -3767,7 +4677,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 4,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "FTL",
@@ -3787,7 +4702,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 1,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Fusion",
@@ -3807,7 +4727,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 1,
+   "custom_upgrade": false
   },
   {
    "class": "GeneticAlgorithm",
@@ -3829,7 +4754,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Glacier",
@@ -3849,7 +4779,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "GoForTheEyes",
@@ -3869,7 +4804,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 1,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Heatsinks",
@@ -3889,7 +4829,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "HelloWorld",
@@ -3911,7 +4856,12 @@
     "isInnate"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Hologram",
@@ -3933,7 +4883,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 2,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Hyperbeam",
@@ -3953,7 +4908,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 8,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Impulse",
@@ -3975,7 +4935,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Leap",
@@ -3995,7 +4960,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "LockOn",
@@ -4015,7 +4985,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Loop",
@@ -4035,7 +5010,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "MachineLearning",
@@ -4057,7 +5037,12 @@
     "isInnate"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Melter",
@@ -4077,7 +5062,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 4,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "MeteorStrike",
@@ -4099,7 +5089,12 @@
    "tags": [
     "STRIKE"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 6,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "MultiCast",
@@ -4119,7 +5114,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Overclock",
@@ -4139,7 +5139,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Rainbow",
@@ -4161,7 +5166,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Reboot",
@@ -4183,7 +5193,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Rebound",
@@ -4203,7 +5218,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Recursion",
@@ -4223,7 +5243,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "Recycle",
@@ -4243,7 +5268,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "ReinforcedBody",
@@ -4263,7 +5293,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 2,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Reprogram",
@@ -4283,7 +5318,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "RipAndTear",
@@ -4303,7 +5343,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Scrape",
@@ -4323,7 +5368,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Seek",
@@ -4345,7 +5395,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "SelfRepair",
@@ -4367,7 +5422,12 @@
    "tags": [
     "HEALING"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 3,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Skim",
@@ -4387,7 +5447,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Stack",
@@ -4407,7 +5472,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "StaticDischarge",
@@ -4427,7 +5497,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "SteamBarrier",
@@ -4447,7 +5522,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 2,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Storm",
@@ -4469,7 +5549,12 @@
     "isInnate"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Streamline",
@@ -4489,7 +5574,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 5,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Strike_Blue",
@@ -4512,7 +5602,12 @@
     "STARTER_STRIKE",
     "STRIKE"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Sunder",
@@ -4532,7 +5627,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 8,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "SweepingBeam",
@@ -4552,7 +5652,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Tempest",
@@ -4574,7 +5679,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "ThunderStrike",
@@ -4596,7 +5706,12 @@
    "tags": [
     "STRIKE"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Turbo",
@@ -4616,7 +5731,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "WhiteNoise",
@@ -4638,7 +5758,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "Zap",
@@ -4658,7 +5783,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "Alpha",
@@ -4681,7 +5811,12 @@
     "isInnate"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "BattleHymn",
@@ -4703,7 +5838,12 @@
     "isInnate"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Blasphemy",
@@ -4726,7 +5866,12 @@
     "selfRetain"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "BowlingBash",
@@ -4746,7 +5891,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Brilliance",
@@ -4766,7 +5916,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 4,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "CarveReality",
@@ -4786,7 +5941,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 4,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Collect",
@@ -4808,7 +5968,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Conclude",
@@ -4828,7 +5993,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 4,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "ConjureBlade",
@@ -4850,7 +6020,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Consecrate",
@@ -4870,7 +6045,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Crescendo",
@@ -4893,7 +6073,12 @@
     "selfRetain"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "CrushJoints",
@@ -4913,7 +6098,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "CutThroughFate",
@@ -4933,7 +6123,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "DeceiveReality",
@@ -4953,7 +6148,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Defend_Watcher",
@@ -4975,7 +6175,12 @@
    "tags": [
     "STARTER_DEFEND"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "DeusExMachina",
@@ -4997,7 +6202,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "DevaForm",
@@ -5019,7 +6229,12 @@
     "isEthereal"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Devotion",
@@ -5039,7 +6254,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Discipline",
@@ -5059,7 +6279,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 1,
+   "custom_upgrade": false
   },
   {
    "class": "EmptyBody",
@@ -5081,7 +6306,12 @@
    "tags": [
     "EMPTY"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "EmptyFist",
@@ -5103,7 +6333,12 @@
    "tags": [
     "EMPTY"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 5,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "EmptyMind",
@@ -5125,7 +6360,12 @@
    "tags": [
     "EMPTY"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Eruption",
@@ -5145,7 +6385,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 1,
+   "custom_upgrade": false
   },
   {
    "class": "Establishment",
@@ -5167,7 +6412,12 @@
     "isInnate"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Evaluate",
@@ -5187,7 +6437,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 4,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Fasting",
@@ -5207,7 +6462,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "FearNoEvil",
@@ -5227,7 +6487,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "FlurryOfBlows",
@@ -5247,7 +6512,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "FlyingSleeves",
@@ -5269,7 +6539,12 @@
     "selfRetain"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "FollowUp",
@@ -5289,7 +6564,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 4,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "ForeignInfluence",
@@ -5311,7 +6591,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Foresight",
@@ -5331,7 +6616,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Halt",
@@ -5351,7 +6641,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 1,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Indignation",
@@ -5371,7 +6666,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "InnerPeace",
@@ -5391,7 +6691,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Judgement",
@@ -5411,7 +6716,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 10,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "JustLucky",
@@ -5431,7 +6741,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 1,
+   "up_block": 1,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "LessonLearned",
@@ -5455,7 +6770,12 @@
    "tags": [
     "HEALING"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "LikeWater",
@@ -5475,7 +6795,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "MasterReality",
@@ -5495,7 +6820,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "Meditate",
@@ -5515,7 +6845,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "MentalFortress",
@@ -5535,7 +6870,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Nirvana",
@@ -5555,7 +6895,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Omniscience",
@@ -5577,7 +6922,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 3,
+   "custom_upgrade": false
   },
   {
    "class": "Perseverance",
@@ -5599,7 +6949,12 @@
     "selfRetain"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 2,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Pray",
@@ -5619,7 +6974,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "PressurePoints",
@@ -5639,7 +6999,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 3,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Prostrate",
@@ -5659,7 +7024,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Protect",
@@ -5681,7 +7051,12 @@
     "selfRetain"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 4,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Ragnarok",
@@ -5701,7 +7076,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 1,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "ReachHeaven",
@@ -5721,7 +7101,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 5,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Rushdown",
@@ -5741,7 +7126,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "Sanctity",
@@ -5761,7 +7151,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "SandsOfTime",
@@ -5783,7 +7178,12 @@
     "selfRetain"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 6,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "SashWhip",
@@ -5803,7 +7203,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Scrawl",
@@ -5825,7 +7230,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "SignatureMove",
@@ -5845,7 +7255,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 10,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "SimmeringFury",
@@ -5865,7 +7280,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "SpiritShield",
@@ -5885,7 +7305,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Strike_Purple",
@@ -5908,7 +7333,12 @@
     "STARTER_STRIKE",
     "STRIKE"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Study",
@@ -5928,7 +7358,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 1,
+   "custom_upgrade": false
   },
   {
    "class": "Swivel",
@@ -5948,7 +7383,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "TalkToTheHand",
@@ -5970,7 +7410,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Tantrum",
@@ -5992,7 +7437,12 @@
     "shuffleBackIntoDrawPile"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "ThirdEye",
@@ -6012,7 +7462,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 2,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Tranquility",
@@ -6035,7 +7490,12 @@
     "selfRetain"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "Unraveling",
@@ -6057,7 +7517,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 1,
+   "custom_upgrade": false
   },
   {
    "class": "Vault",
@@ -6079,7 +7544,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 2,
+   "custom_upgrade": false
   },
   {
    "class": "Vigilance",
@@ -6099,7 +7569,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 4,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Wallop",
@@ -6119,7 +7594,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "WaveOfTheHand",
@@ -6139,7 +7619,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Weave",
@@ -6159,7 +7644,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "WheelKick",
@@ -6179,7 +7669,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 5,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "WindmillStrike",
@@ -6203,7 +7698,12 @@
    "tags": [
     "STRIKE"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Wish",
@@ -6227,7 +7727,12 @@
    "tags": [
     "HEALING"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 1,
+   "up_block": 2,
+   "up_magic": 5,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Worship",
@@ -6249,7 +7754,12 @@
     "selfRetain"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "WreathOfFlame",
@@ -6269,7 +7779,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 3,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Apotheosis",
@@ -6291,7 +7806,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 1,
+   "custom_upgrade": false
   },
   {
    "class": "Apparition",
@@ -6314,7 +7834,12 @@
     "isEthereal"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "BandageUp",
@@ -6338,7 +7863,12 @@
    "tags": [
     "HEALING"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Bite",
@@ -6360,7 +7890,12 @@
    "tags": [
     "HEALING"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 1,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Blind",
@@ -6380,7 +7915,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Chrysalis",
@@ -6402,7 +7942,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "DarkShackles",
@@ -6424,7 +7969,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 6,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "DeepBreath",
@@ -6444,7 +7994,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Discovery",
@@ -6466,7 +8021,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "DramaticEntrance",
@@ -6489,7 +8049,12 @@
     "isInnate"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 4,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Enlightenment",
@@ -6509,7 +8074,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Finesse",
@@ -6529,7 +8099,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 2,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "FlashOfSteel",
@@ -6549,7 +8124,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Forethought",
@@ -6569,7 +8149,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "GoodInstincts",
@@ -6589,7 +8174,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 3,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "HandOfGreed",
@@ -6609,7 +8199,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 5,
+   "up_block": null,
+   "up_magic": 5,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Impatience",
@@ -6629,7 +8224,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "JackOfAllTrades",
@@ -6651,7 +8251,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "JAX",
@@ -6671,7 +8276,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Madness",
@@ -6693,7 +8303,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 0,
+   "custom_upgrade": false
   },
   {
    "class": "Magnetism",
@@ -6713,7 +8328,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 1,
+   "custom_upgrade": false
   },
   {
    "class": "MasterOfStrategy",
@@ -6735,7 +8355,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Mayhem",
@@ -6755,7 +8380,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 1,
+   "custom_upgrade": false
   },
   {
    "class": "Metamorphosis",
@@ -6777,7 +8407,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "MindBlast",
@@ -6799,7 +8434,12 @@
     "isInnate"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 1,
+   "custom_upgrade": false
   },
   {
    "class": "Panacea",
@@ -6821,7 +8461,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Panache",
@@ -6841,7 +8486,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 4,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "PanicButton",
@@ -6863,7 +8513,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 10,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Purity",
@@ -6885,7 +8540,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "RitualDagger",
@@ -6907,7 +8567,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "SadisticNature",
@@ -6927,7 +8592,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "SecretTechnique",
@@ -6949,7 +8619,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "SecretWeapon",
@@ -6971,7 +8646,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "SwiftStrike",
@@ -6993,7 +8673,12 @@
    "tags": [
     "STRIKE"
    ],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 3,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "TheBomb",
@@ -7013,7 +8698,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 10,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "ThinkingAhead",
@@ -7035,7 +8725,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Transmutation",
@@ -7057,7 +8752,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Trip",
@@ -7077,7 +8777,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Violence",
@@ -7099,7 +8804,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "AscendersBane",
@@ -7121,7 +8831,12 @@
     "isEthereal"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Clumsy",
@@ -7143,7 +8858,12 @@
     "isEthereal"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "CurseOfTheBell",
@@ -7163,7 +8883,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Decay",
@@ -7183,7 +8908,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Doubt",
@@ -7203,7 +8933,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Injury",
@@ -7223,7 +8958,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Necronomicurse",
@@ -7243,7 +8983,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Normality",
@@ -7263,7 +9008,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Pain",
@@ -7283,7 +9033,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Parasite",
@@ -7303,7 +9058,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Pride",
@@ -7326,7 +9086,12 @@
     "isInnate"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Regret",
@@ -7346,7 +9111,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Shame",
@@ -7366,7 +9136,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Writhe",
@@ -7388,7 +9163,12 @@
     "isInnate"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Burn",
@@ -7408,7 +9188,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Dazed",
@@ -7430,7 +9215,12 @@
     "isEthereal"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Slimed",
@@ -7452,7 +9242,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "VoidCard",
@@ -7474,7 +9269,12 @@
     "isEthereal"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Wound",
@@ -7494,7 +9294,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Beta",
@@ -7516,7 +9321,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": 1,
+   "custom_upgrade": false
   },
   {
    "class": "Expunger",
@@ -7536,7 +9346,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 6,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Insight",
@@ -7559,7 +9374,12 @@
     "selfRetain"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Miracle",
@@ -7582,7 +9402,12 @@
     "selfRetain"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": true
   },
   {
    "class": "Omega",
@@ -7602,7 +9427,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 10,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Safety",
@@ -7625,7 +9455,12 @@
     "selfRetain"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": 4,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Shiv",
@@ -7647,7 +9482,12 @@
     "exhaust"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 2,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "Smite",
@@ -7670,7 +9510,12 @@
     "selfRetain"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 4,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "ThroughViolence",
@@ -7693,7 +9538,12 @@
     "selfRetain"
    ],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": 10,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "BecomeAlmighty",
@@ -7713,7 +9563,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 1,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "ChooseCalm",
@@ -7733,7 +9588,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "ChooseWrath",
@@ -7753,7 +9613,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": null,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "FameAndFortune",
@@ -7773,7 +9638,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 5,
+   "up_cost": null,
+   "custom_upgrade": false
   },
   {
    "class": "LiveForever",
@@ -7793,7 +9663,12 @@
    "base_discard": null,
    "flags": [],
    "tags": [],
-   "parse_ok": true
+   "parse_ok": true,
+   "up_damage": null,
+   "up_block": null,
+   "up_magic": 2,
+   "up_cost": null,
+   "custom_upgrade": false
   }
  ],
  "relics": [
