@@ -2,3 +2,4 @@
 Cargo.lock
 saves/
 *.run
+__pycache__/
