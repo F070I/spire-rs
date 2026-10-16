@@ -5,6 +5,9 @@
 
 pub mod rng;
 
+/// 机械抽取的静态数据表（tools/extract.py 生成，勿手改）。
+pub mod gen;
+
 /// 原版规则常量（出处标注）。
 pub mod config {
     /// `core/Settings.java:204`
