@@ -2,23 +2,116 @@
 //!
 //! 原版对应：actions/unique 与各卡伴生 Action 类（WhirlwindAction、HeadbuttAction…）。
 //! 例程执行时机 = 队列消费到该项（即时模型下一个 tick 内完成全部逻辑）。
+//!
+//! 占位约定：需要选择屏（批次 6）或随机（4.1 RNG 接线）的点用确定性占位并加
+//! `// TODO` 注释；进度在 docs/modules/cards-red.md 清账。
 
-use crate::action::RoutineCall;
-use crate::battle::BattleState;
+use crate::action::{GameAction, RoutineCall};
+use crate::battle::{BattleState, CardInst};
+use crate::cards::damage_matrix;
+use crate::power::DamageType;
 
 type RoutineFn = fn(&mut BattleState, &RoutineCall);
 
 /// 注册表（id → 执行体）。灌注进度：批次 3.10 前应有 ~110 项。
-const ROUTINES: &[(&str, RoutineFn)] = &[];
+const ROUTINES: &[(&str, RoutineFn)] = &[
+    // actions/unique/WhirlwindAction：energyOnUse 次 × 全体伤害（矩阵在执行时计算，同 tick 等价）
+    ("WhirlwindAction", whirlwind),
+    // actions/unique/ArmamentsAction：升级手牌（upgraded=全体；否则选择 1 张）
+    ("ArmamentsAction", armaments),
+    // actions/common/ExhaustAction：amount2=1 表示随机消耗
+    ("ExhaustAction", exhaust_action),
+    // actions/unique/ModifyDamageAction：Rampage 永久成长（misc += amount）
+    ("ModifyDamageAction", modify_damage),
+];
 
 pub fn run(b: &mut BattleState, call: &RoutineCall) {
     match ROUTINES.iter().find(|(id, _)| *id == call.id) {
         Some((_, f)) => f(b, call),
         None => {
-            // 未转译例程：记入 Future 动作等价（审计用；灌注进度表跟踪）
-            // 这里选择静默跳过 + debug_assert，避免测试因灌注进度中断。
             #[cfg(debug_assertions)]
             eprintln!("[sts-core] untranslated card routine: {}", call.id);
+        }
+    }
+}
+
+/// WhirlwindAction：消耗 energyOnUse 点能量（amount2），每点对全体敌人打一次 baseDamage。
+fn whirlwind(b: &mut BattleState, call: &RoutineCall) {
+    let base = sts_data::gen::CARDS[call.sid].base_damage;
+    for _ in 0..call.amount.max(0) {
+        let matrix = damage_matrix(b, base, DamageType::Normal);
+        b.mgr
+            .add_bottom(GameAction::DamageAll { matrix, ty: DamageType::Normal });
+    }
+    // X 费的能量扣减由动作本体承担（useCard 对 cost=-1 不扣）
+    b.energy = (b.energy - call.amount2).max(0);
+}
+
+/// ArmamentsAction：升级手牌。upgraded=全体；否则选择 1 张（选择屏 TODO 批次 6，占位取首张可升级）。
+fn armaments(b: &mut BattleState, call: &RoutineCall) {
+    upgrade_hand(b, call.upgraded);
+}
+
+/// 升级手牌。
+pub fn upgrade_hand(b: &mut BattleState, all: bool) {
+    if all {
+        for c in &mut b.hand.group {
+            if c.can_upgrade() {
+                c.upgraded = true;
+                c.times_upgraded += 1;
+                c.cost_for_turn = c.eff_cost();
+            }
+        }
+    } else {
+        // TODO 批次 6：选择屏（玩家选 1 张）
+        if let Some(c) = b.hand.group.iter_mut().find(|c| c.can_upgrade()) {
+            c.upgraded = true;
+            c.times_upgraded += 1;
+            c.cost_for_turn = c.eff_cost();
+        }
+    }
+}
+
+/// ExhaustAction：消耗手牌。amount2=1 → 随机（cardRandomRng TODO 4.1，取顶占位）；否则选择屏 TODO 批次 6。
+fn exhaust_action(b: &mut BattleState, call: &RoutineCall) {
+    let n = call.amount.min(b.hand.group.len() as i32);
+    for _ in 0..n {
+        let idx = if call.amount2 == 1 {
+            b.hand.group.len().saturating_sub(1) // TODO 4.1：随机位
+        } else {
+            0 // TODO 批次 6：选择屏
+        };
+        if idx < b.hand.group.len() {
+            let c = b.hand.group.remove(idx);
+            exhaust_one(b, c);
+        }
+    }
+}
+
+/// 消耗一张手牌（进消耗堆 + Blood for Blood 费用联动）。
+pub fn exhaust_one(b: &mut BattleState, c: CardInst) {
+    b.exhaust_pile.add_top(c);
+    blood_for_blood_trigger(b);
+}
+
+/// Blood for Blood 机制：每次消耗后，手牌/抽牌堆/弃牌堆中的 B4B 费用 -1。
+/// TODO 3.10：核对原版挂接点（ExhaustAction/ExhaustSpecificCardAction 内联）。
+pub fn blood_for_blood_trigger(b: &mut BattleState) {
+    for pile in [&mut b.hand, &mut b.draw_pile, &mut b.discard_pile] {
+        for c in &mut pile.group {
+            if c.st().id == "Blood for Blood" && c.cost_for_turn > 0 {
+                c.cost_for_turn -= 1;
+            }
+        }
+    }
+}
+
+/// ModifyDamageAction：按 uuid 找到卡实例，misc += amount（Rampage 永久成长）。
+fn modify_damage(b: &mut BattleState, call: &RoutineCall) {
+    for pile in [&mut b.discard_pile, &mut b.hand, &mut b.draw_pile] {
+        if let Some(c) = pile.group.iter_mut().find(|c| c.uuid == call.card_uuid) {
+            c.misc += call.amount;
+            return;
         }
     }
 }

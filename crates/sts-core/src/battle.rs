@@ -561,8 +561,12 @@ impl BattleState {
     fn begin_player_turn(&mut self, _rng: &mut sts_data::rng::StsRandom) {
         // 1) atEndOfRound（记录 03 §10：先玩家全体 powers，后每只存活怪物的 powers）
         let mut deferred: Vec<GameAction> = Vec::new();
-        // 玩家侧：回合型减益递减 + 毒
+        // 玩家侧：回合型减益递减 + 毒 + LoseStrength（Flex：回合末收回力量）
+        let mut lose_str: Option<i32> = None;
         for p in &mut self.player.powers {
+            if p.kind == PowerKind::LoseStrength {
+                lose_str = Some(p.amount);
+            }
             if power::ops::end_of_round_tick(p) {
                 deferred.push(GameAction::RemovePower {
                     target: TargetRef::Player,
@@ -602,6 +606,25 @@ impl BattleState {
         }
         for a in deferred {
             self.mgr.add_bottom(a);
+        }
+        // LoseStrengthPower.atEndOfTurn：力量 -= amount，自身移除（ReducePowerAction 语义）
+        if let Some(amt) = lose_str {
+            if let Some(sp) = self
+                .player
+                .powers
+                .iter_mut()
+                .find(|p| p.kind == PowerKind::Strength)
+            {
+                if power::ops::reduce_power(sp, amt) == power::ops::ReduceResult::Remove {
+                    self.mgr.add_bottom(GameAction::RemovePower {
+                        target: TargetRef::Player,
+                        kind: PowerKind::Strength,
+                    });
+                }
+            }
+            self.player
+                .powers
+                .retain(|p| p.kind != PowerKind::LoseStrength);
         }
         // 2) 计数清零（cardsPlayedThisTurn 等 TODO 2.4）
         // 3-5) 回合开始钩子（遗物/卡/能力 atStartOfTurn）—— TODO 3.5/3.6
@@ -771,6 +794,12 @@ impl BattleState {
                     } else {
                         self.draw_pile.add_top(c);
                     }
+                }
+            }
+            GameAction::MakeTempCardInDiscard { sid, upgraded, count } => {
+                for _ in 0..count {
+                    let uuid = self.next_uuid();
+                    self.discard_pile.add_top(CardInst::new(sid, upgraded, uuid));
                 }
             }
             GameAction::ChannelOrb { kind } => self.channel_orb(kind),

@@ -141,11 +141,12 @@ fn x_cost_snapshot_and_zero_energy_pass() {
     let mut b = fixture(&[("Whirlwind", false)]);
     b.energy = 2;
     let i = find_hand(&b, "Whirlwind").unwrap();
-    // X 费：能量校验恒过（cost=-1），energyOnUse 快照 2
+    // X 费：能量校验恒过（cost=-1），energyOnUse 快照 2；WhirlwindAction 消耗全部快照能量
     assert!(b.play_card(i, Some(0)).is_ok());
     b.run_until_idle(&mut rng(2));
-    // WhirlwindAction 未转译（批次 3）——能量不扣；快照已随队列传递（行为在批次 3 断言）
-    assert_eq!(b.energy, 2);
+    assert_eq!(b.energy, 0, "X 费卡由其动作本体扣能");
+    // 2 点能量 → 2 次全体伤害（baseDamage 5，怪 60 血）
+    assert_eq!(b.monsters[0].creature.current_health, 60 - 10);
 }
 
 #[test]

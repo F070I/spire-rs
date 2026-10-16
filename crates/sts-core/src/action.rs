@@ -96,6 +96,8 @@ pub enum GameAction {
     MakeTempCardInHand { sid: usize, upgraded: bool, count: i32 },
     /// `MakeTempCardInDrawPileAction`：random_spot=随机位置（cardRandomRng），否则顶。
     MakeTempCardInDrawPile { sid: usize, upgraded: bool, count: i32, random_spot: bool },
+    /// `MakeTempCardInDiscardAction`（Anger 等）。
+    MakeTempCardInDiscard { sid: usize, upgraded: bool, count: i32 },
     /// `ChannelAction`：引动充能球。
     ChannelOrb { kind: crate::orb::OrbKind },
     /// `EvokeOrbAction`：引动 N 个球（最老优先）。

@@ -30,6 +30,10 @@ pub enum PowerKind {
     Intangible,
     IntangiblePlayer,
     NoDraw,
+    /// LoseStrengthPower（原版 ID 恒为 "Flex"——ID 契约特例）：回合末力量 -= amount。
+    LoseStrength,
+    /// RagePower（ID "Rage"）：每打出一张攻击获得 amount 格挡（onPlayCard 钩子 TODO 3.5）。
+    Rage,
     /// 兜底：尚未转译的能力（批次 3.5 逐个消灭；带原版 ID 以便审计）。
     Future,
 }
