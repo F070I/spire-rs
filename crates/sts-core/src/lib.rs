@@ -10,5 +10,9 @@
 
 pub mod state;
 pub mod flow;
+pub mod power;
+pub mod stance;
+pub mod damage;
+pub mod creature;
 
 pub use state::Game;
