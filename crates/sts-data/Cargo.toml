@@ -1,0 +1,7 @@
+[package]
+name = "sts-data"
+version.workspace = true
+edition.workspace = true
+description = "Slay the Spire (text edition) - static game data, IDs, RNG algorithms, text protocol"
+
+[dependencies]

@@ -1,0 +1,8 @@
+[package]
+name = "sts-interface"
+version.workspace = true
+edition.workspace = true
+description = "Slay the Spire (text edition) - UI<->core protocol: PlayerCommand / GameView"
+
+[dependencies]
+sts-data = { path = "../sts-data" }

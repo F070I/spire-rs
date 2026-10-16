@@ -1,0 +1,14 @@
+[package]
+name = "sts-terminal"
+version.workspace = true
+edition.workspace = true
+description = "Slay the Spire (text edition) - terminal UI and executable entry point"
+
+[[bin]]
+name = "sts"
+path = "src/main.rs"
+
+[dependencies]
+sts-data = { path = "../sts-data" }
+sts-core = { path = "../sts-core" }
+sts-interface = { path = "../sts-interface" }

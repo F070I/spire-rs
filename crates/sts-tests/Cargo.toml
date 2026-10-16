@@ -1,0 +1,10 @@
+[package]
+name = "sts-tests"
+version.workspace = true
+edition.workspace = true
+description = "Slay the Spire (text edition) - cross-crate rule tests, seed regression, parity, run-through tests"
+
+[dependencies]
+sts-data = { path = "../sts-data" }
+sts-core = { path = "../sts-core" }
+sts-interface = { path = "../sts-interface" }

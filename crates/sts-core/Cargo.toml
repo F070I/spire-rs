@@ -1,0 +1,8 @@
+[package]
+name = "sts-core"
+version.workspace = true
+edition.workspace = true
+description = "Slay the Spire (text edition) - complete game rules, state, flow. No UI/platform dependencies."
+
+[dependencies]
+sts-data = { path = "../sts-data" }
