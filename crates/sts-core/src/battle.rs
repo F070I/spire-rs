@@ -188,6 +188,9 @@ pub struct BattleState {
     /// 手牌上限（masterHandSize，默认 5；MAX_HAND_SIZE=10 是抽牌钳制）。
     pub game_hand_size: i32,
     pub is_battle_over: bool,
+    /// 充能球（空槽占位补齐；批次 3.8 完整化）。
+    pub orbs: Vec<crate::orb::Orb>,
+    pub max_orbs: usize,
     /// 遗物/神龛事实占位（批次 3.6 接入后由 RunState 查询）。
     pub relics_ctx: RelicCtx,
 }
@@ -229,6 +232,8 @@ impl BattleState {
             uuid_next: 1,
             game_hand_size,
             is_battle_over: false,
+            orbs: Vec::new(),
+            max_orbs: 0,
             relics_ctx: RelicCtx::default(),
         };
         for (sid, up) in deck {
@@ -444,6 +449,110 @@ impl BattleState {
         false
     }
 
+    /// 引动球（channelOrb：找第一个空槽；槽满 → 引动最老再通道，记录 03 §8）。
+    pub fn channel_orb(&mut self, kind: crate::orb::OrbKind) {
+        let orb = match kind {
+            crate::orb::OrbKind::Lightning => crate::orb::Orb { kind, passive_amount: 3, evoke_amount: 8 },
+            crate::orb::OrbKind::Frost => crate::orb::Orb { kind, passive_amount: 2, evoke_amount: 5 },
+            crate::orb::OrbKind::Dark => crate::orb::Orb { kind, passive_amount: 6, evoke_amount: 6 },
+            crate::orb::OrbKind::Plasma => crate::orb::Orb { kind, passive_amount: 1, evoke_amount: 2 },
+            crate::orb::OrbKind::EmptySlot => return,
+        };
+        if self.orbs.len() < self.max_orbs {
+            self.orbs.push(orb);
+        } else if !self.orbs.is_empty() {
+            self.evoke_orb();
+            self.orbs.push(orb);
+        }
+    }
+
+    /// 引动最老的球（evokeOrb：orbs[0] onEvoke → 左移补空槽，记录 03 §8）。
+    pub fn evoke_orb(&mut self) {
+        if self.orbs.is_empty() {
+            return;
+        }
+        let orb = self.orbs.remove(0);
+        let out = crate::orb::evoke_effect(&orb);
+        if out.thorns_damage > 0 {
+            // 闪电球：THORNS 打随机敌人（Electro 全体分支 TODO 3.8）
+            if let Some(mi) = self.first_alive_monster() {
+                self.exec_damage(
+                    TargetRef::Monster(mi),
+                    crate::damage::DamageInfo::pure(false, out.thorns_damage, crate::orb::ORB_DAMAGE_TYPE),
+                );
+            }
+        }
+        if out.block > 0 {
+            self.player.add_block(out.block);
+        }
+        if out.dark_damage > 0 {
+            // 暗球：打血量最高的敌人
+            if let Some(mi) = self.highest_hp_monster() {
+                self.exec_damage(
+                    TargetRef::Monster(mi),
+                    crate::damage::DamageInfo::pure(false, out.dark_damage, crate::orb::ORB_DAMAGE_TYPE),
+                );
+            }
+        }
+        if out.energy > 0 {
+            self.energy = (self.energy + out.energy).min(999);
+        }
+        self.orbs.push(crate::orb::Orb {
+            kind: crate::orb::OrbKind::EmptySlot,
+            passive_amount: 0,
+            evoke_amount: 0,
+        });
+        self.check_battle_over();
+    }
+
+    fn first_alive_monster(&self) -> Option<usize> {
+        self.monsters
+            .iter()
+            .position(|m| !m.creature.is_dying && !m.creature.is_dead)
+    }
+
+    fn highest_hp_monster(&self) -> Option<usize> {
+        self.monsters
+            .iter()
+            .enumerate()
+            .filter(|(_, m)| !m.creature.is_dying && !m.creature.is_dead)
+            .max_by_key(|(_, m)| m.creature.current_health)
+            .map(|(i, _)| i)
+    }
+
+    /// 切换架势（ChangeStanceAction，记录 03 §9：powers→relics→exit→enter；钩子 TODO 3.5/3.6）。
+    pub fn change_stance(&mut self, new: crate::stance::StanceKind) {
+        if self.player_stance == new {
+            return;
+        }
+        if self.player_stance == crate::stance::StanceKind::Calm {
+            // CalmStance.onExitStance：+2 能量
+            self.energy = (self.energy + 2).min(999);
+        }
+        self.player_stance = new;
+        if new == crate::stance::StanceKind::Divinity {
+            // DivinityStance.onEnterStance：+3 能量
+            self.energy = (self.energy + 3).min(999);
+        }
+    }
+
+    /// 弃牌动作（DiscardAction，记录 09 §5）：随机/全弃；选择屏在批次 6。
+    fn exec_discard(&mut self, amount: i32, is_random: bool, _any_number: bool) {
+        let n = self.hand.group.len() as i32;
+        if is_random {
+            for _ in 0..amount.min(n) {
+                // 随机弃：cardRandomRng（TODO 4.1 接线；取顶占位）
+                if let Some(c) = self.hand.group.pop() {
+                    self.discard_pile.add_top(c);
+                }
+            }
+        } else if n <= amount {
+            while let Some(c) = self.hand.group.pop() {
+                self.discard_pile.add_top(c);
+            }
+        }
+    }
+
     fn monsters_basically_dead(&self) -> bool {
         self.monsters.iter().all(|m| m.creature.is_dying || m.creature.is_dead)
     }
@@ -623,6 +732,58 @@ impl BattleState {
                 self.is_battle_over = true;
                 self.mgr.clear_post_combat();
             }
+            GameAction::DamageAll { matrix, ty } => {
+                // 记录 09 §7：按索引结算、跳过死怪（矩阵不重排）
+                for (mi, dmg) in matrix {
+                    if mi < self.monsters.len()
+                        && !self.monsters[mi].creature.is_dying
+                        && !self.monsters[mi].creature.is_dead
+                    {
+                        self.exec_damage(
+                            TargetRef::Monster(mi),
+                            crate::damage::DamageInfo::pure(false, dmg, ty),
+                        );
+                    }
+                }
+                self.check_battle_over();
+            }
+            GameAction::Discard { amount, is_random, any_number } => {
+                self.exec_discard(amount, is_random, any_number);
+            }
+            GameAction::MakeTempCardInHand { sid, upgraded, count } => {
+                for _ in 0..count {
+                    if (self.hand.group.len() as i32) < sts_data::config::MAX_HAND_SIZE as i32 {
+                        let uuid = self.next_uuid();
+                        let mut c = CardInst::new(sid, upgraded, uuid);
+                        c.cost_for_turn = 0; // 临时卡 0 费（MakeTempCard 语义）
+                        self.hand.add_top(c);
+                    }
+                }
+            }
+            GameAction::MakeTempCardInDrawPile { sid, upgraded, count, random_spot } => {
+                for _ in 0..count {
+                    let uuid = self.next_uuid();
+                    let c = CardInst::new(sid, upgraded, uuid);
+                    if random_spot {
+                        // addToRandomSpot：cardRandomRng（TODO 4.1 接线；中位占位）
+                        let pos = self.draw_pile.group.len() / 2;
+                        self.draw_pile.group.insert(pos, c);
+                    } else {
+                        self.draw_pile.add_top(c);
+                    }
+                }
+            }
+            GameAction::ChannelOrb { kind } => self.channel_orb(kind),
+            GameAction::EvokeOrb { count } => {
+                for _ in 0..count {
+                    self.evoke_orb();
+                }
+            }
+            GameAction::ChangeStance { stance } => self.change_stance(stance),
+            GameAction::Scry { amount } => {
+                let _ = amount; // 批次 6 交互（选择屏）
+            }
+            GameAction::CardRoutine { call } => crate::cards::run_routine(self, &call),
             GameAction::Future { .. } => {}
         }
     }
@@ -783,9 +944,9 @@ impl BattleState {
         // onPlayCard 钩子链（记录 09 §1-4）：玩家 powers → 怪物 powers → 遗物 → 架势 →
         // blights → 手/弃/抽牌堆卡——TODO 3.5/3.6 钩子接入（当前无钩子能力）
 
-        // calculateCardDamage（打出瞬间重算）
+        // use() 效果：cards 模块分发（记录 09 §1 阶段 C-4）
         let target = item.target;
-        let effects = self.card_effects(&card, target);
+        let effects = crate::cards::effects(self, &card, target);
         // 扣能（Corruption/freeToPlay TODO）
         self.energy -= card.cost_for_turn.max(0);
         // 手牌移除（useCard 步骤 6-7）
@@ -809,48 +970,4 @@ impl BattleState {
         }
     }
 
-    /// 卡牌效果分发（批次 2.4/3 起逐卡转译；当前覆盖沙盘所需的基础攻击/防御）。
-    fn card_effects(&mut self, card: &CardInst, target: Option<usize>) -> Vec<GameAction> {
-        let st = card.st();
-        let mut out = Vec::new();
-        match st.kind {
-            CardType::Attack => {
-                let base_eff = card.eff_damage();
-                if base_eff > 0 {
-                    if let Some(mi) = target {
-                        // calculateCardDamage（打出瞬间重算，记录 09 §1 阶段 C-2）
-                        let info = DamageInfo::from_card(
-                            &self.player.powers,
-                            self.player_stance,
-                            &self.monsters[mi].creature.powers,
-                            base_eff,
-                            DamageType::Normal,
-                        );
-                        out.push(GameAction::Damage {
-                            target: TargetRef::Monster(mi),
-                            info,
-                        });
-                        // 首批正式转译卡（use() 效果；Bash 升级后 magic 2→3）
-                        if st.id == "Bash" {
-                            out.push(GameAction::ApplyPower {
-                                target: TargetRef::Monster(mi),
-                                source: Some(TargetRef::Player),
-                                power: Power::new(PowerKind::Vulnerable, card.eff_magic()),
-                                from_monster: false,
-                            });
-                        }
-                    }
-                    // 无目标攻击（ALL_ENEMY 矩阵，记录 09 §7）—— TODO 2.4
-                }
-            }
-            CardType::Skill if card.eff_block() > 0 => {
-                out.push(GameAction::GainBlock {
-                    target: TargetRef::Player,
-                    amount: card.eff_block(),
-                });
-            }
-            _ => {}
-        }
-        out
-    }
 }

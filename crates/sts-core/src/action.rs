@@ -85,8 +85,45 @@ pub enum GameAction {
     DiscardAtEndOfTurn,
     /// 战斗结束标记（由 endBattle 流程入队；即时模型下只翻转状态）。
     BattleOver,
+    // ---------- 批次 3 卡牌灌注：高频动作 ----------
+    /// `DamageAllEnemiesAction`：预计算矩阵（索引, 伤害），执行时跳过已死目标（记录 09 §7）。
+    DamageAll { matrix: Vec<(usize, i32)>, ty: crate::power::DamageType },
+    /// `DiscardAction`：amount<0 表示任意张选择屏；is_random 用 cardRandomRng。
+    Discard { amount: i32, is_random: bool, any_number: bool },
+    /// `DrawCardAction` 变体已在（DrawCard）。
+    /// `GainEnergyAction` 已在（GainEnergy）。
+    /// `MakeTempCardInHandAction`：生成临时卡进手牌。
+    MakeTempCardInHand { sid: usize, upgraded: bool, count: i32 },
+    /// `MakeTempCardInDrawPileAction`：random_spot=随机位置（cardRandomRng），否则顶。
+    MakeTempCardInDrawPile { sid: usize, upgraded: bool, count: i32, random_spot: bool },
+    /// `ChannelAction`：引动充能球。
+    ChannelOrb { kind: crate::orb::OrbKind },
+    /// `EvokeOrbAction`：引动 N 个球（最老优先）。
+    EvokeOrb { count: i32 },
+    /// `ChangeStanceAction`。
+    ChangeStance { stance: crate::stance::StanceKind },
+    /// `ScryAction`：观/弃（选择屏，批次 6 交互；核心先实现"进入选择"标记）。
+    Scry { amount: i32 },
+    /// 卡牌专属例程（对应原版 actions/unique 与卡牌专属 Action 类，共 ~110 种）。
+    /// 例：WhirlwindAction / FeedAction / ExhumeAction。执行入口 `cards::routines::run`。
+    CardRoutine { call: RoutineCall },
     /// 批次 3.10 兜底：未转译动作（审计用描述）。
     Future { desc: &'static str },
+}
+
+/// 卡牌专属例程调用参数（对齐原版各卡牌 Action 类的构造参数子集）。
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct RoutineCall {
+    /// 例程名（= 原版 Action 类名，硬契约便于对照）。
+    pub id: &'static str,
+    pub target: Option<usize>,
+    pub amount: i32,
+    pub amount2: i32,
+    /// 关联卡 uuid（原版动作持卡引用/uuid 反查）。
+    pub card_uuid: u64,
+    /// 关联卡 sid（生成临时卡等）。
+    pub sid: usize,
+    pub upgraded: bool,
 }
 
 impl GameAction {
