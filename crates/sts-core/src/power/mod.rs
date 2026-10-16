@@ -29,6 +29,7 @@ pub enum PowerKind {
     Artifact,
     Intangible,
     IntangiblePlayer,
+    NoDraw,
     /// 兜底：尚未转译的能力（批次 3.5 逐个消灭；带原版 ID 以便审计）。
     Future,
 }
@@ -40,6 +41,9 @@ pub struct Power {
     pub amount: i32,
     /// 原版 ID 字符串（硬契约，Future 兜底时必填）。
     pub id: &'static str,
+    /// justApplied 模式（记录 03 §2）：怪物施加的回合型减益在本回合结束时
+    /// 跳过第一次递减（避免当回合就掉层）。仅回合型减益使用。
+    pub just_applied: bool,
 }
 
 impl Power {
@@ -48,6 +52,15 @@ impl Power {
             kind,
             amount,
             id: "",
+            just_applied: false,
+        }
+    }
+
+    /// 施加时携带 justApplied（回合型减益由怪物施加时置位）。
+    pub fn new_just_applied(kind: PowerKind, amount: i32) -> Self {
+        Self {
+            just_applied: true,
+            ..Self::new(kind, amount)
         }
     }
 
@@ -56,8 +69,36 @@ impl Power {
             kind: PowerKind::Future,
             amount,
             id,
+            just_applied: false,
         }
     }
+}
+
+/// priority 表（记录 03 §3）：默认 5，仅列出覆写者；排序只发生在
+/// ApplyPowerAction 新增时（稳定排序），低级 addPower 不排序。
+pub fn priority(kind: PowerKind) -> i32 {
+    match kind {
+        PowerKind::Frail => 10,
+        PowerKind::Intangible | PowerKind::IntangiblePlayer => 75,
+        PowerKind::Weak => 99,
+        _ => 5,
+    }
+}
+
+/// PowerType.BUFF/DEBUFF（固定于能力种类，不随 amount 正负改变——
+/// 原 StrengthPower 负值仍为 BUFF，Artifact 不拦截，保真）。
+pub fn is_debuff(kind: PowerKind) -> bool {
+    matches!(kind, PowerKind::Vulnerable | PowerKind::Weak | PowerKind::Frail | PowerKind::Slow)
+}
+
+/// 回合型减益（atEndOfRound 递减 + justApplied 跳过，记录 03 §2）。
+pub fn is_turn_based_decrement(kind: PowerKind) -> bool {
+    matches!(
+        kind,
+        PowerKind::Vulnerable | PowerKind::Weak | PowerKind::Frail
+        // 完整集合（NoBlock/AttackBurn/SkillBurn/DoubleDamage/DrawReduction/Intangible）
+        // 随批次 3.5 补全对应 kind。
+    )
 }
 
 /// 单能力的 `atDamageGive` 语义（powers/*.java 同名钩子逐条对照）。
@@ -113,3 +154,11 @@ pub fn modify_block_last(_p: &Power, block: f32) -> f32 {
     // 批次 2.2 补全（Barricade 系无；Calipers 不在此）
     block
 }
+
+// ======================================================================
+// 施加 / 叠层 / 递减 / 移除（ApplyPowerAction / stackPower / ReducePowerAction /
+// RemoveSpecificPowerAction 的语义核心，记录 09 §8、03 §1E/2）
+
+pub mod ops;
+
+pub use ops::{apply_power, add_power_raw, end_of_round_tick, reduce_power, remove_power, stack_power, ApplyCtx, ApplyOutcome, ReduceResult};
