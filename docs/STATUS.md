@@ -2,7 +2,7 @@
 
 > 本文档为 token 预算接近尾声时的交接快照。下个会话/接手者按此继续。
 
-## 已完成（git 最新 commit：9b36c34，203 测试全过，clippy 0）
+## 已完成（git 最新 commit：bdf601d，236 测试全过，clippy 0）
 
 ### 批次 1：地基
 - sts-data::rng：RandomXS128 + JDK LCG + STS Random 包装（基线交叉验证）
@@ -28,6 +28,26 @@
 
 ### 4.1 RNG 接线
 - BattleRngs：shuffle/card_random/ai/misc（seed+floorNum 重播种），随机占位全回填
+
+## 本轮追加（批次 4f-4g，2026-10-17）
+
+- **药水 4f（f15f9af）**：42 种全实装（potency 逐瓶按 getPotency() 源码校对）。
+  源码纠错：Fire Potion=THORNS 穿格挡、Explosive=10 伤 NORMAL 可格挡、
+  Essence of Steel=4 反甲、Steroid/Speed=5+Lose 回收。Entropic Brew 先消耗再
+  填满含本槽。Fairy 死亡自动复活（has_fairy_potion 钩子）。新 PowerKind：
+  Ritual/Regen/LoseDexterity。
+- **遗物第三批 4g（bdf601d）**：+45 件全钩子（出牌计数 Kunai/Shuriken/Fan/
+  LetterOpener/ChampionBelt/MummifiedHand/BirdFacedUrn/Damaru/Necronomicon；
+  回合 ArtOfWar/Pocketwatch/Inserter/RingOfSerpent/EmotionChip/IceCream；
+  承伤 Boot/Torii/LizardTail/RunicCube/SelfFormingClay；战斗开始 BronzeScales/
+  Clockwork/TwistedFunnel/MarkOfPain/DuVuDoll/RunicCapacitor/Enchiridion/
+  HolyWater/CultistMask/SlaversCollar；拾取 EmptyCage/PandorasBox/Astrolabe/
+  TinyHouse/CallingBell/BlackBlood/蛋类×3；flow RegalPillow/MawBank/CeramicFish/
+  ToyOrnithopter/AncientTeaSet/Omamori/CursedKey）。映射累计 89/181。
+  时序教训：回合开始遗物检查要用「快照后清零」，能量类增益必须排在充能动作
+  之后入队（Happy Flower/Art of War 同坑两次）。
+- **源码路径迁移**：`C:\Users\17366\Desktop\MySlayTheSpire-master`（原
+  OneDrive\Desktop 已迁空）。
 
 ## 本轮追加（批次 4c-4e，2026-10-17）
 
