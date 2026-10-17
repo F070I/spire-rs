@@ -777,9 +777,16 @@ impl BattleState {
             let matrix = self.combust_matrix(52);
             self.mgr.add_bottom(GameAction::DamageAll { matrix, ty: DamageType::Thorns });
         }
-        // Burn.triggerOnEndOfTurnForPlayingCard：手牌灼伤自动打出——THORNS 伤
-        // （无视格挡）= magic（升级 +2）；升级灼伤在批次 4c Hexaghost 引入
+        // 手牌状态/诅咒的回合末触发（triggerOnEndOfTurnForPlayingCard 系）：
+        // Burn（THORNS magic，升级 +2）/ Decay（THORNS 2）/ Shame（Frail 1）/
+        // Regret（HP 流失 = 手牌数）
         let burn_sid = crate::cards::sid_of("Burn");
+        let decay_sid = crate::cards::sid_of("Decay");
+        let shame_sid = crate::cards::sid_of("Shame");
+        let regret_sid = crate::cards::sid_of("Regret");
+        let mut decay_n = 0;
+        let mut shame_n = 0;
+        let mut regret_n = 0;
         for c in &self.hand.group {
             if c.sid == burn_sid {
                 self.mgr.add_bottom(GameAction::Damage {
@@ -792,7 +799,43 @@ impl BattleState {
                         modified: false,
                     },
                 });
+            } else if c.sid == decay_sid {
+                decay_n += 1;
+            } else if c.sid == shame_sid {
+                shame_n += 1;
+            } else if c.sid == regret_sid {
+                regret_n += 1;
             }
+        }
+        if decay_n > 0 {
+            self.mgr.add_bottom(GameAction::Damage {
+                target: TargetRef::Player,
+                info: DamageInfo {
+                    owner_is_player: true,
+                    base: 2 * decay_n,
+                    output: 2 * decay_n,
+                    ty: DamageType::Thorns,
+                    modified: false,
+                },
+            });
+        }
+        if shame_n > 0 {
+            // 回合末自施脆弱：justApplied=true（活过回合边界——原版下回合末才递减）
+            let mut pw = Power::new(PowerKind::Frail, shame_n);
+            pw.just_applied = true;
+            self.mgr.add_bottom(GameAction::ApplyPower {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                power: pw,
+                from_monster: false,
+            });
+        }
+        if regret_n > 0 {
+            self.mgr.add_bottom(GameAction::LoseHp {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                amount: self.hand.group.len() as i32,
+            });
         }
         self.mgr.add_bottom(GameAction::ClearCardQueue);
         self.mgr.add_bottom(GameAction::DiscardAtEndOfTurn);
@@ -841,6 +884,10 @@ impl BattleState {
         // VelvetChoker.canPlay：每回合最多 6 张
         if self.relics_ctx.velvet_choker && self.cards_played_this_turn >= 6 {
             return Err("天鹅绒颈圈：本回合出牌已达上限");
+        }
+        // Normality.canPlay：手牌含凡庸 → 每回合最多 3 张
+        if self.hand.group.iter().any(|c| c.st().id == "Normality") && self.cards_played_this_turn >= 3 {
+            return Err("凡庸：本回合出牌已达上限");
         }
         // X 费（cost=-1）与普通卡一致：energyOnUse 快照当前能量（CardQueueItem 构造语义）
         let item = CardQueueItem {
@@ -2847,6 +2894,14 @@ impl BattleState {
             });
         }
         self.cards_played_this_turn += 1;
+        // Pain.triggerOnOtherCardPlayed：手牌含苦痛 → 每出一张掉 1 血（HP_LOSS）
+        if self.hand.group.iter().any(|c| c.st().id == "Pain") {
+            self.mgr.add_bottom(GameAction::LoseHp {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                amount: 1,
+            });
+        }
         // Nunchaku.onUseCard：每 10 次攻击 +1 能量
         if st.kind == CardType::Attack && self.relics_ctx.nunchaku {
             self.relic_nunchaku += 1;
