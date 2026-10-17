@@ -183,40 +183,35 @@ fn render(run: &RunState4b, out: &mut std::io::Stdout) {
         }
         RoomPhase::InBattle => {
             if let Some(b) = &run.battle {
-                for (i, m) in b.monsters.iter().enumerate() {
-                    if !m.creature.is_dying {
-                        let _ = writeln!(
-                            out,
-                            "  [敌{}] {} {}/{} 意图{:?}",
-                            i, m.creature.name, m.creature.current_health, m.creature.max_health,
-                            m.script[m.move_idx.min(m.script.len() - 1)]
-                        );
-                    }
+                for line in ui::battle::render_battle(theme(theme::ThemeKind::Color), b, 78) {
+                    let _ = writeln!(out, "{}", line);
                 }
-                let _ = writeln!(out, "  能量 {} · 格挡 {}", b.energy, b.player.current_block);
-                for (i, c) in b.hand.group.iter().enumerate() {
-                    let _ = writeln!(
-                        out,
-                        "  [{}] {} 费{} 攻{} 块{}",
-                        i, c.st().id, c.cost_for_turn, c.eff_damage(), c.eff_block()
-                    );
-                }
-                let _ = writeln!(out, "  抽{} 弃{} 耗{}", b.draw_pile.group.len(), b.discard_pile.group.len(), b.exhaust_pile.group.len());
             }
         }
         RoomPhase::Rewards => {
-            let _ = writeln!(out, "【奖励】+{} 金", run.gold_reward);
-            for (i, (sid, up)) in run.card_reward.iter().enumerate() {
-                let _ = writeln!(out, "  [卡{}] {}{}", i, sts_data::gen::CARDS[*sid].id, if *up { "+" } else { "" });
-            }
-            if let Some(t) = &run.relic_reward {
-                let _ = writeln!(out, "  [遗物] {}", t);
-            }
-            if let Some(p) = &run.potion_reward {
-                let _ = writeln!(out, "  [药水] {}", p);
+            for line in ui::battle::render_rewards(
+                theme(theme::ThemeKind::Color),
+                run.gold_reward,
+                &run.card_reward,
+                run.relic_reward,
+                run.potion_reward,
+                78,
+            ) {
+                let _ = writeln!(out, "{}", line);
             }
         }
         RoomPhase::RoomDone => {
+            // 篝火房完成时展示篝火面板（其他房同样走列表风格）
+            let is_rest = run
+                .current
+                .and_then(|(x, y)| run.map.get(y as usize).and_then(|r| r.get(x as usize)))
+                .map(|n| n.symbol == Some('R'))
+                .unwrap_or(false);
+            if is_rest {
+                for line in ui::panels::render_campfire(theme(theme::ThemeKind::Color), true, 78) {
+                    let _ = writeln!(out, "{}", line);
+                }
+            }
             let _ = writeln!(out, "【房间完成】继续选择下一节点");
         }
         RoomPhase::Dead => {
