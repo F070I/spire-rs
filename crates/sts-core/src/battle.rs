@@ -386,6 +386,21 @@ pub struct BattleState {
     /// 本战斗引动的闪电/冰霜数（Thunder Strike/Blizzard）。
     pub lightning_channeled_this_combat: i32,
     pub frost_channeled_this_combat: i32,
+    // —— 批次 4e 遗物钩子状态 ——
+    /// 战斗类型（Sling of Courage/Preserved Insect/Pantograph 判定）。
+    pub is_elite_fight: bool,
+    pub is_boss_fight: bool,
+    /// 遗物计数（幸福之花回合/双节棍攻击/墨水瓶卡/石历回合）。
+    pub relic_happy_turns: i32,
+    pub relic_nunchaku: i32,
+    pub relic_ink: i32,
+    pub relic_stone_turns: i32,
+    /// 本回合出牌数（Velvet Choker 上限 6）。
+    pub cards_played_this_turn: i32,
+    /// Red Skull：血量过半线激活态（bloodied ±3 力）。
+    pub red_skull_active: bool,
+    /// Centennial Puzzle：战斗首次掉血已触发。
+    pub centennial_used: bool,
     /// 遗物/神龛事实占位（批次 3.6 接入后由 RunState 查询）。
     pub relics_ctx: RelicCtx,
 }
@@ -430,6 +445,37 @@ pub struct RelicCtx {
     pub mercury_damage: i32,     // 水漏：每回合开始全体 N 伤
     pub orichalcum_block: i32,   // 山铜：无格挡时 +N
     pub burning_blood_heal: i32, // 燃烧之血：战斗结束回 N
+    // —— 批次 4e 玩家遗物第二批 ——
+    // 战斗开始（atBattleStart）
+    pub bag_of_marbles: bool,     // 大理石袋：全体怪 1 易伤
+    pub oddly_smooth_dex: i32,    // 奇石：+N 敏捷
+    pub data_disk_focus: i32,     // 数据盘：+N 专注
+    pub cracked_core: bool,       // 破核：开战引动 1 闪电
+    pub sling_of_courage: bool,   // 勇气投石索：精英战 +2 力
+    pub preserved_insect: bool,   // 完好昆虫：精英怪 75% HP 入场
+    pub pantograph: bool,         // 缩图仪：Boss 战回 25
+    pub philosophers_str: i32,    // 贤者之石：全体怪 +N 力
+    pub thread_needle_armor: i32, // 针线：开战 +N 反甲
+    pub juzu_hand_size: i32,      // 念珠：手牌上限 +N
+    pub snecko_eye_hand: i32,     // 隐蛇之眼：手牌上限 +N（费用随机 TODO）
+    pub fossilized_helix: bool,   // 石化螺旋：开战 Buffer 1
+    // 每回合/出牌
+    pub energy_per_turn: i32,     // 咖啡滴壶/聚能锤/灵质/符文穹顶/贤者之石 +N
+    pub happy_flower: bool,       // 幸福之花：每 3 回合 +1 能量
+    pub stone_calendar: bool,     // 石历：第 7 回合末全体 52 伤
+    pub nunchaku: bool,           // 双节棍：每 10 次攻击 +1 能量
+    pub ink_bottle: bool,         // 墨水瓶：每 10 张牌抽 1
+    pub velvet_choker: bool,      // 天鹅绒颈圈：每回合最多 6 张
+    // 承伤钩子
+    pub centennial_puzzle: bool,  // 百年拼图：战斗首次掉血抽 3
+    pub red_skull: bool,          // 红颅骨：过半血线 ±3 力（bloodied 语义）
+    pub tungsten_rod: bool,       // 钨棒：HP 流失 -1
+    // 结算/限制
+    pub meat_on_bone: bool,       // 带肉骨头：战后 <50% 回 12
+    pub no_rest: bool,            // 咖啡滴壶：不可休息
+    pub no_smith: bool,           // 聚能锤：不可锻造
+    pub no_potions: bool,         // 琥珀眼魔：不获得药水
+    pub no_gold_gain: bool,       // 灵质：不获得金币
 }
 
 #[allow(clippy::derivable_impls)]
@@ -450,6 +496,32 @@ impl Default for RelicCtx {
             mercury_damage: 0,
             orichalcum_block: 0,
             burning_blood_heal: 0,
+            bag_of_marbles: false,
+            oddly_smooth_dex: 0,
+            data_disk_focus: 0,
+            cracked_core: false,
+            sling_of_courage: false,
+            preserved_insect: false,
+            pantograph: false,
+            philosophers_str: 0,
+            thread_needle_armor: 0,
+            juzu_hand_size: 0,
+            snecko_eye_hand: 0,
+            fossilized_helix: false,
+            energy_per_turn: 0,
+            happy_flower: false,
+            stone_calendar: false,
+            nunchaku: false,
+            ink_bottle: false,
+            velvet_choker: false,
+            centennial_puzzle: false,
+            red_skull: false,
+            tungsten_rod: false,
+            meat_on_bone: false,
+            no_rest: false,
+            no_smith: false,
+            no_potions: false,
+            no_gold_gain: false,
         }
     }
 }
@@ -488,6 +560,15 @@ impl BattleState {
             rngs: BattleRngs::new(0, 0),
             lightning_channeled_this_combat: 0,
             frost_channeled_this_combat: 0,
+            is_elite_fight: false,
+            is_boss_fight: false,
+            relic_happy_turns: 0,
+            relic_nunchaku: 0,
+            relic_ink: 0,
+            relic_stone_turns: 0,
+            cards_played_this_turn: 0,
+            red_skull_active: false,
+            centennial_used: false,
             relics_ctx: RelicCtx::default(),
         };
         for (sid, up) in deck {
@@ -537,6 +618,8 @@ impl BattleState {
         self.player.powers.clear();
         self.player.lose_block();
         self.energy = 0;
+        // 遗物战斗开始钩子（energy_master 加成须先于开场充能）
+        self.apply_relic_battle_start();
         // 开场动作序列（记录 09 §9 步骤 3-16 的即时等价；遗物/姿态钩子 TODO）
         self.mgr.add_bottom(GameAction::GainEnergyAndEnableControls {
             amount: self.energy_master,
@@ -583,6 +666,11 @@ impl BattleState {
         }
         for a in eot {
             self.mgr.add_bottom(a);
+        }
+        // StoneCalendar.onPlayerEndTurn：第 7 回合末全体 52 伤（THORNS，原版遗物伤类型）
+        if self.relics_ctx.stone_calendar && self.relic_stone_turns == 7 {
+            let matrix = self.combust_matrix(52);
+            self.mgr.add_bottom(GameAction::DamageAll { matrix, ty: DamageType::Thorns });
         }
         // Burn.triggerOnEndOfTurnForPlayingCard：手牌灼伤自动打出——THORNS 伤
         // （无视格挡）= magic（升级 +2）；升级灼伤在批次 4c Hexaghost 引入
@@ -645,6 +733,10 @@ impl BattleState {
             return Err("无此手牌");
         };
         self.can_use(card)?;
+        // VelvetChoker.canPlay：每回合最多 6 张
+        if self.relics_ctx.velvet_choker && self.cards_played_this_turn >= 6 {
+            return Err("天鹅绒颈圈：本回合出牌已达上限");
+        }
         // X 费（cost=-1）与普通卡一致：energyOnUse 快照当前能量（CardQueueItem 构造语义）
         let item = CardQueueItem {
             card: Some(card.uuid),
@@ -1349,6 +1441,81 @@ impl BattleState {
         }
     }
 
+
+    /// 批次 4e：遗物战斗开始钩子第二批（atBattleStart；is_elite/is_boss 由 flow4b 预设）。
+    pub fn apply_relic_battle_start(&mut self) {
+        // 每回合能量加成进 energy_master（Coffee Dripper/Fusion Hammer/Sozu/
+        // Ectoplasm/Philosopher's Stone——原版 changeEnergyPerTurn）
+        self.energy_master += self.relics_ctx.energy_per_turn;
+        if self.relics_ctx.oddly_smooth_dex > 0 {
+            self.player
+                .powers
+                .push(Power::new(PowerKind::Dexterity, self.relics_ctx.oddly_smooth_dex));
+        }
+        if self.relics_ctx.data_disk_focus > 0 {
+            self.player
+                .powers
+                .push(Power::new(PowerKind::Focus, self.relics_ctx.data_disk_focus));
+        }
+        // Cracked Core：开战引动 1 闪电
+        if self.relics_ctx.cracked_core {
+            self.mgr.add_bottom(GameAction::ChannelOrb { kind: crate::orb::OrbKind::Lightning });
+        }
+        // FossilizedHelix：开战 Buffer 1
+        if self.relics_ctx.fossilized_helix {
+            self.player.powers.push(Power::new(PowerKind::Buffer, 1));
+        }
+        // Thread and Needle：开战 +4 反甲
+        if self.relics_ctx.thread_needle_armor > 0 {
+            self.player
+                .powers
+                .push(Power::new(PowerKind::PlatedArmor, self.relics_ctx.thread_needle_armor));
+        }
+        // Bag of Marbles：全体怪 1 易伤
+        if self.relics_ctx.bag_of_marbles {
+            for i in 0..self.monsters.len() {
+                self.mgr.add_bottom(GameAction::ApplyPower {
+                    target: TargetRef::Monster(i),
+                    source: Some(TargetRef::Player),
+                    power: Power::new(PowerKind::Vulnerable, 1),
+                    from_monster: false,
+                });
+            }
+        }
+        // Sling of Courage：精英战 +2 力
+        if self.relics_ctx.sling_of_courage && self.is_elite_fight {
+            self.player.powers.push(Power::new(PowerKind::Strength, 2));
+        }
+        // PreservedInsect：精英怪 75% HP 入场
+        if self.relics_ctx.preserved_insect && self.is_elite_fight {
+            for m in self.monsters.iter_mut() {
+                let cap = (m.creature.max_health as f32 * 0.75) as i32;
+                if m.creature.current_health > cap {
+                    m.creature.current_health = cap;
+                }
+            }
+        }
+        // Pantograph：Boss 战回 25
+        if self.relics_ctx.pantograph && self.is_boss_fight {
+            self.player.heal(25);
+        }
+        // StoneCalendar：战斗首回合计入（原版开战 applyStartOfTurnRelics 亦跑 atTurnStart）
+        if self.relics_ctx.stone_calendar {
+            self.relic_stone_turns = 1;
+        }
+        // Philosopher's Stone：全体怪 +N 力
+        if self.relics_ctx.philosophers_str > 0 {
+            for i in 0..self.monsters.len() {
+                self.mgr.add_bottom(GameAction::ApplyPower {
+                    target: TargetRef::Monster(i),
+                    source: Some(TargetRef::Player),
+                    power: Power::new(PowerKind::Strength, self.relics_ctx.philosophers_str),
+                    from_monster: false,
+                });
+            }
+        }
+    }
+
     /// 战斗开始真怪初始化：开局能力（usePreBattleAction）+ 首招 roll。
     pub fn setup_real_monsters(&mut self) {
         for i in 0..self.monsters.len() {
@@ -1586,6 +1753,11 @@ impl BattleState {
         self.total_discarded_this_turn = 0;
         self.attacks_played_this_turn = 0;
         self.echo_used_this_turn = false;
+        self.cards_played_this_turn = 0;
+        // StoneCalendar.atTurnStart：回合计数（第 7 回合末结算——end_turn 处理）
+        if self.relics_ctx.stone_calendar {
+            self.relic_stone_turns += 1;
+        }
         // 3-5) 回合开始钩子（遗物/卡/能力 atStartOfTurn）—— TODO 3.5/3.6
         self.mgr.turn += 1;
         self.mgr.skip_monster_turn = false;
@@ -1611,6 +1783,15 @@ impl BattleState {
             amount: self.game_hand_size,
             end_turn_draw: true,
         });
+        // HappyFlower.atTurnStart：每 3 回合 +1 能量（充能动作之后入队——
+        // 原版 GainEnergyAction 在回合充能后结算，不被充能覆盖）
+        if self.relics_ctx.happy_flower {
+            self.relic_happy_turns += 1;
+            if self.relic_happy_turns >= 3 {
+                self.relic_happy_turns = 0;
+                self.mgr.add_bottom(GameAction::GainEnergy { amount: 1 });
+            }
+        }
         // applyStartOfTurnPostDrawPowers（原版在入队抽牌后**内联调用**，动作排在抽牌之后）
         let mut post_draw: Vec<GameAction> = Vec::new();
         for p in &mut self.player.powers {
@@ -2145,12 +2326,35 @@ impl BattleState {
                     }
                     return;
                 }
-                let (remain, _broke) = c.decrement_block(info.ty, amount);
+                let (mut remain, _broke) = c.decrement_block(info.ty, amount);
+                // TungstenRod.onLoseHpLast：实际掉血 -1（HP_LOSS/攻击均适用）
+                if remain > 0 && self.relics_ctx.tungsten_rod {
+                    remain -= 1;
+                }
                 c.last_damage_taken = remain.min(c.current_health);
                 c.current_health = (c.current_health - remain).max(0);
+                // RedSkull.onBloodied/onNotBloodied：过半血线 ±3 力（一次性切换）
+                if self.relics_ctx.red_skull && remain > 0 {
+                    let bloodied = c.current_health * 2 <= c.max_health;
+                    if bloodied && !self.red_skull_active {
+                        self.red_skull_active = true;
+                        c.powers.push(Power::new(PowerKind::Strength, 3));
+                    } else if !bloodied && self.red_skull_active {
+                        self.red_skull_active = false;
+                        if let Some(sp) = c.powers.iter_mut().find(|p| p.kind == PowerKind::Strength) {
+                            sp.amount -= 3;
+                        }
+                    }
+                }
                 let dying = c.current_health == 0;
                 if dying {
                     c.is_dying = true; // FairyPotion/LizardTail TODO 3.6
+                }
+                // CentennialPuzzle.wasHPLost：战斗首次掉血 → 抽 3（一次）
+                if remain > 0 && self.relics_ctx.centennial_puzzle && !self.centennial_used {
+                    self.centennial_used = true;
+                    self.mgr
+                        .add_bottom(GameAction::DrawCard { amount: 3, end_turn_draw: false });
                 }
                 // 受击钩子（未格挡攻击伤后）：Thorns 反伤 / StaticDischarge 引雷
                 if remain > 0 && info.ty == DamageType::Normal {
@@ -2336,6 +2540,21 @@ impl BattleState {
                 matrix,
                 ty: DamageType::Thorns,
             });
+        }
+        self.cards_played_this_turn += 1;
+        // Nunchaku.onUseCard：每 10 次攻击 +1 能量
+        if st.kind == CardType::Attack && self.relics_ctx.nunchaku {
+            self.relic_nunchaku += 1;
+            if self.relic_nunchaku % 10 == 0 {
+                self.energy = (self.energy + 1).min(999);
+            }
+        }
+        // InkBottle.onUseCard：每 10 张牌抽 1
+        if self.relics_ctx.ink_bottle {
+            self.relic_ink += 1;
+            if self.relic_ink % 10 == 0 {
+                self.mgr.add_bottom(GameAction::DrawCard { amount: 1, end_turn_draw: false });
+            }
         }
         // GremlinNob Anger：玩家打技能牌 → Nob +1 力
         if st.kind == CardType::Skill {

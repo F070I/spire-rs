@@ -477,6 +477,11 @@ impl RunState4b {
             c.reset_attributes();
         }
         b.relics_ctx = self.relics_ctx;
+        // Juzu Bracelet/Snecko Eye：手牌上限（首抽前生效）
+        b.game_hand_size += b.relics_ctx.juzu_hand_size + b.relics_ctx.snecko_eye_hand;
+        // 批次 4e：战斗类型旗标（apply_relic_battle_start 的 Sling/Preserved/Pantograph 判定）
+        b.is_elite_fight = matches!(symbol, 'E');
+        b.is_boss_fight = matches!(symbol, 'B');
         b.set_rng_seed(self.seed, self.floor);
         b.start_battle();
         // 真怪初始化：开局能力（usePreBattleAction）+ 首招 roll（aiRng）
@@ -540,6 +545,13 @@ impl RunState4b {
             if self.relics_ctx.burning_blood_heal > 0 {
                 self.player_hp = (self.player_hp + self.relics_ctx.burning_blood_heal).min(self.player_max_hp);
             }
+            // MeatOnTheBone.onTrigger：战后 <50% 回 12
+            if self.relics_ctx.meat_on_bone
+                && self.player_hp > 0
+                && self.player_hp * 2 <= self.player_max_hp
+            {
+                self.player_hp = (self.player_hp + 12).min(self.player_max_hp);
+            }
             // 奖励：金币（普通 10-20/精英 25-35/Boss 100±5）+ 卡牌二选一（3 选 1 简化为 2）
             let (lo, hi) = match self
                 .current
@@ -552,7 +564,9 @@ impl RunState4b {
                 _ => (10, 20),
             };
             self.gold_reward = self.treasure_rng.random_int_range(lo, hi);
-            self.gold += self.gold_reward;
+            if !self.relics_ctx.no_gold_gain {
+                self.gold += self.gold_reward;
+            }
             // 卡奖：cardRng 从本职业池抽 3（简化：池=红卡）
             let mut rewards = Vec::new();
             for _ in 0..3 {
@@ -692,6 +706,78 @@ impl RunState4b {
             "Medical Kit" => self.relics_ctx.has_medical_kit = true,
             "Blue Candle" => self.relics_ctx.has_blue_candle = true,
             "Runic Pyramid" => self.relics_ctx.has_runic_pyramid = true,
+            // —— 批次 4e 玩家遗物第二批 ——
+            "Bag of Marbles" => self.relics_ctx.bag_of_marbles = true,
+            "Oddly Smooth Stone" => self.relics_ctx.oddly_smooth_dex += 1,
+            "DataDisk" => self.relics_ctx.data_disk_focus += 1,
+            "Cracked Core" => self.relics_ctx.cracked_core = true,
+            "Sling" => self.relics_ctx.sling_of_courage = true,
+            "PreservedInsect" => self.relics_ctx.preserved_insect = true,
+            "Pantograph" => self.relics_ctx.pantograph = true,
+            "Philosopher's Stone" => {
+                self.relics_ctx.energy_per_turn += 1;
+                self.relics_ctx.philosophers_str += 1;
+            }
+            "Thread and Needle" => self.relics_ctx.thread_needle_armor += 4,
+            "Juzu Bracelet" => self.relics_ctx.juzu_hand_size += 1,
+            "Snecko Eye" => self.relics_ctx.snecko_eye_hand += 1, // 费用随机化 TODO
+            "FossilizedHelix" => self.relics_ctx.fossilized_helix = true,
+            "Coffee Dripper" => {
+                self.relics_ctx.energy_per_turn += 1;
+                self.relics_ctx.no_rest = true;
+            }
+            "Fusion Hammer" => {
+                self.relics_ctx.energy_per_turn += 1;
+                self.relics_ctx.no_smith = true;
+            }
+            "Sozu" => {
+                self.relics_ctx.energy_per_turn += 1;
+                self.relics_ctx.no_potions = true;
+            }
+            "Ectoplasm" => {
+                self.relics_ctx.energy_per_turn += 1;
+                self.relics_ctx.no_gold_gain = true;
+            }
+            "Happy Flower" => self.relics_ctx.happy_flower = true,
+            "StoneCalendar" => self.relics_ctx.stone_calendar = true,
+            "Nunchaku" => self.relics_ctx.nunchaku = true,
+            "InkBottle" => self.relics_ctx.ink_bottle = true,
+            "Velvet Choker" => self.relics_ctx.velvet_choker = true,
+            "Centennial Puzzle" => self.relics_ctx.centennial_puzzle = true,
+            "Red Skull" => self.relics_ctx.red_skull = true,
+            "TungstenRod" => self.relics_ctx.tungsten_rod = true,
+            "Meat on the Bone" => self.relics_ctx.meat_on_bone = true,
+            // 拾取即时效果（原版 onEquip）
+            "Pear" => {
+                self.player_max_hp += 10;
+                self.player_hp += 10;
+            }
+            "Strawberry" => {
+                self.player_max_hp += 7;
+                self.player_hp += 7;
+            }
+            "Mango" => {
+                self.player_max_hp += 27;
+                self.player_hp += 27;
+            }
+            "Lee's Waffle" => {
+                self.player_max_hp += 7;
+                self.player_hp = self.player_max_hp; // 回满
+            }
+            "Whetstone" => {
+                for c in self.deck.iter_mut() {
+                    if c.st().id.starts_with("Strike_") && c.can_upgrade() {
+                        c.apply_upgrade();
+                    }
+                }
+            }
+            "War Paint" => {
+                for c in self.deck.iter_mut() {
+                    if c.st().id.starts_with("Defend_") && c.can_upgrade() {
+                        c.apply_upgrade();
+                    }
+                }
+            }
             _ => {}
         }
     }
@@ -849,6 +935,9 @@ impl RunState4b {
         if self.phase != RoomPhase::CampfireChoice {
             return Err("不在篝火选择阶段");
         }
+        if self.relics_ctx.no_rest {
+            return Err("咖啡滴壶：无法休息");
+        }
         let missing = self.player_max_hp - self.player_hp;
         self.player_hp += missing * 3 / 10;
         self.phase = RoomPhase::RoomDone;
@@ -859,6 +948,9 @@ impl RunState4b {
     pub fn campfire_smith(&mut self, deck_index: usize) -> Result<(), &'static str> {
         if self.phase != RoomPhase::CampfireChoice {
             return Err("不在篝火选择阶段");
+        }
+        if self.relics_ctx.no_smith {
+            return Err("聚能锤：无法锻造");
         }
         if let Some(c) = self.deck.get_mut(deck_index) {
             c.apply_upgrade();
@@ -1104,6 +1196,18 @@ impl RunState4b {
         self.phase = RoomPhase::EventChoice;
     }
 
+    /// 测试辅助：直接构造战斗（跳过地图导航；遗物上下文沿用当前值）。
+    pub fn force_battle_for_test(&mut self, monsters: Vec<crate::battle::Monster>) {
+        let mut b = BattleState::new(self.player_hp, 3, Vec::new(), monsters, 5);
+        b.relics_ctx = self.relics_ctx;
+        b.master_deck.group = self.deck.clone();
+        b.set_rng_seed(self.seed, self.floor);
+        b.start_battle();
+        b.setup_real_monsters();
+        self.battle = Some(b);
+        self.phase = RoomPhase::InBattle;
+    }
+
     /// 篝火锻造：升级主牌组一张卡（兼容旧调用）。
     pub fn smith_upgrade(&mut self, deck_index: usize) {
         let _ = self.campfire_smith(deck_index);
@@ -1111,6 +1215,10 @@ impl RunState4b {
 
     /// 领药水奖励（入空槽；槽满保留）。
     pub fn take_potion_reward(&mut self) -> bool {
+        if self.relics_ctx.no_potions {
+            self.potion_reward = None; // Sozu：不获得药水
+            return true;
+        }
         if let Some(p) = self.potion_reward {
             if let Some(slot) = self.potions.iter().position(|s| s.is_none()) {
                 self.potions[slot] = Some(p);
