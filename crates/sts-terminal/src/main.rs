@@ -99,6 +99,12 @@ fn main() {
                 }
                 render(&run, &mut out);
             }
+            // 主题切换
+            "t" => {
+                let cur = THEME.load(std::sync::atomic::Ordering::Relaxed);
+                THEME.store(1 - cur, std::sync::atomic::Ordering::Relaxed);
+                println!("主题切换为: {}", current_theme().name());
+            }
             // 存档
             "s" => {
                 let json = run.save_json();
@@ -132,7 +138,18 @@ fn help() {
     println!("      e[结束回合] r <0-2>|skip[领奖] po <槽>[用药] s[存档] l[读档] q[退出]");
 }
 
+/// 当前主题（主题切换不改游戏状态——UI 规范 §三）。
+static THEME: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+
+fn current_theme() -> &'static dyn theme::Theme {
+    theme(match THEME.load(std::sync::atomic::Ordering::Relaxed) {
+        1 => theme::ThemeKind::Mono,
+        _ => theme::ThemeKind::Color,
+    })
+}
+
 fn render(run: &RunState4b, out: &mut std::io::Stdout) {
+    let t = current_theme();
     let _ = writeln!(out, "═══ Act {} · 层 {} · HP {}/{} · 金 {} ═══",
         run.act + 1, run.floor, run.player_hp, run.player_max_hp, run.gold);
     if let Some(offers) = run.neow_offers {
@@ -167,7 +184,7 @@ fn render(run: &RunState4b, out: &mut std::io::Stdout) {
                         .collect()
                 })
                 .unwrap_or_default();
-            for l in ui::map::render_map(&run.map, run.current, &reachable, theme(theme::ThemeKind::Color)) {
+            for l in ui::map::render_map(&run.map, run.current, &reachable, t) {
                 let _ = writeln!(out, "{}", l.text);
             }
             // 选中节点详情（当前节点的下一步）
@@ -183,14 +200,14 @@ fn render(run: &RunState4b, out: &mut std::io::Stdout) {
         }
         RoomPhase::InBattle => {
             if let Some(b) = &run.battle {
-                for line in ui::battle::render_battle(theme(theme::ThemeKind::Color), b, 78) {
+                for line in ui::battle::render_battle(t, b, 78) {
                     let _ = writeln!(out, "{}", line);
                 }
             }
         }
         RoomPhase::Rewards => {
             for line in ui::battle::render_rewards(
-                theme(theme::ThemeKind::Color),
+                t,
                 run.gold_reward,
                 &run.card_reward,
                 run.relic_reward,
@@ -208,7 +225,7 @@ fn render(run: &RunState4b, out: &mut std::io::Stdout) {
                 .map(|n| n.symbol == Some('R'))
                 .unwrap_or(false);
             if is_rest {
-                for line in ui::panels::render_campfire(theme(theme::ThemeKind::Color), true, 78) {
+                for line in ui::panels::render_campfire(t, true, 78) {
                     let _ = writeln!(out, "{}", line);
                 }
             }
