@@ -403,6 +403,49 @@ impl RunState4b {
         }
     }
 
+    /// 使用药水（战斗中：效果按 ID 分派；非战斗：回血类直接生效）。
+    pub fn use_potion(&mut self, slot: usize, target: Option<usize>) -> Result<(), &'static str> {
+        let Some(Some(potion_id)) = self.potions.get(slot).copied() else {
+            return Err("空药水槽");
+        };
+        match potion_id {
+            // Fire Potion：20 伤（战斗中）
+            "Fire Potion" => {
+                if self.phase == RoomPhase::InBattle {
+                    if let Some(mi) = target {
+                        let b = self.battle.as_mut().unwrap();
+                        b.mgr.add_bottom(GameAction::Damage {
+                            target: TargetRef::Monster(mi),
+                            info: crate::damage::DamageInfo::pure(
+                                true,
+                                20,
+                                crate::power::DamageType::Normal,
+                            ),
+                        });
+                    }
+                }
+            }
+            // Blood Potion：回 20% maxHP
+            "Blood Potion" => {
+                let heal = self.player_max_hp / 5;
+                self.player_hp = (self.player_hp + heal).min(self.player_max_hp);
+                if self.phase == RoomPhase::InBattle {
+                    self.battle.as_mut().unwrap().player.current_health = self.player_hp;
+                }
+            }
+            _ => {}
+        }
+        self.potions[slot] = None;
+        Ok(())
+    }
+
+    /// 篝火锻造：升级主牌组一张卡（index）。
+    pub fn smith_upgrade(&mut self, deck_index: usize) {
+        if let Some(c) = self.deck.get_mut(deck_index) {
+            c.apply_upgrade();
+        }
+    }
+
     /// 领药水奖励（入空槽；槽满保留）。
     pub fn take_potion_reward(&mut self) -> bool {
         if let Some(p) = self.potion_reward {
