@@ -265,6 +265,97 @@ pub static EVENTS: &[EventDef] = &[
             EventOption { text: "离开", effect: Effect::Nothing },
         ],
     },
+    EventDef {
+        id: "Gremlin Wheel Game",
+        title: "哥布林轮盘",
+        body: "哥布林邀请你转轮盘。",
+        options: &[
+            EventOption { text: "转一次（+25% 概率赢金）", effect: Effect::GainGold(60) },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "Shining Light",
+        title: "闪亮之光",
+        body: "一束光从裂缝中透出。",
+        options: &[
+            EventOption { text: "进入（失去 4 生命，升级一张卡）", effect: Effect::UpgradeRandom },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "The Tomb of Lord Red Mask",
+        title: "红面具勋爵之墓",
+        body: "墓室里堆满了陪葬品。",
+        options: &[
+            EventOption { text: "搜刮（+100 金）", effect: Effect::GainGold(100) },
+            EventOption { text: "敬畏（+稀有遗物）", effect: Effect::GainRareRelic },
+        ],
+    },
+    EventDef {
+        id: "The Colosseum",
+        title: "竞技场",
+        body: "观众的欢呼声从竞技场传来。",
+        options: &[
+            EventOption { text: "参加（+75 金，+稀有遗物，失去 10 生命）", effect: Effect::GainRareRelic },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "The Moai Head",
+        title: "摩艾石像",
+        body: "石像的嘴里流出金色液体。",
+        options: &[
+            EventOption { text: "喝下（+最大生命 5）", effect: Effect::GainHp(5) },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "Nest",
+        title: "巢穴",
+        body: "一个巨大的巢穴在头顶。",
+        options: &[
+            EventOption { text: "偷蛋（+普通遗物，失去 8 生命）", effect: Effect::GainCommonRelic },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "The Adventurer",
+        title: "冒险者",
+        body: "一名冒险者倒在路上。",
+        options: &[
+            EventOption { text: "搜身（+随机卡，失去 8 生命）", effect: Effect::GainGold(25) },
+            EventOption { text: "帮助（回 10 生命）", effect: Effect::GainHp(10) },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "The Mine",
+        title: "矿坑",
+        body: "废弃的矿坑深处有金属反光。",
+        options: &[
+            EventOption { text: "挖掘（+75 金）", effect: Effect::GainGold(75) },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "The Graveyard",
+        title: "墓地",
+        body: "墓碑林立，似乎有东西埋在浅土里。",
+        options: &[
+            EventOption { text: "挖掘（+诅咒，+50 金）", effect: Effect::GainGold(50) },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "The Castle",
+        title: "城堡",
+        body: "一座废弃的城堡矗立在山丘上。",
+        options: &[
+            EventOption { text: "探索（+稀有遗物，失去 12 生命）", effect: Effect::GainRareRelic },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
 ];
 
 /// 按 ID 查事件（未知 → 首个事件兜底）。
