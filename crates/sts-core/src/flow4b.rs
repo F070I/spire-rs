@@ -250,6 +250,9 @@ impl RunState4b {
         if self.phase != RoomPhase::MapChoice {
             return Err("当前不在地图选择阶段");
         }
+        if self.neow_offers.is_some() {
+            return Err("先选择 Neow 祝福");
+        }
         let Some((cx, cy)) = self.current else {
             // 首选：y==0 行（原版不做 isConnectedTo 检查）
             if y != 0 {

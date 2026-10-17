@@ -9,6 +9,9 @@ name = "sts"
 path = "src/main.rs"
 
 [dependencies]
+# TODO 批次6：crossterm 需 GNU 完整工具链（dlltool）或 msvc+link 环境；
+# 当前环境两缺。先以零依赖行协议实现 UI 骨架，接口不变。
+# crossterm = { version = "0.27", default-features = false, features = ["events"] }
 sts-data = { path = "../sts-data" }
 sts-core = { path = "../sts-core" }
 sts-interface = { path = "../sts-interface" }
