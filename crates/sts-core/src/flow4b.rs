@@ -455,28 +455,21 @@ impl RunState4b {
         } else {
             self.monster_list.remove(0)
         };
-        // 怪物 AI 表（批次 3.9 第一批）：HP 区间 + 招式脚本按遭遇名查表
-        let ai = sts_data::monster_ai::get(encounter);
-        let hp = sts_data::monster_ai::scaled_hp(ai, 0, &mut self.monster_rng);
-        // 真怪状态机（批次 4c）：五真怪完全转译（Hexaghost/Orb Walker/
-        // Donu & Deca/Awakened One）；其余遭遇走脚本表
-        let monsters = match crate::monsters::build_real(encounter, 0, hp) {
+        // 多怪遭遇（批次 5a）：组合工厂展开成员（MonsterHelper.getEncounter 转译）
+        let members = sts_data::encounters::composition(encounter, &mut self.monster_rng);
+        // 真怪状态机（批次 4c）：五真怪完全转译；其余按成员脚本表逐个构造
+        let monsters = match crate::monsters::build_real(encounter, 0, 0) {
             Some(v) => v,
             None => {
-                let special = match encounter {
-                    "Cultist" => Some(SpecialAi::Ritual(3)),
-                    "The Guardian" => Some(SpecialAi::GuardianModeShift),
-                    "Slime Boss" => Some(SpecialAi::SplitOnHalf),
-                    "Time Eater" => Some(SpecialAi::TimeWarp),
-                    "Transient" => Some(SpecialAi::Fading(5)),
-                    "Lagavulin" => Some(SpecialAi::SleepyWakeup),
-                    "Nemesis" => Some(SpecialAi::PhaseShift),
-                    "Gremlin Nob" => Some(SpecialAi::Anger),
-                    _ => None,
-                };
-                let mut mon = Monster::scripted(encounter, hp, ai.moves.to_vec());
-                mon.special = special;
-                vec![mon]
+                let mut out = Vec::new();
+                for name in members {
+                    let ai = sts_data::monster_ai::get(name);
+                    let hp = sts_data::monster_ai::scaled_hp(ai, 0, &mut self.monster_rng);
+                    let mut mon = Monster::scripted(name, hp, ai.moves.to_vec());
+                    mon.special = Self::member_special(name);
+                    out.push(mon);
+                }
+                out
             }
         };
         let mut b = BattleState::new(
@@ -522,6 +515,23 @@ impl RunState4b {
         }
         self.battle = Some(b);
         self.phase = RoomPhase::InBattle;
+    }
+
+    /// 成员怪特殊机制映射（多怪遭遇逐成员）。
+    fn member_special(name: &str) -> Option<SpecialAi> {
+        match name {
+            "Cultist" => Some(SpecialAi::Ritual(3)),
+            "The Guardian" => Some(SpecialAi::GuardianModeShift),
+            "Slime Boss" => Some(SpecialAi::SplitOnHalf),
+            "Time Eater" => Some(SpecialAi::TimeWarp),
+            "Transient" => Some(SpecialAi::Fading(5)),
+            "Lagavulin" => Some(SpecialAi::SleepyWakeup),
+            "Nemesis" => Some(SpecialAi::PhaseShift),
+            "Gremlin Nob" => Some(SpecialAi::Anger),
+            "Gremlin Leader" => Some(SpecialAi::Summoner),
+            "Darkling" => Some(SpecialAi::HiveDeath),
+            _ => None,
+        }
     }
 
     /// 战斗中操作透传（出牌/结束回合）。
@@ -1681,6 +1691,43 @@ impl RunState4b {
     pub fn force_event(&mut self, id: &str) {
         self.event = Some((crate::event::get(id).id, -1));
         self.phase = RoomPhase::EventChoice;
+    }
+
+    /// 测试辅助：按遭遇键直接进战斗（多怪组合走 composition）。
+    pub fn force_encounter(&mut self, encounter: &'static str) {
+        let mut b = self.build_battle_for(encounter);
+        b.set_rng_seed(self.seed, self.floor);
+        b.start_battle();
+        b.setup_real_monsters();
+        b.has_fairy_potion = self.potions.contains(&Some("FairyPotion"));
+        b.relics_ctx = self.relics_ctx;
+        self.battle = Some(b);
+        self.phase = RoomPhase::InBattle;
+    }
+
+    /// 战斗构造（start_battle 的成员装配段抽出复用）。
+    fn build_battle_for(&mut self, encounter: &'static str) -> crate::battle::BattleState {
+        let members = sts_data::encounters::composition(encounter, &mut self.monster_rng);
+        let monsters = match crate::monsters::build_real(encounter, 0, 0) {
+            Some(v) => v,
+            None => {
+                let mut out = Vec::new();
+                for name in members {
+                    let ai = sts_data::monster_ai::get(name);
+                    let hp = sts_data::monster_ai::scaled_hp(ai, 0, &mut self.monster_rng);
+                    let mut mon = Monster::scripted(name, hp, ai.moves.to_vec());
+                    mon.special = Self::member_special(name);
+                    out.push(mon);
+                }
+                out
+            }
+        };
+        let mut b = BattleState::new(self.player_hp, 3, Vec::new(), monsters, 5);
+        b.master_deck.group = self.deck.clone();
+        for c in &mut b.master_deck.group {
+            c.reset_attributes();
+        }
+        b
     }
 
     /// 测试辅助：直接构造战斗（跳过地图导航；遗物上下文沿用当前值）。

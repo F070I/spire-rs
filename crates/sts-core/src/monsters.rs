@@ -50,20 +50,29 @@ pub fn build_real(id: &str, asc: u8, hp: i32) -> Option<Vec<Monster>> {
             );
             // Deca 开局攻击（isAttacking = true——与 Donu 反相）
             deca.brain.attacking = true;
+            // 源码顺序：Deca 在前（MonsterHelper "Donu and Deca"）
             Some(vec![
-                Monster::real("Donu", hp, SpecialAi::DonuAi { beam, artifact }),
                 deca,
+                Monster::real("Donu", hp, SpecialAi::DonuAi { beam, artifact }),
             ])
         }
-        "Awakened One" => Some(vec![Monster::real(
-            "Awakened One",
-            if a9 { 320 } else { 300 },
-            SpecialAi::AwakenedOneAi {
-                regen: if a19 { 15 } else { 10 },
-                curiosity: if a19 { 2 } else { 1 },
-                str_pre: if a4 { 2 } else { 0 },
-            },
-        )]),
+        "Awakened One" => {
+            // 源码组合：双教徒护卫（Cultist(-590), Cultist(-298), AwakenedOne(100)）
+            let mut cultist = Monster::scripted("Cultist", 51, vec![Some(6)]);
+            cultist.special = Some(SpecialAi::Ritual(3));
+            Some(vec![
+                cultist,
+                Monster::real(
+                    "Awakened One",
+                    if a9 { 320 } else { 300 },
+                    SpecialAi::AwakenedOneAi {
+                        regen: if a19 { 15 } else { 10 },
+                        curiosity: if a19 { 2 } else { 1 },
+                        str_pre: if a4 { 2 } else { 0 },
+                    },
+                ),
+            ])
+        }
         _ => None,
     }
 }
@@ -81,9 +90,17 @@ mod tests {
     fn donu_deca_is_pair_with_same_beam() {
         let v = build_real("Donu & Deca", 0, 250).unwrap();
         assert_eq!(v.len(), 2);
-        assert_eq!(v[0].creature.name, "Donu");
-        assert_eq!(v[1].creature.name, "Deca");
+        assert_eq!(v[0].creature.name, "Deca", "源码顺序 Deca 在前");
+        assert_eq!(v[1].creature.name, "Donu");
         assert_eq!(v[0].creature.max_health, 250);
+    }
+
+    #[test]
+    fn awakened_one_has_cultist_escort() {
+        let v = build_real("Awakened One", 0, 300).unwrap();
+        assert_eq!(v.len(), 2, "教徒 + Awakened One");
+        assert_eq!(v[0].creature.name, "Cultist");
+        assert_eq!(v[1].creature.name, "Awakened One");
     }
 
     #[test]
@@ -91,7 +108,7 @@ mod tests {
         let h = build_real("Hexaghost", 9, 250).unwrap();
         assert_eq!(h[0].creature.max_health, 264);
         let aw = build_real("Awakened One", 19, 300).unwrap();
-        match aw[0].special {
+        match aw.last().unwrap().special {
             Some(SpecialAi::AwakenedOneAi { regen, curiosity, str_pre }) => {
                 assert_eq!((regen, curiosity, str_pre), (15, 2, 2));
             }

@@ -170,6 +170,131 @@ pub fn populate_list(
     out
 }
 
+/// 批次 5a：遭遇 → 怪物成员组合（MonsterHelper.getEncounter 转译）。
+/// 随机池按原版 spawner 的 miscRng 逻辑滚（monsterRng 代用）。
+/// 键为 encounters 池键（`&` 与 `and` 两写法都收）；未知键 → 单体兜底。
+pub fn composition(key: &str, rng: &mut crate::rng::StsRandom) -> Vec<&'static str> {
+    let k = key.replace(" & ", " and ").replace("JawWorm", "Jaw Worm");
+    let mut roll = |n: i32| rng.random_int_inclusive(n - 1) as usize;
+    match k.as_str() {
+        // ---- 第一幕单体 ----
+        "Jaw Worm" => vec!["Jaw Worm"],
+        "Cultist" => vec!["Cultist"],
+        "Blue Slaver" => vec!["Blue Slaver"],
+        "Red Slaver" => vec!["Red Slaver"],
+        "Looter" => vec!["Looter"],
+        "Large Slime" => {
+            if rng.random_bool() {
+                vec!["Acid Slime L"]
+            } else {
+                vec!["Spike Slime L"]
+            }
+        }
+        "Small Slimes" => {
+            if rng.random_bool() {
+                vec!["Spike Slime S", "Acid Slime M"]
+            } else {
+                vec!["Acid Slime S", "Spike Slime M"]
+            }
+        }
+        "Lots of Slimes" => {
+            let pool = ["Spike Slime S", "Spike Slime S", "Spike Slime S", "Acid Slime S", "Acid Slime S"];
+            let mut idx: Vec<usize> = (0..pool.len()).collect();
+            let mut out = Vec::new();
+            for _ in 0..5 {
+                let i = roll(idx.len() as i32);
+                out.push(pool[idx[i]]);
+                idx.remove(i);
+            }
+            out
+        }
+        "Gremlin Gang" => {
+            let pool = ["Gremlin Warrior", "Gremlin Warrior", "Gremlin Thief", "Gremlin Thief", "Gremlin Fat", "Gremlin Fat", "Gremlin Tsundere", "Gremlin Wizard"];
+            let mut idx: Vec<usize> = (0..pool.len()).collect();
+            let mut out = Vec::new();
+            for _ in 0..4 {
+                let i = roll(idx.len() as i32);
+                out.push(pool[idx[i]]);
+                idx.remove(i);
+            }
+            out
+        }
+        "Exordium Thugs" => {
+            let weak = ["Louse", "Spike Slime M", "Acid Slime M"];
+            let strong = ["Cultist", "Blue Slaver", "Looter"];
+            vec![weak[roll(3)], strong[roll(3)]]
+        }
+        "Exordium Wildlife" => {
+            let weak = ["Louse", "Spike Slime M", "Acid Slime M"];
+            let strong = ["Fungi Beast", "Jaw Worm"];
+            vec![strong[roll(2)], weak[roll(3)]]
+        }
+        "2 Louse" => vec!["Louse", "Louse"],
+        "3 Louse" => vec!["Louse", "Louse", "Louse"],
+        "2 Fungi" => vec!["Fungi Beast", "Fungi Beast"],
+        "Gremlin Nob" => vec!["Gremlin Nob"],
+        "Lagavulin" => vec!["Lagavulin"],
+        "3 Sentries" => vec!["Sentry", "Sentry", "Sentry"],
+        // ---- 第二幕 ----
+        "2 Thieves" => vec!["Looter", "Mugger"],
+        "3 Byrds" => vec!["Byrd", "Byrd", "Byrd"],
+        "Chosen" => vec!["Chosen"],
+        "Shell Parasite" => vec!["Shell Parasite"],
+        "Spheric Guardian" => vec!["Spheric Guardian"],
+        "Cultist and Chosen" => vec!["Cultist", "Chosen"],
+        "3 Cultists" => vec!["Cultist", "Cultist", "Cultist"],
+        "Chosen and Byrds" => vec!["Byrd", "Chosen"],
+        "Sentry and Sphere" => vec!["Sentry", "Spheric Guardian"],
+        "Snake Plant" => vec!["Snake Plant"],
+        "Snecko" => vec!["Snecko"],
+        "Centurion and Healer" => vec!["Centurion", "Healer"],
+        "Shelled Parasite and Fungi" => vec!["Shell Parasite", "Fungi Beast"],
+        "Book of Stabbing" => vec!["Book of Stabbing"],
+        "Gremlin Leader" => vec!["Gremlin Warrior", "Gremlin Thief", "Gremlin Leader"],
+        "Slavers" => vec!["Blue Slaver", "Taskmaster", "Red Slaver"],
+        // ---- 第三幕 ----
+        "Reptomancer" => vec!["Snake Dagger", "Reptomancer", "Snake Dagger"],
+        "3 Darklings" => vec!["Darkling", "Darkling", "Darkling"],
+        "Jaw Worm Horde" => vec!["Jaw Worm", "Jaw Worm", "Jaw Worm"],
+        "3 Shapes" | "4 Shapes" => {
+            let n = if k == "4 Shapes" { 4 } else { 3 };
+            let pool = ["Repulsor", "Repulsor", "Exploder", "Exploder", "Spiker", "Spiker"];
+            let mut idx: Vec<usize> = (0..pool.len()).collect();
+            let mut out = Vec::new();
+            for _ in 0..n {
+                let i = roll(idx.len() as i32);
+                out.push(pool[idx[i]]);
+                idx.remove(i);
+            }
+            out
+        }
+        "Sphere and 2 Shapes" => {
+            let pool = ["Repulsor", "Repulsor", "Exploder", "Exploder", "Spiker", "Spiker"];
+            vec![pool[roll(6)], pool[roll(6)], "Spheric Guardian"]
+        }
+        "Orb Walker" => vec!["Orb Walker"],
+        "Spire Growth" => vec!["Spire Growth"],
+        "Maw" => vec!["Maw"],
+        "Nemesis" => vec!["Nemesis"],
+        "Transient" => vec!["Transient"],
+        "Writhing Mass" => vec!["Writhing Mass"],
+        "Giant Head" => vec!["Giant Head"],
+        // ---- Boss/精英单体（build_real 会接管的状态机怪也先列在此处）----
+        "The Guardian" => vec!["The Guardian"],
+        "Hexaghost" => vec!["Hexaghost"],
+        "Slime Boss" => vec!["Slime Boss"],
+        "Bronze Automaton" => vec!["Bronze Automaton"],
+        "The Collector" => vec!["The Collector"],
+        "Champ" => vec!["Champ"],
+        "Time Eater" => vec!["Time Eater"],
+        "The Heart" => vec!["The Heart"],
+        // ---- 第四幕 ----
+        "Shield and Spear" => vec!["Spire Shield", "Spire Spear"],
+        // 未知键：泄漏成 'static 单体兜底（罕见路径；语义同 AI 表 fallback）
+        _ => vec![Box::leak(key.to_string().into_boxed_str())],
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -207,3 +332,4 @@ mod tests {
         }
     }
 }
+

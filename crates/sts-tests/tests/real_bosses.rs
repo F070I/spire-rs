@@ -148,10 +148,11 @@ fn orb_walker_laser_adds_burns_and_strength() {
 #[test]
 fn donu_deca_phases_and_buffs() {
     let mut b = fixture_real("Donu & Deca", 300);
-    // 开局 Artifact 2；相位相反：Donu 辅助先行，Deca 攻击先行
-    assert_eq!(b.monsters[0].creature.name, "Donu");
-    assert_eq!(b.monsters[0].next_byte, 2);
-    assert_eq!(b.monsters[1].next_byte, 0);
+    // 开局 Artifact 2；相位相反：Deca 攻击先行（源码顺序 Deca 在前）
+    assert_eq!(b.monsters[0].creature.name, "Deca");
+    assert_eq!(b.monsters[0].next_byte, 0);
+    assert_eq!(b.monsters[1].creature.name, "Donu");
+    assert_eq!(b.monsters[1].next_byte, 2);
     for m in &b.monsters {
         assert!(
             m.creature
@@ -162,9 +163,8 @@ fn donu_deca_phases_and_buffs() {
     }
     b.end_turn();
     b.run_until_idle();
-    // Deca 光束 2×10=20 伤——但 Donu 先手光环 +3 力当轮即强化（原版
-    // ApplyPowerAction 后 applyPowers 更新已入队的 DamageInfo）→ 2×13=26
-    assert_eq!(b.player.current_health, 274);
+    // 源码顺序 Deca 在前：光束 2×10=20（Donu 后手，强化下轮才生效）
+    assert_eq!(b.player.current_health, 280);
     assert_eq!(count_card(&b, "Dazed"), 2);
     for m in &b.monsters {
         assert!(
@@ -174,13 +174,13 @@ fn donu_deca_phases_and_buffs() {
                 .any(|p| p.kind == PowerKind::Strength && p.amount >= 3)
         );
     }
-    // 相位翻转：Donu → 光束，Deca → 方阵
-    assert_eq!(b.monsters[0].next_byte, 0);
-    assert_eq!(b.monsters[1].next_byte, 2);
+    // 相位翻转：Deca → 方阵，Donu → 光束
+    assert_eq!(b.monsters[0].next_byte, 2);
+    assert_eq!(b.monsters[1].next_byte, 0);
     b.end_turn();
     b.run_until_idle();
-    // Donu 光束：2×(10+3)=26；Deca 方阵：全体 +16 格挡
-    assert_eq!(b.player.current_health, 274 - 26);
+    // Donu 光束：2×(10+3)=26（光环上轮已 +3）；Deca 方阵：全体 +16 格挡
+    assert_eq!(b.player.current_health, 280 - 26);
     assert_eq!(b.monsters[0].creature.current_block, 16);
     assert_eq!(b.monsters[1].creature.current_block, 16);
 }
@@ -191,16 +191,17 @@ fn donu_deca_phases_and_buffs() {
 fn awakened_one_rebirth_transition() {
     let mut b = fixture_real("Awakened One", 300);
     // 开局：Regenerate 10 + Curiosity 1（升阶 0 无先行力量）；首招 Pounce
-    let m = &b.monsters[0];
+    let m = &b.monsters[1];
     assert!(m.creature.powers.iter().any(|p| p.kind == PowerKind::Regenerate && p.amount == 10));
     assert!(m.creature.powers.iter().any(|p| p.kind == PowerKind::Curiosity && p.amount == 1));
     assert_eq!(m.next_byte, 1);
     b.end_turn();
     b.run_until_idle();
-    assert_eq!(b.player.current_health, 280, "Pounce 20");
+    // AO Pounce 20 + 教徒（仪式 +3 力）咬 9
+    assert_eq!(b.player.current_health, 271, "Pounce 20 + 教徒 9");
     // 一击归零：不判死 → 半死 + 二形态转换 + 下一招 REBIRTH
     b.mgr.add_bottom(GameAction::Damage {
-        target: TargetRef::Monster(0),
+        target: TargetRef::Monster(1),
         info: DamageInfo {
             owner_is_player: true,
             base: 999,
@@ -210,7 +211,7 @@ fn awakened_one_rebirth_transition() {
         },
     });
     b.run_until_idle();
-    let m = &b.monsters[0];
+    let m = &b.monsters[1];
     assert!(!m.creature.is_dying, "一形态归零不判死");
     assert!(m.creature.half_dead);
     assert!(m.brain.form2);
@@ -227,15 +228,15 @@ fn awakened_one_rebirth_transition() {
     // REBIRTH：回满血 → 二形态首招 Dark Echo
     b.end_turn();
     b.run_until_idle();
-    let m = &b.monsters[0];
+    let m = &b.monsters[1];
     assert_eq!(m.creature.current_health, m.creature.max_health);
     assert!(!m.creature.half_dead);
     assert_eq!(m.next_byte, 5);
-    // Dark Echo 40
+    // Dark Echo 40 + 教徒咬（仪式 3 层 +9 力 → 15）
     let hp0 = b.player.current_health;
     b.end_turn();
     b.run_until_idle();
-    assert_eq!(hp0 - b.player.current_health, 40);
+    assert_eq!(hp0 - b.player.current_health, 55);
 }
 
 #[test]
@@ -263,7 +264,7 @@ fn awakened_one_curiosity_on_power_card() {
     b.play_card(i, None).unwrap();
     b.run_until_idle();
     assert!(
-        b.monsters[0]
+        b.monsters[1]
             .creature
             .powers
             .iter()
@@ -277,7 +278,7 @@ fn awakened_one_sludge_adds_void() {
     let mut b = fixture_real("Awakened One", 300);
     // 推进到二形态（杀→REBIRTH→Dark Echo）后强制 Sludge
     b.mgr.add_bottom(GameAction::Damage {
-        target: TargetRef::Monster(0),
+        target: TargetRef::Monster(1),
         info: DamageInfo {
             owner_is_player: true,
             base: 999,
@@ -289,7 +290,7 @@ fn awakened_one_sludge_adds_void() {
     b.run_until_idle();
     b.end_turn();
     b.run_until_idle(); // REBIRTH
-    b.monsters[0].next_byte = 6; // SLUDGE
+    b.monsters[1].next_byte = 6; // SLUDGE
     b.end_turn();
     b.run_until_idle();
     assert_eq!(count_card(&b, "Void"), 1, "虚空洗入抽牌堆");
