@@ -123,9 +123,9 @@ fn gremlin_gang_survivors_flee_after_death() {
 fn last_two_constraint_blocks_triple_repeat() {
     let wm = sts_data::monster_ai::get_weighted("Louse Defensive").unwrap();
     // 咬击权重 75% 且连击禁位：上两招都是咬时，掷中咬应顺延到强化(-1)
-    let (dmg, _) = sts_data::monster_ai::pick_weighted(wm, 0, true);
+    let (dmg, _, _) = sts_data::monster_ai::pick_weighted(wm, 0, true);
     assert_eq!(dmg, -1, "连击钳制：第三咬被禁止");
-    let (dmg, _) = sts_data::monster_ai::pick_weighted(wm, 0, false);
+    let (dmg, _, _) = sts_data::monster_ai::pick_weighted(wm, 0, false);
     assert_eq!(dmg, 6, "无钳制时正常咬");
 }
 

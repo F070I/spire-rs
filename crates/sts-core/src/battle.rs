@@ -1086,10 +1086,12 @@ impl BattleState {
                     ty: DamageType::Normal,
                     modified: true,
                 };
-                self.mgr.add_bottom(GameAction::Damage {
-                    target: TargetRef::Player,
-                    info,
-                });
+                for _ in 0..m.hits.max(1) {
+                    self.mgr.add_bottom(GameAction::Damage {
+                        target: TargetRef::Player,
+                        info: info.clone(),
+                    });
+                }
                 // 加权招式附带格挡（Jaw Worm Thrash 等 ATTACK_DEFEND）
                 if m.bonus_block > 0 {
                     self.mgr.add_bottom(GameAction::GainBlock {
@@ -1678,11 +1680,12 @@ impl BattleState {
             let name = self.monsters[i].creature.name.clone();
             if let Some(wm) = sts_data::monster_ai::get_weighted(&name) {
                 let num = self.rngs.ai.random_int_inclusive(99);
-                let (dmg, block) = sts_data::monster_ai::pick_weighted(wm, num, false);
+                let (dmg, block, hits) = sts_data::monster_ai::pick_weighted(wm, num, false);
                 let m = &mut self.monsters[i];
                 m.script = vec![if dmg < 0 { None } else { Some(dmg) }];
                 m.move_idx = 0;
                 m.bonus_block = block;
+                m.hits = hits.max(1);
             }
         }
     }
@@ -2454,12 +2457,13 @@ impl BattleState {
                                 let pv = prev.unwrap() as u8;
                                 m.move_history[m.move_history.len() - 2..] == [pv, pv]
                             };
-                        let (dmg, block) =
+                        let (dmg, block, hits) =
                             sts_data::monster_ai::pick_weighted(wm, num, last_two_same);
                         m.move_history.push(if dmg < 0 { 0 } else { dmg as u8 });
                         m.script = vec![if dmg < 0 { None } else { Some(dmg) }];
                         m.move_idx = 0;
                         m.bonus_block = block;
+                        m.hits = hits.max(1);
                     }
                 } else if !m.script.is_empty() {
                     m.move_idx = m.move_idx.min(m.script.len() - 1);

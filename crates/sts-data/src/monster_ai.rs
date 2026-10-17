@@ -124,65 +124,109 @@ pub fn scaled_hp(ai: &MonsterAi, ascension: u8, rng: &mut crate::rng::StsRandom)
     }
 }
 
-/// 批次 5b：加权招式表（getMove 转译）。
-/// 条目 (伤害, 附带格挡, 权重%, 连击禁位)；伤害 -1 = 防御/强化回合；
-/// 连击禁位 = 1 时该招不连续出现三次（lastTwoMoves 钳制——5c 补全）。
+/// 批次 5b/5d：加权招式表（getMove 转译）。
+/// 条目 (伤害, 附带格挡, 权重%, 连击禁位, 段数)；伤害 -1 = 防御/强化回合；
+/// 连击禁位 = 1 时该招不连续出现三次（lastTwoMoves 钳制——5c 补全）；
+/// 段数 = 多段攻击（Byrd 啄击 ×5 等）。
 pub struct WeightedMoves {
     pub id: &'static str,
-    pub moves: &'static [(i32, i32, u32, u8)],
+    pub moves: &'static [(i32, i32, u32, u8, i32)],
 }
 
 pub static WEIGHTED: &[WeightedMoves] = &[
     // JawWorm：首招必咬碎；其后 thrash 25%/chomp 30%/skull bash 45%（thrash 带 6 格挡）
     WeightedMoves {
         id: "Jaw Worm",
-        moves: &[(7, 6, 25, 1), (11, 0, 30, 1), (8, 0, 45, 1)],
+        moves: &[(7, 6, 25, 1, 1), (11, 0, 30, 1, 1), (8, 0, 45, 1, 1)],
     },
     // Louse：咬 ~75%（5-7 取 6）/强化 25%（以格挡近似）
-    WeightedMoves { id: "Louse", moves: &[(6, 0, 75, 1), (-1, 0, 25, 1)] },
-    WeightedMoves { id: "Louse Defensive", moves: &[(6, 0, 75, 1), (-1, 0, 25, 0)] },
+    WeightedMoves { id: "Louse", moves: &[(6, 0, 75, 1, 1), (-1, 0, 25, 1, 1)] },
+    WeightedMoves { id: "Louse Defensive", moves: &[(6, 0, 75, 1, 1), (-1, 0, 25, 0, 1)] },
     // Acid Slime L：冲撞 16 40%/喷吐 10 30%/舔击 30%
-    WeightedMoves { id: "Acid Slime L", moves: &[(16, 0, 40, 1), (10, 0, 30, 1), (-1, 0, 30, 1)] },
+    WeightedMoves { id: "Acid Slime L", moves: &[(16, 0, 40, 1, 1), (10, 0, 30, 1, 1), (-1, 0, 30, 1, 1)] },
     // Acid Slime M：冲撞 10 40%/喷吐 7 40%/舔击 20%
-    WeightedMoves { id: "Acid Slime M", moves: &[(10, 0, 40, 1), (7, 0, 40, 1), (-1, 0, 20, 1)] },
+    WeightedMoves { id: "Acid Slime M", moves: &[(10, 0, 40, 1, 1), (7, 0, 40, 1, 1), (-1, 0, 20, 1, 1)] },
     // Acid Slime S：randomBoolean 冲撞 3/减益
-    WeightedMoves { id: "Acid Slime S", moves: &[(3, 0, 50, 1), (-1, 0, 50, 1)] },
+    WeightedMoves { id: "Acid Slime S", moves: &[(3, 0, 50, 1, 1), (-1, 0, 50, 1, 1)] },
     // Spike Slime L：火焰冲撞 8 70%/虚弱舔 30%
-    WeightedMoves { id: "Spike Slime L", moves: &[(8, 0, 70, 1), (-1, 0, 30, 1)] },
+    WeightedMoves { id: "Spike Slime L", moves: &[(8, 0, 70, 1, 1), (-1, 0, 30, 1, 1)] },
     // Spike Slime M：火焰冲撞 7 70%/虚弱舔 30%
-    WeightedMoves { id: "Spike Slime M", moves: &[(7, 0, 70, 1), (-1, 0, 30, 1)] },
+    WeightedMoves { id: "Spike Slime M", moves: &[(7, 0, 70, 1, 1), (-1, 0, 30, 1, 1)] },
     // Spike Slime S：永远冲撞 5
-    WeightedMoves { id: "Spike Slime S", moves: &[(5, 0, 100, 1)] },
+    WeightedMoves { id: "Spike Slime S", moves: &[(5, 0, 100, 1, 1)] },
     // Fungi Beast：撕咬 6 60%/成长 40%
-    WeightedMoves { id: "Fungi Beast", moves: &[(6, 0, 60, 1), (-1, 0, 40, 1)] },
+    WeightedMoves { id: "Fungi Beast", moves: &[(6, 0, 60, 1, 1), (-1, 0, 40, 1, 1)] },
     // Slaver Blue：刺击 12 60%/耙击 7 40%（附虚弱——脚本层省略）
-    WeightedMoves { id: "Blue Slaver", moves: &[(12, 0, 60, 1), (7, 0, 40, 1)] },
+    WeightedMoves { id: "Blue Slaver", moves: &[(12, 0, 60, 1, 1), (7, 0, 40, 1, 1)] },
     // Slaver Red：刺击 13 55%/刮擦 8 35%/束缚 10%（以格挡近似）
-    WeightedMoves { id: "Red Slaver", moves: &[(13, 0, 55, 1), (8, 0, 35, 1), (-1, 0, 10, 1)] },
+    WeightedMoves { id: "Red Slaver", moves: &[(13, 0, 55, 1, 1), (8, 0, 35, 1, 1), (-1, 0, 10, 1, 1)] },
     // Sentry：光束 9 50%/螺栓（晕眩）50%
-    WeightedMoves { id: "Sentry", moves: &[(9, 0, 50, 1), (-1, 0, 50, 1)] },
+    WeightedMoves { id: "Sentry", moves: &[(9, 0, 50, 1, 1), (-1, 0, 50, 1, 1)] },
     // Gremlin Fat：钝击 4 70%/逃跑强化（格挡近似）30%
-    WeightedMoves { id: "Gremlin Fat", moves: &[(4, 0, 70, 1), (-1, 0, 30, 1)] },
+    WeightedMoves { id: "Gremlin Fat", moves: &[(4, 0, 70, 1, 1), (-1, 0, 30, 1, 1)] },
     // Gremlin Tsundere：护盾 50%/猛击 6 50%
-    WeightedMoves { id: "Gremlin Tsundere", moves: &[(-1, 7, 50, 1), (6, 0, 50, 1)] },
+    WeightedMoves { id: "Gremlin Tsundere", moves: &[(-1, 7, 50, 1, 1), (6, 0, 50, 1, 1)] },
+    // ---- 批次 5d：第二幕 ----
+    // Byrd：啄 1×5 ~40%/俯冲 12 ~30%/啼叫 ~20%/头槌 3 ~10%
+    WeightedMoves { id: "Byrd", moves: &[(1, 0, 40, 1, 5), (12, 0, 30, 1, 1), (-1, 0, 20, 0, 1), (3, 0, 10, 0, 1)] },
+    // Centurion：劈砍 12 ~35%/怒火 6×3 ~30%/防御 15 ~35%
+    WeightedMoves { id: "Centurion", moves: &[(12, 0, 35, 1, 1), (6, 0, 30, 1, 3), (-1, 15, 35, 1, 1)] },
+    // Chosen：雷击 18/吸取 10/诅咒/戳 5×3 四分
+    WeightedMoves { id: "Chosen", moves: &[(18, 0, 25, 0, 1), (10, 0, 25, 0, 1), (-1, 0, 25, 0, 1), (5, 0, 25, 1, 3)] },
+    // Shelled Parasite：吸吮 10/双斩 6×2/坠落 18/硬化 ~20%
+    WeightedMoves { id: "Shell Parasite", moves: &[(10, 0, 30, 0, 1), (6, 0, 30, 1, 2), (18, 0, 20, 1, 1), (-1, 0, 20, 0, 1)] },
+    // Spheric Guardian：猛击 10×2/撞击/硬化
+    WeightedMoves { id: "Spheric Guardian", moves: &[(10, 0, 35, 1, 2), (10, 0, 25, 1, 1), (-1, 15, 20, 0, 1), (-1, 25, 20, 0, 1)] },
+    // Snake Plant：快咬 7×3 65%/大打喷嚏 35%
+    WeightedMoves { id: "Snake Plant", moves: &[(7, 0, 65, 1, 3), (-1, 0, 35, 1, 1)] },
+    // Snecko：咬 15 55%/甩尾 8 35%/凝视 10%
+    WeightedMoves { id: "Snecko", moves: &[(15, 0, 55, 1, 1), (8, 0, 35, 1, 1), (-1, 0, 10, 0, 1)] },
+    // Book of Stabbing：连刺 6×3 75%/大刺 21 25%
+    WeightedMoves { id: "Book of Stabbing", moves: &[(6, 0, 75, 1, 3), (21, 0, 25, 0, 1)] },
+    // Taskmaster：鞭笞 7 60%/抽击 40%
+    WeightedMoves { id: "Taskmaster", moves: &[(7, 0, 60, 1, 1), (-1, 0, 40, 0, 1)] },
+    // Bandit Leader：斩 15/痛斩 10/嘲弄
+    WeightedMoves { id: "Bandit Leader", moves: &[(15, 0, 40, 1, 1), (10, 0, 35, 1, 1), (-1, 0, 25, 0, 1)] },
+    // Bandit Bear：重锤 18/扑击 9+格挡/熊抱
+    WeightedMoves { id: "Bandit Bear", moves: &[(18, 0, 40, 1, 1), (9, 9, 35, 1, 1), (-1, 0, 25, 0, 1)] },
+    // ---- 第三幕 ----
+    // Darkling：噬咬 8×2/轻咬 5×3/硬化（复生走 HiveDeath 特殊）
+    WeightedMoves { id: "Darkling", moves: &[(8, 0, 30, 1, 2), (5, 0, 25, 1, 3), (-1, 12, 30, 0, 1), (-1, 0, 15, 0, 1)] },
+    // Reptomancer：蛇击 13×2/召唤 35%/大咬 30 35%
+    WeightedMoves { id: "Reptomancer", moves: &[(13, 0, 35, 1, 2), (-1, 0, 30, 1, 1), (30, 0, 35, 1, 1)] },
+    // Spire Growth：冲撞 14 45%/束缚 30%/重砸 16 25%
+    WeightedMoves { id: "Spire Growth", moves: &[(14, 0, 45, 1, 1), (-1, 0, 30, 0, 1), (16, 0, 25, 1, 1)] },
+    // Maw：猛击 25 40%/吞噬 5×2 30%/咆哮强化 15%/横扫 15%
+    WeightedMoves { id: "Maw", moves: &[(25, 0, 40, 1, 1), (5, 0, 30, 1, 2), (-1, 0, 15, 0, 1), (13, 0, 15, 1, 1)] },
+    // Nemesis：火焰 6×3 40%/死神镰刀 45 20%/相位 40%
+    WeightedMoves { id: "Nemesis", moves: &[(6, 0, 40, 1, 3), (45, 0, 20, 1, 1), (-1, 0, 40, 0, 1)] },
+    // Writhing Mass：多段 9×3/双击 11+格挡/打击 13/怒击 20
+    WeightedMoves { id: "Writhing Mass", moves: &[(9, 0, 33, 1, 3), (11, 10, 33, 0, 1), (13, 0, 24, 1, 1), (20, 0, 10, 0, 1)] },
+    // Giant Head：瞪视 40%/数数 13 45%/致死一击 30 15%
+    WeightedMoves { id: "Giant Head", moves: &[(-1, 0, 40, 1, 1), (13, 0, 45, 1, 1), (30, 0, 15, 0, 1)] },
+    // Spire Shield：猛击 12 35%/盾击 10+10 格挡 25%/强化 30 格挡 40%
+    WeightedMoves { id: "Spire Shield", moves: &[(12, 0, 35, 1, 1), (10, 10, 25, 1, 1), (-1, 30, 40, 1, 1)] },
+    // Spire Spear：串刺 9×3 40%/灼热双击 11×2 30%/强化 30%
+    WeightedMoves { id: "Spire Spear", moves: &[(9, 0, 40, 1, 3), (11, 0, 30, 1, 2), (-1, 0, 30, 0, 1)] },
 ];
 
 /// 按加权表取招式（num = aiRng.random(99)）。
 /// last_two_same：上两招是否同招（命中连击禁位条目时顺延）。
-pub fn pick_weighted(wm: &WeightedMoves, num: i32, last_two_same: bool) -> (i32, i32) {
+/// 返回 (伤害, 附带格挡, 段数)。
+pub fn pick_weighted(wm: &WeightedMoves, num: i32, last_two_same: bool) -> (i32, i32, i32) {
     let total: u32 = wm.moves.iter().map(|m| m.2).sum();
     let mut acc: u32 = 0;
-    for (dmg, block, w, ban) in wm.moves {
+    for (dmg, block, w, ban, hits) in wm.moves {
         acc += w;
         if (num as u32) < acc * 100 / total {
             if *ban == 1 && last_two_same {
                 continue; // lastTwoMoves 钳制
             }
-            return (*dmg, *block);
+            return (*dmg, *block, *hits);
         }
     }
-    let last = wm.moves.last().copied().unwrap_or((-1, 0, 0, 0));
-    (last.0, last.1)
+    let last = wm.moves.last().copied().unwrap_or((-1, 0, 0, 0, 1));
+    (last.0, last.1, last.4)
 }
 
 pub fn get_weighted(id: &str) -> Option<&'static WeightedMoves> {
