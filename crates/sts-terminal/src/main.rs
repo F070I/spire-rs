@@ -155,7 +155,9 @@ fn main() {
                         }
                     }
                     RoomPhase::CampfireChoice => {
-                        let _ = if selection == 0 { run.campfire_rest() } else { Ok(()) };
+                        if selection == 0 {
+                            let _ = run.campfire_rest();
+                        }
                     }
                     RoomPhase::TreasureChoice => run.open_treasure(),
                     RoomPhase::EventChoice => {
@@ -163,6 +165,7 @@ fn main() {
                     }
                     _ => {}
                 }
+                selection = 0;
                 selection = 0;
                 render(&run, &mut out);
             }
