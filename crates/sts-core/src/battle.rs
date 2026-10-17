@@ -193,6 +193,12 @@ pub enum SpecialAi {
     HexaCount,
     /// Gremlin Nob：玩家打技能牌时 +1 力（Anger 语义）
     Anger,
+    /// Awakened One：死亡时复活一次（回满血）
+    Rebirth,
+    /// Darkling：三只同体——单只死亡后其余两只在 2 回合后复活它（简化：死亡不掉离队列）
+    HiveDeath,
+    /// Gremlin Leader：每 3 回合召唤一只小怪（占位：+1 力给自己）
+    Summoner,
 }
 
 #[derive(Clone, Debug)]
@@ -606,7 +612,13 @@ impl BattleState {
                     // 伤害递增在 script 取值时由 dmg+ai_turn 计算过——此处仅推进计数
                 }
                 // Gremlin Nob 怒气：被动钩子在玩家出技能时（出牌段处理）——此处无操作
-                Some(SpecialAi::Anger) => {}
+                Some(SpecialAi::Anger)
+                // SplitOnHalf：由受击钩子处理
+                | Some(SpecialAi::SplitOnHalf) => {}
+                // Gremlin Leader：每 3 回合召唤（简化：给自己 +2 力）
+                Some(SpecialAi::Summoner) if m.ai_turn > 0 && m.ai_turn.is_multiple_of(3) => {
+                    m.creature.powers.push(Power::new(PowerKind::Strength, 2));
+                }
                 // Guardian 三态：血量≤50% 且脚本下一步是攻击 → 转防御回合
                 Some(SpecialAi::GuardianModeShift) => {
                     if m.creature.current_health * 2 <= m.creature.max_health {
@@ -1490,8 +1502,9 @@ impl BattleState {
         match target {
             TargetRef::Monster(i) => {
                 // 快照钩子数据
-                let (has_intangible, envenom) = {
+                let (has_intangible, envenom, has_rebirth) = {
                     let p = &self.player;
+                    let mon = &self.monsters[i];
                     (
                         p.powers.iter().any(|p| p.kind == PowerKind::IntangiblePlayer),
                         p.powers
@@ -1499,6 +1512,7 @@ impl BattleState {
                             .find(|p| p.kind == PowerKind::Envenom)
                             .map(|p| p.amount)
                             .unwrap_or(0),
+                        matches!(mon.special, Some(SpecialAi::Rebirth)) && mon.ai_turn < 99,
                     )
                 };
                 let c = &mut self.monsters[i].creature;
@@ -1510,7 +1524,13 @@ impl BattleState {
                 let (remain, _broke) = c.decrement_block(info.ty, amount);
                 c.last_damage_taken = remain.min(c.current_health);
                 c.current_health = (c.current_health - remain).max(0);
-                let dying = c.current_health == 0 && !c.is_dying;
+                let mut dying = c.current_health == 0 && !c.is_dying;
+                let mut rebirth = false;
+                if dying && has_rebirth {
+                    // AwakenedOne：首次死亡复活一次（记录 04 §4：Rebirth 回满血）
+                    rebirth = true;
+                    dying = false;
+                }
                 if dying {
                     c.is_dying = true;
                 }
@@ -1522,6 +1542,12 @@ impl BattleState {
                         power: Power::new(PowerKind::Poison, envenom),
                         from_monster: false,
                     });
+                }
+                // AwakenedOne 复活：回满血 + 标记已用
+                if rebirth {
+                    self.monsters[i].special = Some(SpecialAi::Ritual(0));
+                    self.monsters[i].creature.current_health = self.monsters[i].creature.max_health;
+                    self.monsters[i].creature.is_dying = false;
                 }
             }
             TargetRef::Player => {
