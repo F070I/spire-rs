@@ -2,7 +2,7 @@
 
 > 本文档为 token 预算接近尾声时的交接快照。下个会话/接手者按此继续。
 
-## 已完成（git 最新 commit：4f2df3d，263 测试全过，clippy 0）
+## 已完成（git 最新 commit：dd115f7，266 测试全过，clippy 0）
 
 ### 批次 1：地基
 - sts-data::rng：RandomXS128 + JDK LCG + STS Random 包装（基线交叉验证）
@@ -48,6 +48,15 @@
   之后入队（Happy Flower/Art of War 同坑两次）。
 - **源码路径迁移**：`C:\Users\17366\Desktop\MySlayTheSpire-master`（原
   OneDrive\Desktop 已迁空）。
+
+## 本轮追加（批次 5d 二三幕加权表，2026-10-18）
+
+- **二三幕怪加权表（dd115f7）**：+20 怪进 WEIGHTED 表（第二幕 Byrd/Centurion/
+  Chosen/Shell Parasite/Spheric Guardian/Snake Plant/Snecko/Book of Stabbing/
+  Taskmaster/Bandit×2；第三幕 Darkling/Reptomancer/Spire Growth/Maw/Nemesis/
+  Writhing Mass/Giant Head/Spire Shield/Spear）。条目扩展第 5 位段数——多段
+  攻击（Byrd 啄 1×5、Book 连刺 6×3、Darkling/Nemesis/Writhing 多段）进引擎。
+  加权表累计 34 怪。测试 +3。
 
 ## 本轮追加（批次 5c 小怪机制，2026-10-18）
 
