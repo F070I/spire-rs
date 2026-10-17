@@ -1,5 +1,11 @@
 # 模块记录：批次 3.2 铁甲战士卡牌灌注
 
+> 批次 3.3 绿卡进度（2026-10-17）：**25/75 已转译**（cards/green.rs，12 测试）。
+> 新增 PowerKind：Poison（正式化）/Accuracy/Blur/Choke/DodgeAndRoll/Energized/Thorns；
+> 钩子：Blur（不掉格挡）、DodgeAndRoll/Energized（抽牌后）、Endless Agony（抽到再抽）；
+> 例程：EscapePlanAction/ExpertiseAction。
+> 数值纠错：Footwork 敏捷 2、Dodge and Roll 块 4、Dash 双值独立于 magic、Bane 无条件首段。
+
 状态：✅ **75/75 全部转译完成**（2026-10-17）；残留例程/选择屏占位见清账
 实现位置：`crates/sts-core/src/cards/red.rs` + `routines.rs` + `tests/cards_red.rs`
 

@@ -7,6 +7,7 @@
 //! - 卡牌专属例程（原版卡牌 Action 类）在 `routines.rs` 注册执行。
 
 pub mod builder;
+pub mod green;
 pub mod red;
 pub mod routines;
 
@@ -21,6 +22,7 @@ use sts_data::gen::{self, CardType};
 pub fn handled_ids() -> Vec<&'static str> {
     let mut v = Vec::new();
     v.extend_from_slice(red::HANDLED);
+    v.extend_from_slice(green::HANDLED);
     v
 }
 
@@ -30,12 +32,14 @@ pub fn effects(b: &BattleState, card: &CardInst, target: Option<usize>) -> Vec<G
     let id = card.st().id;
     let handled = match card.st().color_dir {
         "red" => red::HANDLED.contains(&id),
-        // 批次 3.2-3.4 逐色接入
+        "green" => green::HANDLED.contains(&id),
+        // 批次 3.3-3.4 逐色接入
         _ => false,
     };
     if handled {
         match card.st().color_dir {
             "red" => red::effects(b, card, target, &mut eb),
+            "green" => green::effects(b, card, target, &mut eb),
             _ => unreachable!("handled 表与分发分支不同步"),
         }
     } else {

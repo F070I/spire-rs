@@ -711,7 +711,7 @@ impl BattleState {
                         kind: p.kind,
                     });
                 }
-                if p.kind == PowerKind::Future && p.id == "Poison" && p.amount > 0 {
+                if p.kind == PowerKind::Poison && p.amount > 0 {
                     deferred.push(GameAction::LoseHp {
                         target: TargetRef::Monster(mi),
                         source: Some(TargetRef::Monster(mi)),
@@ -769,7 +769,13 @@ impl BattleState {
                 .powers
                 .iter()
                 .any(|p| p.kind == PowerKind::Barricade);
-        if !has_barricade {
+        // BlurPower：本回合不掉格挡（Blur 保持当回合已有格挡）
+        let has_blur = self
+            .player
+            .powers
+            .iter()
+            .any(|p| p.kind == PowerKind::Blur);
+        if !has_barricade && !has_blur {
             self.player.lose_block();
         }
         // 7) 抽牌（endTurnDraw=true → 充能）+ PostDraw 钩子 + 启用按钮
@@ -793,6 +799,15 @@ impl BattleState {
                     post_draw.push(GameAction::GainEnergy { amount: 1 });
                     p.amount -= 1;
                 }
+                // NextTurnBlockPower（Dodge and Roll）：+amount 格挡
+                PowerKind::DodgeAndRoll => post_draw.push(GameAction::GainBlock {
+                    target: TargetRef::Player,
+                    amount: p.amount,
+                }),
+                // EnergizedPower（Flying Knee）：下回合 +amount 能量
+                PowerKind::Energized => post_draw.push(GameAction::GainEnergy {
+                    amount: p.amount,
+                }),
                 _ => {}
             }
         }
@@ -821,6 +836,9 @@ impl BattleState {
                 self.apply_lose_hp(target, amount);
             }
             GameAction::GainBlock { target, amount } => {
+                if amount <= 0 {
+                    return;
+                }
                 let b = match target {
                     TargetRef::Player => {
                         let gained = self.player.add_block(amount);
@@ -1119,8 +1137,16 @@ impl BattleState {
             let kind = card.st().kind;
             let is_status = kind == CardType::Status;
             let is_status_or_curse = is_status || kind == CardType::Curse;
+            let drawn_endless_agony = card.st().id == "Endless Agony";
             self.hand.add_top(card);
             let mut hooks: Vec<GameAction> = Vec::new();
+            // 卡牌 triggerWhenDrawn（第一批）：Endless Agony 抽到时再抽 1
+            if drawn_endless_agony {
+                hooks.push(GameAction::DrawCard {
+                    amount: 1,
+                    end_turn_draw: false,
+                });
+            }
             for p in &self.player.powers {
                 match p.kind {
                     // EvolvePower.onCardDraw：抽到状态牌 → 抽 amount 张（No Draw 时不触发）

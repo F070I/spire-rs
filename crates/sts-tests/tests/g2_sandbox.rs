@@ -130,7 +130,7 @@ fn turn_loop_two_rounds_and_discard_flow() {
 fn poison_ticks_at_round_end_hp_loss() {
     let mut b = fixture(&[("Defend_R", false)]);
     // 毒（PoisonPower 语义：atEndOfRound 伤害 + 递减，HP_LOSS 无视格挡）
-    b.monsters[0].creature.powers.push(Power::future("Poison", 5));
+    b.monsters[0].creature.powers.push(Power::new(PowerKind::Poison, 5));
     let hp0 = b.monsters[0].creature.current_health;
     b.end_turn();
     b.run_until_idle();
@@ -140,7 +140,7 @@ fn poison_ticks_at_round_end_hp_loss() {
             .creature
             .powers
             .iter()
-            .find(|p| p.id == "Poison")
+            .find(|p| p.kind == PowerKind::Poison)
             .map(|p| p.amount),
         Some(4)
     );
@@ -151,7 +151,7 @@ fn poison_ticks_at_round_end_hp_loss() {
 fn monster_block_wiped_at_its_turn_then_poison_bypasses() {
     let mut b = fixture(&[("Defend_R", false)]);
     b.monsters[0].creature.add_block(50);
-    b.monsters[0].creature.powers.push(Power::future("Poison", 5));
+    b.monsters[0].creature.powers.push(Power::new(PowerKind::Poison, 5));
     let hp0 = b.monsters[0].creature.current_health;
     b.end_turn();
     b.run_until_idle();

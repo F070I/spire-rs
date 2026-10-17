@@ -48,6 +48,21 @@ pub enum PowerKind {
     FlameBarrier,
     Juggernaut,
     Metallicize,
+    /// PoisonPower（绿卡核心）：回合末伤害 = 层数并递减（HP_LOSS）。
+    Poison,
+    // ---- 批次 3.3 绿卡（静默猎手）----
+    /// AccuracyPower：Shiv +magic 伤（onPlayCard 钩子 TODO 3.5）。
+    Accuracy,
+    /// BlurPower：本回合不掉格挡（begin_player_turn 已接）。
+    Blur,
+    /// ChokePower：玩家每打出一张牌掉 amount 血（onUseCard 钩子 TODO 3.5）。
+    Choke,
+    /// NextTurnBlockPower（Dodge and Roll）：抽牌后 +amount 格挡。
+    DodgeAndRoll,
+    /// EnergizedPower（Flying Knee）：抽牌后 +1 能量。
+    Energized,
+    /// ThornsPower（Caltrops）：被攻击时反伤（onAttacked 钩子 TODO 3.5）。
+    Thorns,
     /// 兜底：尚未转译的能力（批次 3.5 逐个消灭；带原版 ID 以便审计）。
     Future,
 }
@@ -106,7 +121,10 @@ pub fn priority(kind: PowerKind) -> i32 {
 /// PowerType.BUFF/DEBUFF（固定于能力种类，不随 amount 正负改变——
 /// 原 StrengthPower 负值仍为 BUFF，Artifact 不拦截，保真）。
 pub fn is_debuff(kind: PowerKind) -> bool {
-    matches!(kind, PowerKind::Vulnerable | PowerKind::Weak | PowerKind::Frail | PowerKind::Slow)
+    matches!(
+        kind,
+        PowerKind::Vulnerable | PowerKind::Weak | PowerKind::Frail | PowerKind::Slow | PowerKind::Poison
+    )
 }
 
 /// 回合型减益（atEndOfRound 递减 + justApplied 跳过，记录 03 §2）。

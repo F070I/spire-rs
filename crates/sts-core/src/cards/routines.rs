@@ -42,6 +42,10 @@ const ROUTINES: &[(&str, RoutineFn)] = &[
     ("ExhaustAllNonAttackAction", exhaust_all_non_attack),
     // actions/unique/AttackDamageRandomEnemyAction：随机敌人 amount 伤
     ("AttackDamageRandomEnemyAction", attack_random),
+    // actions/unique/EscapePlanAction：抽到技能 → +amount 格挡
+    ("EscapePlanAction", escape_plan),
+    // actions/unique/ExpertiseAction：抽牌直到手牌 = amount
+    ("ExpertiseAction", expertise),
 ];
 
 pub fn run(b: &mut BattleState, call: &RoutineCall) {
@@ -232,6 +236,29 @@ fn attack_random(b: &mut BattleState, call: &RoutineCall) {
         TargetRef::Monster(mi),
         DamageInfo::pure(true, call.amount, DamageType::Normal),
     );
+}
+
+/// EscapePlanAction：抽到技能 → GainBlock(amount)。
+fn escape_plan(b: &mut BattleState, call: &RoutineCall) {
+    if let Some(top) = b.hand.group.last() {
+        if top.st().kind == sts_data::gen::CardType::Skill {
+            b.mgr.add_bottom(GameAction::GainBlock {
+                target: TargetRef::Player,
+                amount: call.amount,
+            });
+        }
+    }
+}
+
+/// ExpertiseAction：抽牌直到手牌数 = amount（不足则抽差值）。
+fn expertise(b: &mut BattleState, call: &RoutineCall) {
+    let deficit = call.amount - b.hand.group.len() as i32;
+    if deficit > 0 {
+        b.mgr.add_bottom(GameAction::DrawCard {
+            amount: deficit,
+            end_turn_draw: false,
+        });
+    }
 }
 
 /// InfernalBladeAction：随机攻击/技能/能力卡进手（0 费）——TODO 4.1 RNG（占位不动）。
