@@ -29,7 +29,13 @@
 ### 4.1 RNG 接线
 - BattleRngs：shuffle/card_random/ai/misc（seed+floorNum 重播种），随机占位全回填
 
-## ## 本轮追加（UI 后续推进，2026-10-17）
+## ## 本轮追加（UI 后续推进 2，2026-10-17）
+
+- 商店完整：ShopState.generate（5卡/2遗物/3药水，价格±10%）+ 购买/移除 API + 渲染命令（47d0bba）
+- 事件系统首批：6 事件（文本+选项+效果：金/血/升级/移除/遗物/诅咒）+ 渲染命令（1d2b2a6）
+- 批次 5 余量：解锁链（Silent→Defect→Watcher）+ 进阶上限 20 + RunMetrics 运行统计（f56cdeb）
+
+## 本轮追加（UI 后续推进，2026-10-17）
 
 - 房间交互深化：篝火休息/锻造、宝箱开箱（50/33/17 箱型+金币）、商店/事件阶段（7693dc3）
 - 钩子清账第二批：Establishment 降费/Equilibrium 保留整手/Loop 引动首球/WaveOfTheHand onScry（265a627）
