@@ -1,4 +1,5 @@
 //! sts-terminal：文字终端 UI（批次 6 骨架）。
+#![allow(dead_code)] // UI 组件库先建后用（阶段4-5接入）
 //!
 //! 输入输出协议（docs/04）：
 //! - 输入：stdin 行命令（`p <手牌序号> [目标]`出牌 / `e`结束回合 / `m <x> <y>`选节点 /
@@ -7,6 +8,11 @@
 //!
 //! crossterm 依赖因当前工具链缺 dlltool 暂缓（Cargo.toml 注释保留）；
 //! 接口（PlayerCommand/GameView）不变，未来替换输入后端零成本。
+
+mod theme;
+use theme::theme;
+mod ui;
+mod ui_core;
 
 use std::io::{BufRead, Write};
 use sts_core::flow4b::{NeowReward, RunState4b, RoomPhase};
@@ -150,23 +156,29 @@ fn render(run: &RunState4b, out: &mut std::io::Stdout) {
     }
     match run.phase {
         RoomPhase::MapChoice => {
-            let _ = writeln!(out, "【地图】当前位置 {:?}", run.current);
+            // 可达集合：当前位置的出边目标（原版 isConnectedTo 语义由核心 choose_node 校验）
+            let reachable: Vec<(i32, i32)> = run
+                .current
+                .map(|(cx, cy)| {
+                    run.map[cy as usize][cx as usize]
+                        .edges
+                        .iter()
+                        .map(|e| (e.dst_x, e.dst_y))
+                        .collect()
+                })
+                .unwrap_or_default();
+            for l in ui::map::render_map(&run.map, run.current, &reachable, theme(theme::ThemeKind::Color)) {
+                let _ = writeln!(out, "{}", l.text);
+            }
+            // 选中节点详情（当前节点的下一步）
             if let Some((cx, cy)) = run.current {
-                for e in &run.map[cy as usize][cx as usize].edges {
-                    let sym = run
-                        .map
-                        .get(e.dst_y as usize)
-                        .and_then(|r| r.get(e.dst_x as usize))
-                        .and_then(|n| n.symbol)
-                        .unwrap_or('?');
-                    let _ = writeln!(out, "  → ({},{}) {}", e.dst_x, e.dst_y, sym);
-                }
-            } else {
-                for (x, n) in run.map[0].iter().enumerate() {
-                    if !n.edges.is_empty() {
-                        let _ = writeln!(out, "  → ({},0) {}", x, n.symbol.unwrap_or('?'));
-                    }
-                }
+                let node = &run.map[cy as usize][cx as usize];
+                let next: Vec<(i32, i32)> = node
+                    .edges
+                    .iter()
+                    .map(|e| (e.dst_x, e.dst_y))
+                    .collect();
+                let _ = writeln!(out, "{}", ui::map::node_detail(node, &next));
             }
         }
         RoomPhase::InBattle => {

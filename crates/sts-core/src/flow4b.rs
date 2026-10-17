@@ -102,7 +102,11 @@ impl RunState4b {
             seed,
             act: 0,
             floor: 0,
-            map: generate_dungeon(MAP_HEIGHT, MAP_WIDTH, PATH_DENSITY, &mut map_rng),
+            map: {
+                let mut m = generate_dungeon(MAP_HEIGHT, MAP_WIDTH, PATH_DENSITY, &mut map_rng);
+                crate::map::assign_rooms(&mut m, &crate::map::DEFAULT_CHANCES, 0, false, &mut map_rng);
+                m
+            },
             current: None,
             monster_list: encounters::populate_list(
                 pools.weak,
@@ -465,7 +469,11 @@ impl RunState4b {
         self.player_hp = self.player_max_hp;
         self.act += 1;
         let mut map_rng = StsRandom::new(self.seed.wrapping_add((self.act as i64) * 100));
-        self.map = generate_dungeon(MAP_HEIGHT, MAP_WIDTH, PATH_DENSITY, &mut map_rng);
+        self.map = {
+            let mut m = generate_dungeon(MAP_HEIGHT, MAP_WIDTH, PATH_DENSITY, &mut map_rng);
+            crate::map::assign_rooms(&mut m, &crate::map::DEFAULT_CHANCES, 0, false, &mut map_rng);
+            m
+        };
         self.map_rng = map_rng;
         let pools = encounters::act_pools(self.act);
         self.monster_list = encounters::populate_list(
