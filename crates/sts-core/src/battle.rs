@@ -357,6 +357,18 @@ impl BattleState {
         });
         self.mgr
             .add_bottom(GameAction::DrawCard { amount: self.game_hand_size, end_turn_draw: false });
+        // LoopPower.atStartOfTurnPostDraw：引动首球（不消耗——evoke without remove）
+        if let Some(lp) = self
+            .player
+            .powers
+            .iter()
+            .find(|p| p.kind == PowerKind::Future && p.id == "Loop")
+            .map(|p| p.amount)
+        {
+            if lp > 0 && !self.orbs.is_empty() && self.orbs[0].kind != crate::orb::OrbKind::EmptySlot {
+                self.mgr.add_bottom(GameAction::EvokeWithoutRemove { count: 1 });
+            }
+        }
         self.mgr.add_bottom(GameAction::EnableEndTurnButton);
     }
 
@@ -825,6 +837,20 @@ impl BattleState {
         if metallicize > 0 {
             self.player.add_block(metallicize);
         }
+        // EstablishmentPower：retain 卡费用 -amount（回合开始应用——原版在 retain 时）
+        if let Some(es) = self
+            .player
+            .powers
+            .iter()
+            .find(|p| p.kind == PowerKind::Establishment)
+            .map(|p| p.amount)
+        {
+            for c in &mut self.hand.group {
+                if c.cost_for_turn > 0 {
+                    c.cost_for_turn = (c.cost_for_turn - es).max(0);
+                }
+            }
+        }
         // BrutalityPower.atEndOfTurn：掉 1 HP + 抽 amount 张
         if let Some(br) = self
             .player
@@ -983,6 +1009,18 @@ impl BattleState {
             .retain(|p| p.kind != PowerKind::Berserk || p.amount > 0);
         for a in post_draw {
             self.mgr.add_bottom(a);
+        }
+        // LoopPower.atStartOfTurnPostDraw：引动首球（不消耗——evoke without remove）
+        if let Some(lp) = self
+            .player
+            .powers
+            .iter()
+            .find(|p| p.kind == PowerKind::Future && p.id == "Loop")
+            .map(|p| p.amount)
+        {
+            if lp > 0 && !self.orbs.is_empty() && self.orbs[0].kind != crate::orb::OrbKind::EmptySlot {
+                self.mgr.add_bottom(GameAction::EvokeWithoutRemove { count: 1 });
+            }
         }
         self.mgr.add_bottom(GameAction::EnableEndTurnButton);
     }
@@ -1282,6 +1320,25 @@ impl BattleState {
             GameAction::ChangeStance { stance } => self.change_stance(stance),
             GameAction::Scry { amount } => {
                 let _ = amount; // 批次 6 交互（选择屏）
+                // WaveOfTheHandPower.onScry：预见后全体 Weak amount
+                if let Some(w) = self
+                    .player
+                    .powers
+                    .iter()
+                    .find(|p| p.kind == PowerKind::WaveOfTheHand)
+                    .map(|p| p.amount)
+                {
+                    for mi in 0..self.monsters.len() {
+                        if !self.monsters[mi].creature.is_dying && !self.monsters[mi].creature.is_dead {
+                            self.mgr.add_bottom(GameAction::ApplyPower {
+                                target: TargetRef::Monster(mi),
+                                source: Some(TargetRef::Player),
+                                power: Power::new(PowerKind::Weak, w),
+                                from_monster: false,
+                            });
+                        }
+                    }
+                }
             }
             GameAction::CardRoutine { call } => crate::cards::run_routine(self, &call),
             GameAction::Future { .. } => {}
@@ -1515,8 +1572,13 @@ impl BattleState {
         if ethereal_count > 0 {
             self.on_exhaust_hook(ethereal_count);
         }
-        // 3) 其余弃牌
-        if !self.relics_ctx.has_runic_pyramid {
+        // 3) 其余弃牌（Runic Pyramid / Equilibrium 保留整手）
+        let has_equilibrium = self
+            .player
+            .powers
+            .iter()
+            .any(|p| p.kind == PowerKind::Equilibrium);
+        if !self.relics_ctx.has_runic_pyramid && !has_equilibrium {
             while let Some(c) = self.hand.group.pop() {
                 self.discard_pile.add_top(c);
             }
