@@ -429,6 +429,78 @@ pub static EVENTS: &[EventDef] = &[
             EventOption { text: "拒绝", effect: Effect::Nothing },
         ],
     },
+    EventDef {
+        id: "The Joust",
+        title: "马上比武",
+        body: "两名骑士在远处比武。",
+        options: &[
+            EventOption { text: "下注（失去 50 金，+稀有遗物）", effect: Effect::GainRareRelic },
+            EventOption { text: "旁观", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "World of Goop",
+        title: "黏液世界",
+        body: "地上全是黏液。",
+        options: &[
+            EventOption { text: "捡起（失去 5 生命，+75 金）", effect: Effect::GainGold(75) },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "The Cleric 2",
+        title: "牧师的祝福",
+        body: "牧师再次出现。",
+        options: &[
+            EventOption { text: "治疗（回 25% 最大生命）", effect: Effect::GainHp(20) },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "White Beast Statue",
+        title: "白兽像",
+        body: "白兽像的眼睛发出光芒。",
+        options: &[
+            EventOption { text: "触摸（+药水）", effect: Effect::Nothing },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "Gold Idol Trap",
+        title: "金像陷阱",
+        body: "又一个金像，但这次你更小心了。",
+        options: &[
+            EventOption { text: "小心拿取（+150 金）", effect: Effect::GainGold(150) },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "KnowSP",
+        title: "知识",
+        body: "一本古书摊开在面前。",
+        options: &[
+            EventOption { text: "阅读（移除一张卡）", effect: Effect::RemoveCard },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "Wheel of Change",
+        title: "命运之轮",
+        body: "一个巨大的轮盘在转动。",
+        options: &[
+            EventOption { text: "转动（+100 金，+50 金，+诅咒）", effect: Effect::GainGold(150) },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "Secret Portal",
+        title: "秘密传送门",
+        body: "一道传送门在你面前打开。",
+        options: &[
+            EventOption { text: "进入（+稀有遗物）", effect: Effect::GainRareRelic },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
 ];
 
 /// 按 ID 查事件（未知 → 首个事件兜底）。
