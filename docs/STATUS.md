@@ -2,7 +2,7 @@
 
 > 本文档为 token 预算接近尾声时的交接快照。下个会话/接手者按此继续。
 
-## 已完成（git 最新 commit：b3250e6，251 测试全过，clippy 0）
+## 已完成（git 最新 commit：33cf672，256 测试全过，clippy 0）
 
 ### 批次 1：地基
 - sts-data::rng：RandomXS128 + JDK LCG + STS Random 包装（基线交叉验证）
@@ -48,6 +48,15 @@
   之后入队（Happy Flower/Art of War 同坑两次）。
 - **源码路径迁移**：`C:\Users\17366\Desktop\MySlayTheSpire-master`（原
   OneDrive\Desktop 已迁空）。
+
+## 本轮追加（批次 5b 加权招式，2026-10-18）
+
+- **加权 getMove（33cf672）**：14 只一幕怪从固定序列升级为源码加权掷
+  （WeightedMoves 表：伤害/附带格挡/权重%，按 getMove 的 num 阈值分支校准；
+  Jaw Worm thrash 带 6 格挡的 ATTACK_DEFEND 已复刻）。RollMove 时 aiRng 重掷
+  写回 script[0]，意图显示零改动；开战首掷立即可见。教徒保持确定性。
+  测试 +5（含 1000 次权重采样分布验证）。
+- 连击钳制（lastTwoMoves）省略——记 5c 余量。
 
 ## 本轮追加（批次 5a 多怪遭遇，2026-10-17）
 
