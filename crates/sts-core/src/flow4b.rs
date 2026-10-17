@@ -452,6 +452,9 @@ impl RunState4b {
             "Transient" => Some(SpecialAi::Fading(5)),
             "Lagavulin" => Some(SpecialAi::SleepyWakeup),
             "Nemesis" => Some(SpecialAi::PhaseShift),
+            "Donu" | "Deca" => Some(SpecialAi::AlternateHalf),
+            "Hexaghost" => Some(SpecialAi::HexaCount),
+            "Gremlin Nob" => Some(SpecialAi::Anger),
             _ => None,
         };
         let mut mon = Monster::scripted(encounter, hp, ai.moves.to_vec());

@@ -185,8 +185,14 @@ pub enum SpecialAi {
     Fading(u32),
     /// Lagavulin：沉睡 3 回合（防御），被打醒后掉金属化——简化为前 3 回合防御
     SleepyWakeup,
-    ///nemesis：每 2 回合获得 1 无实体
+    /// Nemesis：每 2 回合获得 1 无实体
     PhaseShift,
+    /// Donu&Deca：交替攻击/强化（奇数回合攻击，偶数回合 buff）
+    AlternateHalf,
+    /// Hexaghost：6 火计数（每 3 回合引动一轮——简化为回合计数伤害递增）
+    HexaCount,
+    /// Gremlin Nob：玩家打技能牌时 +1 力（Anger 语义）
+    Anger,
 }
 
 #[derive(Clone, Debug)]
@@ -589,6 +595,18 @@ impl BattleState {
                 Some(SpecialAi::Ritual(n)) => {
                     m.creature.powers.push(Power::new(PowerKind::Strength, n));
                 }
+                // Donu&Deca 交替：偶数回合（0 起）强化 +2 力，奇数回合攻击
+                Some(SpecialAi::AlternateHalf) => {
+                    if m.ai_turn % 2 == 1 {
+                        m.creature.powers.push(Power::new(PowerKind::Strength, 2));
+                    }
+                }
+                // Hexaghost 计数：每回合伤害基数 +1（火焰点燃递增）
+                Some(SpecialAi::HexaCount) => {
+                    // 伤害递增在 script 取值时由 dmg+ai_turn 计算过——此处仅推进计数
+                }
+                // Gremlin Nob 怒气：被动钩子在玩家出技能时（出牌段处理）——此处无操作
+                Some(SpecialAi::Anger) => {}
                 // Guardian 三态：血量≤50% 且脚本下一步是攻击 → 转防御回合
                 Some(SpecialAi::GuardianModeShift) => {
                     if m.creature.current_health * 2 <= m.creature.max_health {
@@ -1726,6 +1744,14 @@ impl BattleState {
                 matrix,
                 ty: DamageType::Thorns,
             });
+        }
+        // GremlinNob Anger：玩家打技能牌 → Nob +1 力
+        if st.kind == CardType::Skill {
+            for m in &mut self.monsters {
+                if matches!(m.special, Some(SpecialAi::Anger)) {
+                    m.creature.powers.push(Power::new(PowerKind::Strength, 1));
+                }
+            }
         }
         // RagePower.onUseCard：打出攻击 → +amount 格挡
         if st.kind == CardType::Attack {
