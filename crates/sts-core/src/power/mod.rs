@@ -130,6 +130,8 @@ pub enum PowerKind {
     Regen,
     /// LoseDexterityPower（Speed Potion 配对）：回合末敏捷 -= amount。
     LoseDexterity,
+    /// CurlUpPower（防御鼠怪）：受攻击掉血且存活时 +amount 格挡（一次性）。
+    CurlUp,
     /// 兜底：尚未转译的能力（批次 3.5 逐个消灭；带原版 ID 以便审计）。
     Future,
 }

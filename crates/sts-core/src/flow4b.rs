@@ -469,6 +469,14 @@ impl RunState4b {
                     mon.special = Self::member_special(name);
                     // 加权招式怪（批次 5b）：有 WEIGHTED 表即启用（初始掷在 setup 后）
                     mon.weighted = sts_data::monster_ai::get_weighted(name).is_some();
+                    // 防御鼠怪蜷缩（Curl Up 3-7——monsterHpRng 代用）
+                    if name == "Louse Defensive" {
+                        let amt = self.monster_rng.random_int_inclusive(4) + 3;
+                        mon.creature.powers.push(crate::power::Power::new(
+                            crate::power::PowerKind::CurlUp,
+                            amt,
+                        ));
+                    }
                     out.push(mon);
                 }
                 out

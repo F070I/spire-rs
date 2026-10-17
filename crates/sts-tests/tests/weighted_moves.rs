@@ -33,7 +33,7 @@ fn pick_weighted_respects_weights() {
     // 1000 次采样：咬 6 约 75%，强化(-1) 约 25%
     let mut bites = 0;
     for n in 0..1000i32 {
-        let (dmg, _) = monster_ai::pick_weighted(wm, n % 100);
+        let (dmg, _) = monster_ai::pick_weighted(wm, n % 100, false);
         if dmg == 6 {
             bites += 1;
         }

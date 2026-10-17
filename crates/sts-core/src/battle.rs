@@ -250,6 +250,8 @@ pub struct Monster {
     pub weighted: bool,
     /// 加权招式附带格挡（thrash 系——随 Damage 一起入队）。
     pub bonus_block: i32,
+    /// 逃跑标记（Gremlin Gang：同伴死亡后下回合逃离）。
+    pub escape_next: bool,
 }
 
 impl Monster {
@@ -336,6 +338,7 @@ impl Monster {
             brain: Brain::default(),
             weighted: false,
             bonus_block: 0,
+            escape_next: false,
         }
     }
 
@@ -966,13 +969,30 @@ impl BattleState {
             }
             return true;
         }
-        // 5. 怪物回合
+        // 5. 怪物回合（阶段化：先快照借用，再 self 级特殊机制，再招式执行）
         if let Some(mi) = self.mgr.monster_queue.pop_front() {
-            let m = &mut self.monsters[mi];
-            m.ai_turn += 1;
-            // 真怪状态机（批次 4c）：完全接管本回合（多段伤/状态牌/转换），不走脚本
+            // 阶段 A：快照 + 递增回合（含逃跑离场）
+            let mut escaped = false;
+            let (sp, hp2, maxhp2, ai_turn) = {
+                let m = &mut self.monsters[mi];
+                m.ai_turn += 1;
+                if m.escape_next {
+                    m.creature.is_dying = true; // 原版 EscapeAction
+                    escaped = true;
+                }
+                (
+                    m.special,
+                    m.creature.current_health,
+                    m.creature.max_health,
+                    m.ai_turn,
+                )
+            };
+            if escaped {
+                self.check_battle_over();
+            }
+            // 阶段 B：真怪状态机接管
             if matches!(
-                m.special,
+                sp,
                 Some(SpecialAi::HexaghostFull { .. })
                     | Some(SpecialAi::OrbWalkerAi { .. })
                     | Some(SpecialAi::DonuAi { .. })
@@ -982,40 +1002,73 @@ impl BattleState {
                 self.exec_real_move(mi);
                 return true;
             }
-            // 特殊机制（回合开始时点）
-            match m.special {
-                // Cultist 仪式：每回合 +N 力量
-                Some(SpecialAi::Ritual(n)) => {
-                    m.creature.powers.push(Power::new(PowerKind::Strength, n));
+            // 阶段 C：需要 self 的特殊机制
+            // SlimeBoss：HP≤50% → 分裂（自灭 + 双大软泥各继承当前血）
+            if sp == Some(SpecialAi::SplitOnHalf) && hp2 * 2 <= maxhp2 {
+                let boss_hp = hp2;
+                self.monsters[mi].creature.is_dying = true;
+                let mut spike = Monster::scripted("Spike Slime L", boss_hp, vec![Some(8), None]);
+                spike.weighted = true;
+                let mut acid =
+                    Monster::scripted("Acid Slime L", boss_hp, vec![Some(16), Some(10), None]);
+                acid.weighted = true;
+                self.monsters.push(spike);
+                self.monsters.push(acid);
+                return true;
+            }
+            // Gremlin Leader：每 3 回合召唤 2 只哥布林（存活小怪 < 3 时）
+            if sp == Some(SpecialAi::Summoner) && ai_turn > 0 && ai_turn % 3 == 0 {
+                let minions = self
+                    .monsters
+                    .iter()
+                    .filter(|x| {
+                        !x.creature.is_dying
+                            && x.creature.name.starts_with("Gremlin")
+                            && x.creature.name != "Gremlin Leader"
+                    })
+                    .count();
+                if minions < 3 {
+                    let pool = ["Gremlin Warrior", "Gremlin Thief", "Gremlin Fat", "Gremlin Tsundere", "Gremlin Wizard"];
+                    for _ in 0..2 {
+                        let i = self.rngs.ai.random_int_inclusive(pool.len() as i32 - 1) as usize;
+                        let ai2 = sts_data::monster_ai::get(pool[i]);
+                        let hp3 = sts_data::monster_ai::scaled_hp(ai2, 0, &mut self.rngs.ai);
+                        let mut mon = Monster::scripted(pool[i], hp3, ai2.moves.to_vec());
+                        mon.weighted = sts_data::monster_ai::get_weighted(pool[i]).is_some();
+                        self.monsters.push(mon);
+                    }
                 }
-                // Gremlin Nob 怒气：被动钩子在玩家出技能时（出牌段处理）——此处无操作
-                Some(SpecialAi::Anger)
-                // SplitOnHalf：由受击钩子处理
-                | Some(SpecialAi::SplitOnHalf) => {}
-                // Gremlin Leader：每 3 回合召唤（简化：给自己 +2 力）
-                Some(SpecialAi::Summoner) if m.ai_turn > 0 && m.ai_turn.is_multiple_of(3) => {
-                    m.creature.powers.push(Power::new(PowerKind::Strength, 2));
-                }
-                // Guardian 三态：血量≤50% 且脚本下一步是攻击 → 转防御回合
-                Some(SpecialAi::GuardianModeShift) => {
-                    if m.creature.current_health * 2 <= m.creature.max_health {
+            }
+            // 阶段 D：轻量特殊机制（仅动自身）
+            {
+                let m = &mut self.monsters[mi];
+                match sp {
+                    // Cultist 仪式：每回合 +N 力量
+                    Some(SpecialAi::Ritual(n)) => {
+                        m.creature.powers.push(Power::new(PowerKind::Strength, n));
+                    }
+                    // Guardian 三态：血量≤50% 且脚本有防御招 → 转防御回合
+                    Some(SpecialAi::GuardianModeShift)
+                        if m.creature.current_health * 2 <= m.creature.max_health =>
+                    {
                         m.move_idx = m
                             .script
                             .iter()
                             .position(|mv| mv.is_none())
                             .unwrap_or(m.move_idx);
                     }
+                    // Lagavulin 沉睡：前 3 回合防御
+                    Some(SpecialAi::SleepyWakeup) if ai_turn <= 3 => {
+                        m.move_idx = m
+                            .script
+                            .iter()
+                            .position(|mv| mv.is_none())
+                            .unwrap_or(m.move_idx);
+                    }
+                    _ => {}
                 }
-                // Lagavulin 沉睡：前 3 回合防御
-                Some(SpecialAi::SleepyWakeup) if m.ai_turn <= 3 => {
-                    m.move_idx = m
-                        .script
-                        .iter()
-                        .position(|mv| mv.is_none())
-                        .unwrap_or(m.move_idx);
-                }
-                _ => {}
             }
+            let m = &mut self.monsters[mi];
             let dmg = m.script[m.move_idx.min(m.script.len() - 1)];
             m.move_idx = (m.move_idx + 1).min(m.script.len() - 1);
             if let Some(base) = dmg {
@@ -1625,7 +1678,7 @@ impl BattleState {
             let name = self.monsters[i].creature.name.clone();
             if let Some(wm) = sts_data::monster_ai::get_weighted(&name) {
                 let num = self.rngs.ai.random_int_inclusive(99);
-                let (dmg, block) = sts_data::monster_ai::pick_weighted(wm, num);
+                let (dmg, block) = sts_data::monster_ai::pick_weighted(wm, num, false);
                 let m = &mut self.monsters[i];
                 m.script = vec![if dmg < 0 { None } else { Some(dmg) }];
                 m.move_idx = 0;
@@ -2390,10 +2443,20 @@ impl BattleState {
                 // 脚本怪：推进招式指针（真怪状态机在 exec_real_move 末尾自 roll）
                 let m = &mut self.monsters[monster];
                 if m.weighted {
-                    // 加权怪：aiRng 掷下招（getMove 转译——连击钳制省略）
+                    // 加权怪：aiRng 掷下招（getMove 转译）+ lastTwoMoves 连击钳制
                     if let Some(wm) = sts_data::monster_ai::get_weighted(&m.creature.name) {
                         let num = self.rngs.ai.random_int_inclusive(99);
-                        let (dmg, block) = sts_data::monster_ai::pick_weighted(wm, num);
+                        let prev = m.script[0];
+                        let last_two_same = m.script.len() == 1
+                            && m.move_history.len() >= 2
+                            && prev.is_some()
+                            && {
+                                let pv = prev.unwrap() as u8;
+                                m.move_history[m.move_history.len() - 2..] == [pv, pv]
+                            };
+                        let (dmg, block) =
+                            sts_data::monster_ai::pick_weighted(wm, num, last_two_same);
+                        m.move_history.push(if dmg < 0 { 0 } else { dmg as u8 });
                         m.script = vec![if dmg < 0 { None } else { Some(dmg) }];
                         m.move_idx = 0;
                         m.bonus_block = block;
@@ -2624,6 +2687,19 @@ impl BattleState {
                         from_monster: false,
                     });
                 }
+                // CurlUpPower.onAttacked：受攻击掉血且存活 → +amount 格挡（一次性移除）
+                if remain > 0 && info.ty == DamageType::Normal && !dying {
+                    if let Some(pos) = self.monsters[i]
+                        .creature
+                        .powers
+                        .iter()
+                        .position(|p| p.kind == PowerKind::CurlUp)
+                    {
+                        let amt = self.monsters[i].creature.powers[pos].amount;
+                        self.monsters[i].creature.add_block(amt);
+                        self.monsters[i].creature.powers.remove(pos);
+                    }
+                }
                 // PlatedArmorPower.wasHPLost：被攻击掉血 → -1 层（HP_LOSS/THORNS 除外）
                 if remain > 0 && info.ty == DamageType::Normal {
                     if let Some(pa) = self.monsters[i]
@@ -2638,6 +2714,20 @@ impl BattleState {
                                 target: TargetRef::Monster(i),
                                 kind: PowerKind::PlatedArmor,
                             });
+                        }
+                    }
+                }
+                // Gremlin Gang：哥布林死亡 → 幸存同伴下回合逃离（无 Leader 在场时）
+                if dying && self.monsters[i].creature.name.starts_with("Gremlin") {
+                    let has_leader = self
+                        .monsters
+                        .iter()
+                        .any(|x| x.creature.name == "Gremlin Leader" && !x.creature.is_dying);
+                    if !has_leader {
+                        for x in self.monsters.iter_mut() {
+                            if !x.creature.is_dying && x.creature.name.starts_with("Gremlin") {
+                                x.escape_next = true;
+                            }
                         }
                     }
                 }

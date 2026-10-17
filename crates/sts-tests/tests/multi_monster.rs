@@ -13,8 +13,12 @@ fn comp(key: &str, seed: i64) -> Vec<&'static str> {
 
 #[test]
 fn fixed_compositions_match_source() {
-    assert_eq!(comp("2 Louse", 1), vec!["Louse", "Louse"]);
-    assert_eq!(comp("3 Louse", 1), vec!["Louse", "Louse", "Louse"]);
+    // Louse 50/50 双变体（getLouse 转译）
+    for m in comp("2 Louse", 1) {
+        assert!(m == "Louse" || m == "Louse Defensive", "非法 Louse 变体 {m}");
+    }
+    assert_eq!(comp("2 Louse", 1).len(), 2);
+    assert_eq!(comp("3 Louse", 1).len(), 3);
     assert_eq!(comp("2 Fungi", 1), vec!["Fungi Beast", "Fungi Beast"]);
     assert_eq!(comp("3 Sentries", 1), vec!["Sentry", "Sentry", "Sentry"]);
     assert_eq!(comp("3 Cultists", 1), vec!["Cultist", "Cultist", "Cultist"]);
@@ -62,7 +66,7 @@ fn two_louse_fight_has_two_monsters_and_targeting() {
     let b = run.battle.as_mut().unwrap();
     b.run_until_idle();
     assert_eq!(b.monsters.len(), 2, "2 Louse = 两只");
-    assert_eq!(b.monsters[0].creature.name, "Louse");
+    assert!(b.monsters[0].creature.name.starts_with("Louse"));
     // 打第二只：伤害落在目标 1
     let (hp0, hp1) = (
         b.monsters[0].creature.current_health,
@@ -125,7 +129,7 @@ fn member_hp_rolls_within_table_range() {
     let b = run.battle.as_ref().unwrap();
     for m in &b.monsters {
         assert!(
-            (10..=15).contains(&m.creature.max_health),
+            (10..=17).contains(&m.creature.max_health),
             "Louse HP {} 越界",
             m.creature.max_health
         );

@@ -170,6 +170,15 @@ pub fn populate_list(
     out
 }
 
+/// getLouse 转译：50/50 普通/防御（蜷缩）。
+fn louse_roll(rng: &mut crate::rng::StsRandom) -> &'static str {
+    if rng.random_bool() {
+        "Louse"
+    } else {
+        "Louse Defensive"
+    }
+}
+
 /// 批次 5a：遭遇 → 怪物成员组合（MonsterHelper.getEncounter 转译）。
 /// 随机池按原版 spawner 的 miscRng 逻辑滚（monsterRng 代用）。
 /// 键为 encounters 池键（`&` 与 `and` 两写法都收）；未知键 → 单体兜底。
@@ -220,17 +229,18 @@ pub fn composition(key: &str, rng: &mut crate::rng::StsRandom) -> Vec<&'static s
             out
         }
         "Exordium Thugs" => {
-            let weak = ["Louse", "Spike Slime M", "Acid Slime M"];
+            let weak = ["Louse", "Louse Defensive", "Spike Slime M", "Acid Slime M"];
             let strong = ["Cultist", "Blue Slaver", "Looter"];
-            vec![weak[roll(3)], strong[roll(3)]]
+            vec![weak[roll(4)], strong[roll(3)]]
         }
         "Exordium Wildlife" => {
             let weak = ["Louse", "Spike Slime M", "Acid Slime M"];
             let strong = ["Fungi Beast", "Jaw Worm"];
             vec![strong[roll(2)], weak[roll(3)]]
         }
-        "2 Louse" => vec!["Louse", "Louse"],
-        "3 Louse" => vec!["Louse", "Louse", "Louse"],
+        // Louse 混合：原版 getLouse 50/50（Normal/Defensive）
+        "2 Louse" => vec![louse_roll(rng), louse_roll(rng)],
+        "3 Louse" => vec![louse_roll(rng), louse_roll(rng), louse_roll(rng)],
         "2 Fungi" => vec!["Fungi Beast", "Fungi Beast"],
         "Gremlin Nob" => vec!["Gremlin Nob"],
         "Lagavulin" => vec!["Lagavulin"],
