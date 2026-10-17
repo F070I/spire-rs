@@ -2,7 +2,7 @@
 
 > 本文档为 token 预算接近尾声时的交接快照。下个会话/接手者按此继续。
 
-## 已完成（git 最新 commit：4d10017）
+## 已完成（git 最新 commit：9b36c34，203 测试全过，clippy 0）
 
 ### 批次 1：地基
 - sts-data::rng：RandomXS128 + JDK LCG + STS Random 包装（基线交叉验证）
@@ -28,6 +28,29 @@
 
 ### 4.1 RNG 接线
 - BattleRngs：shuffle/card_random/ai/misc（seed+floorNum 重播种），随机占位全回填
+
+## 本轮追加（批次 4c-4e，2026-10-17）
+
+- **真怪 4c（2173115）**：Hexaghost 六火完整（ACTIVATE→DIVIDER 6×HP/12+1→
+  SEAR/TACKLE/INFLAME/INFERNO 轮转+BurnIncrease 全堆升级+3 张）、Orb Walker
+  （Laser 灼伤×2/Claw+回合末力）、Donu & Deca 双怪反相交替（Beam+Dazed/方阵/
+  Artifact 2/先手光环同轮强化）、Awakened One 双形态（归零→去减益→REBIRTH
+  回满血→Dark Echo/Sludge+Void/Triple；Curiosity/Regenerate 开局能力）。
+  新 PowerKind：Regenerate/Curiosity/PlatedArmor。Burn 手牌回合末自动打出
+  （THORNS）、Void 抽牌扣能。monsters.rs 工厂（monsters::build_real）。
+- **事件收尾（1362802）**：数据表 52/52 全覆盖（+28 件按源码转译）；Effect
+  枚举 26 变体（And 复合/HealFull/GainMaxHp/TransformCard/UpgradeAll/...）；
+  EventDef.act 字段（终幕 SpireHeart 不进随机池）；6 id 修正（保留原版 typo：
+  Transmorgrifier/Wheel of Change/N'loth）；AscendersBane 净化豁免。
+- **三平台发行（c74c3ed）**：release 0.64MB（<20MB 预算）；macOS x86/ARM64 +
+  Linux 三目标 cargo check 全过（零平台 API 实证）；docs/RELEASE.md。
+- **遗物第二批（9b36c34）**：+30 件全钩子（Marbles/Sling/Preserved/Pantograph/
+  Philosopher's Stone/Thread & Needle 反甲/Helix Buffer/五 boss 能量遗物/
+  Happy Flower/Stone Calendar 第7回合 52/Nunchaku/Ink Bottle 抽牌/Velvet
+  Choker 6 张/Tungsten Rod -1/Red Skull 血线±3力/Centennial 抽3/Meat on Bone/
+  Pear/Strawberry/Mango/Waffle/Whetstone/War Paint + 篝火/药水/金币门控）。
+  源码纠正：Red Skull=bloodied 血线（非首次掉血）、Stone Calendar 第 7 回合、
+  Ink Bottle=抽牌。
 
 ## ## 本轮追加（UI 后续推进 7，2026-10-17）
 
@@ -69,7 +92,14 @@
 - 玩家遗物效果第一批：RelicCtx 7 字段（Vajra/Anchor/BloodVial/Lantern/Mercury/Orichalcum/BurningBlood）+ 13 遗物 ID 映射（1b02275）
 - 批次 3.9 第一批：怪物 AI 表 55+ 条目（HP 区间/招式脚本/ascension 修正）接入 start_battle（18f250c）
 
-剩余工作（按优先级）
+剩余工作（按优先级，2026-10-17 批次 4e 后更新）
+
+1. **多怪遭遇重构**（最大块）：当前每遭遇为单体怪占位；需 MonsterGroup 多怪 +
+   逐怪 AI + 目标选择（Donu & Deca 已走双怪路径可参考——build_real 返回 Vec）
+2. 钩子清账余量：出牌/受击系未接清单见下（Necronomicon/HeelHook/WrathNextTurn 等）
+3. 解锁/metrics 与存档整合；ShopState 持久化语义
+4. crossterm 接入（零依赖 ANSI 已可玩；换后端接口不变）——需修工具链
+5. 正式发行：GitHub Actions 三平台构建（docs/RELEASE.md 已备）
 
 ### 统一 UI 设计系统 ✅（2026-10-17 全 6 阶段完成）
 - theme.rs：集中主题（低饱和彩色 + 纯黑白反显选中），t 键切换不改游戏状态
@@ -110,10 +140,8 @@
 
 ## 消耗
 
-**实际约 3.35 亿 / 3.5 亿 token（96%）**——剩余约 1500 万。
-
-> 注意：此前多个会话内部估算（9700 万等）严重偏低，未计入子代理隐性开销与
-> 长会话上下文重复成本。以后估算请以平台实际计量为准。
+**已追加预算继续推进（2026-10-17）**：批次 4c-4e（真怪/事件/发行/遗物）
+在追加的 3 亿预算内完成；消耗以平台计量为准。
 
 ## 交接指引
 
