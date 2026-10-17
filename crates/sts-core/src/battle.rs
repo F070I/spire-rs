@@ -1313,17 +1313,39 @@ impl BattleState {
         let amount = info.output;
         match target {
             TargetRef::Monster(i) => {
+                // 快照钩子数据
+                let (has_intangible, envenom) = {
+                    let p = &self.player;
+                    (
+                        p.powers.iter().any(|p| p.kind == PowerKind::IntangiblePlayer),
+                        p.powers
+                            .iter()
+                            .find(|p| p.kind == PowerKind::Envenom)
+                            .map(|p| p.amount)
+                            .unwrap_or(0),
+                    )
+                };
                 let c = &mut self.monsters[i].creature;
                 // IntangiblePlayer 钳 1（记录 03 §5，怪物承伤首行）
                 let mut amount = amount;
-                if amount > 0 && c.powers.iter().any(|p| p.kind == PowerKind::IntangiblePlayer) {
+                if amount > 0 && has_intangible {
                     amount = 1;
                 }
                 let (remain, _broke) = c.decrement_block(info.ty, amount);
                 c.last_damage_taken = remain.min(c.current_health);
                 c.current_health = (c.current_health - remain).max(0);
-                if c.current_health == 0 && !c.is_dying {
+                let dying = c.current_health == 0 && !c.is_dying;
+                if dying {
                     c.is_dying = true;
+                }
+                // EnvenomPower：未格挡攻击伤 → 上毒（THORNS 不触发）
+                if remain > 0 && envenom > 0 && info.ty == DamageType::Normal && !dying {
+                    self.mgr.add_bottom(GameAction::ApplyPower {
+                        target: TargetRef::Monster(i),
+                        source: Some(TargetRef::Player),
+                        power: Power::new(PowerKind::Poison, envenom),
+                        from_monster: false,
+                    });
                 }
             }
             TargetRef::Player => {
