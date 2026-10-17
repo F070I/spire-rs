@@ -174,6 +174,97 @@ pub static EVENTS: &[EventDef] = &[
             EventOption { text: "离开", effect: Effect::Nothing },
         ],
     },
+    EventDef {
+        id: "Living Wall",
+        title: "活墙",
+        body: "墙上浮现出一张脸，要求你献祭。",
+        options: &[
+            EventOption { text: "献祭卡（移除一张卡）", effect: Effect::RemoveCard },
+            EventOption { text: "献祭血（失去 6 生命）", effect: Effect::LoseHp(6) },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "The Mausoleum",
+        title: "陵墓",
+        body: "陵墓的门微微敞开着。",
+        options: &[
+            EventOption { text: "进入（+诅咒）", effect: Effect::AddCurse },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "Purifier",
+        title: "净化者",
+        body: "一位旅人愿意为你净化一张卡。",
+        options: &[
+            EventOption { text: "净化（75 金，移除一张卡）", effect: Effect::RemoveCard },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "Boost Trap",
+        title: "增幅陷阱",
+        body: "你看到一个奇怪的装置。",
+        options: &[
+            EventOption { text: "触发（失去 5 生命，+50 金）", effect: Effect::GainGold(50) },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "TheIDol",
+        title: "偶人",
+        body: "一个偶人挡住了去路。",
+        options: &[
+            EventOption { text: "推动（失去 5 生命，+普通遗物）", effect: Effect::GainCommonRelic },
+            EventOption { text: "绕行", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "Masked Bandits",
+        title: "蒙面强盗",
+        body: "强盗们要求你交出金币。",
+        options: &[
+            EventOption { text: "战斗（失去 10 生命，+稀有遗物）", effect: Effect::GainRareRelic },
+            EventOption { text: "交钱（失去全部金币）", effect: Effect::LoseGold(999) },
+        ],
+    },
+    EventDef {
+        id: "Wandering Apprentice",
+        title: "流浪学徒",
+        body: "一名学徒请求指导。",
+        options: &[
+            EventOption { text: "指导（升级一张卡）", effect: Effect::UpgradeRandom },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: " Knowing Skull",
+        title: "知之颅骨",
+        body: "一颗颅骨低声提出交易。",
+        options: &[
+            EventOption { text: "交易（失去 6 生命，+50 金）", effect: Effect::GainGold(50) },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "The Woman in Blue",
+        title: "蓝衣女子",
+        body: "蓝衣女子出售她的药剂。",
+        options: &[
+            EventOption { text: "买药水（50 金，+药水）", effect: Effect::Nothing },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "Scrap Ooze",
+        title: "废料软泥怪",
+        body: "软泥怪身上缠着什么金属。",
+        options: &[
+            EventOption { text: "伸手（失去 4 生命，+50 金）", effect: Effect::GainGold(50) },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
 ];
 
 /// 按 ID 查事件（未知 → 首个事件兜底）。
