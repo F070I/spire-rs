@@ -4,6 +4,7 @@
 //! 数值常量的出处逐条标注原版文件（见 docs/source-inventory/）。
 
 pub mod encounters;
+pub mod monster_ai;
 pub mod rng;
 
 /// 机械抽取的静态数据表（tools/extract.py 生成，勿手改）。

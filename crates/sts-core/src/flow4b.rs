@@ -355,10 +355,10 @@ impl RunState4b {
         } else {
             self.monster_list.remove(0)
         };
-        // 脚本怪占位（真怪 AI 批次 3.9）：HP/招式按遭遇名查表——先统一 50 血 10 伤
-        // TODO 3.9：MonsterHelper.getEncounter 工厂
-        let hp = if symbol == 'B' { 240 } else if symbol == 'E' { 90 } else { 50 };
-        let monsters = vec![Monster::scripted(encounter, hp, vec![Some(10), Some(10), None])];
+        // 怪物 AI 表（批次 3.9 第一批）：HP 区间 + 招式脚本按遭遇名查表
+        let ai = sts_data::monster_ai::get(encounter);
+        let hp = sts_data::monster_ai::scaled_hp(ai, 0, &mut self.monster_rng);
+        let monsters = vec![Monster::scripted(encounter, hp, ai.moves.to_vec())];
         let mut b = BattleState::new(
             self.player_hp,
             3,
