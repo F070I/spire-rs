@@ -17,6 +17,7 @@ pub mod creature;
 pub mod action;
 pub mod orb;
 pub mod cards;
+pub mod map;
 pub mod battle;
 
 pub use state::Game;
