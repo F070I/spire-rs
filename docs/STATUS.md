@@ -29,7 +29,13 @@
 ### 4.1 RNG 接线
 - BattleRngs：shuffle/card_random/ai/misc（seed+floorNum 重播种），随机占位全回填
 
-## ## 本轮追加（UI 后续推进 2，2026-10-17）
+## ## 本轮追加（UI 后续推进 3，2026-10-17）
+
+- 特殊怪物机制：SpecialAi 枚举 7 种（Cultist 仪式/Guardian 三态/SlimeBoss 分裂/TimeEater
+  每12卡/Transient 逃跑/Lagavulin 沉睡/Nemesis 相位）——tick 驱动+出牌计数触发（9b079ae）
+- 事件累计 14 件：+8（图书馆/石像/黏液坑/有翼石像/黄金神龛/铁匠/祭坛/设计师）（c9bf595）
+
+## 本轮追加（UI 后续推进 2，2026-10-17）
 
 - 商店完整：ShopState.generate（5卡/2遗物/3药水，价格±10%）+ 购买/移除 API + 渲染命令（47d0bba）
 - 事件系统首批：6 事件（文本+选项+效果：金/血/升级/移除/遗物/诅咒）+ 渲染命令（1d2b2a6）
