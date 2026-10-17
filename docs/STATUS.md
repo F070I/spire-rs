@@ -2,7 +2,7 @@
 
 > 本文档为 token 预算接近尾声时的交接快照。下个会话/接手者按此继续。
 
-## 已完成（git 最新 commit：33cf672，256 测试全过，clippy 0）
+## 已完成（git 最新 commit：4f2df3d，263 测试全过，clippy 0）
 
 ### 批次 1：地基
 - sts-data::rng：RandomXS128 + JDK LCG + STS Random 包装（基线交叉验证）
@@ -48,6 +48,15 @@
   之后入队（Happy Flower/Art of War 同坑两次）。
 - **源码路径迁移**：`C:\Users\17366\Desktop\MySlayTheSpire-master`（原
   OneDrive\Desktop 已迁空）。
+
+## 本轮追加（批次 5c 小怪机制，2026-10-18）
+
+- **小怪特殊机制（4f2df3d）**：CurlUpPower 实装（受攻击存活→+格挡一次性，
+  Louse Defensive 新个体 + getLouse 50/50 混合）；SlimeBoss 分裂实装（≤50%
+  自灭 + 双大软泥各继承当前血）；Gremlin Leader 召唤（每 3 回合 2 只、<3 钳制）；
+  Gremlin Gang 逃跑传播（同伴死亡→幸存者下回合离场，全员离场判胜）；
+  连击钳制（WeightedMoves 第 4 位禁位 + pick_weighted last_two_same）。
+  怪物回合重构四阶段（快照→状态机→self 级特殊→轻量特殊→招式）。测试 +7。
 
 ## 本轮追加（批次 5b 加权招式，2026-10-18）
 
