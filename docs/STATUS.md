@@ -31,13 +31,14 @@
 
 ## 剩余工作（按优先级）
 
-### 批次 4b：爬塔流程编排（核心路径）
-1. RunState↔BattleState 接线：楼层推进（MapRoomNode 选择→房间→下一层）
-2. 房间流程：战斗触发/奖励/篝火/商店/事件/宝箱
-3. Neow 开局（四类祝福）
-4. 幕间转换（TreasureRoomBoss/三钥匙/Act 4）
+### 批次 4b：爬塔流程编排 ✅（2026-10-17 完成）
+1. ✅ RunState↔BattleState 接线（flow4b.rs：choose_node/enter_room/start_battle/settle_battle）
+2. ✅ 房间流程：战斗触发/奖励（金币+卡3选1+遗物+药水）/篝火（回血+锻造）/药水使用
+3. ✅ 幕间转换（next_act：满血回/mapRng seed+act*100/队列重生成/Boss 池切换）
+4. ⏳ Neow 开局（四类祝福）——待做
 
-### 批次 3.5 钩子清账（~20 个能力行为钩子）
+### 批次 3.5 钩子清账（部分完成 12 项）
+已接：Rage/AfterImage/DoubleTap/Burst/Echo/Choke（出牌）、Buffer/Thorns/StaticDischarge/Envenom（受击）、Tactician（弃牌）、Brutality（回合末）
 - 出牌系：DoubleTap/Burst/Envenom/AfterImage/Necronomicon/HeelHook/WaveOfTheHand
 - 受击系：Caltrops(Thorns)/FlameBarrier/StaticDischarge/Choke/TalkToTheHand/WrathNextTurn
 - 其他：Rage/Rupture/Establishment/Panache/InfiniteBlades(HOOK已接)/Magnetism/HelloWorld/Mayhem/Phantasmal/RetainCard/Equilibrium/Buffer/Repair/Bias/Echo/Loop/Electro/LockOn/DrawCardNextTurn/Regret/Burn/Pain/Decay/Doubt/Shame/Void/Normality/Necronomicurse/CurseOfTheBell 等诅咒/状态触发
