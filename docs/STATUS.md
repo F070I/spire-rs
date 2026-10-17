@@ -29,7 +29,12 @@
 ### 4.1 RNG 接线
 - BattleRngs：shuffle/card_random/ai/misc（seed+floorNum 重播种），随机占位全回填
 
-## ## 本轮追加（UI 后续推进 3，2026-10-17）
+## ## 本轮追加（UI 后续推进 4，2026-10-17）
+
+- 事件累计 24 件：+10（活墙/陵墓/净化者/增幅陷阱/偶人/蒙面强盗/流浪学徒/知之颅骨/蓝衣女子/废料软泥怪）（42127d7）
+- 存档语义注释：商店/事件不持久化（进房生成种子驱动——原版等价）
+
+## 本轮追加（UI 后续推进 3，2026-10-17）
 
 - 特殊怪物机制：SpecialAi 枚举 7 种（Cultist 仪式/Guardian 三态/SlimeBoss 分裂/TimeEater
   每12卡/Transient 逃跑/Lagavulin 沉睡/Nemesis 相位）——tick 驱动+出牌计数触发（9b079ae）
