@@ -40,8 +40,8 @@ fn find_hand(b: &BattleState, id: &str) -> Option<usize> {
 fn battle_start_sequence() {
     let deck: Vec<(usize, bool)> = (0..5).map(|_| (sid("Strike_R"), false)).chain((0..5).map(|_| (sid("Defend_R"), false))).collect();
     let mut b = BattleState::new(80, 3, deck, vec![Monster::scripted("Jaw Worm", 44, vec![Some(10)])], 5);
-    b.start_battle(&mut rng(42));
-    b.run_until_idle(&mut rng(7));
+    b.start_battle();
+    b.run_until_idle();
     assert_eq!(b.energy, 3, "开场充能");
     assert_eq!(b.hand.group.len(), 5, "首回合抽 5");
     assert_eq!(b.draw_pile.group.len(), 5);
@@ -55,7 +55,7 @@ fn strike_via_full_play_chain() {
     let i = find_hand(&b, "Strike_R").unwrap();
     b.play_card(i, Some(0)).unwrap();
     assert_eq!(b.energy, 3, "入队瞬间不扣能（记录 09 §1 阶段 A）");
-    b.run_until_idle(&mut rng(1));
+    b.run_until_idle();
     assert_eq!(b.monsters[0].creature.current_health, hp0 - 6);
     assert_eq!(b.energy, 2, "打出后扣能");
     assert_eq!(find_hand(&b, "Strike_R"), None, "离手");
@@ -69,7 +69,7 @@ fn bash_applies_vulnerable_then_strike_benefit() {
     let hp0 = b.monsters[0].creature.current_health;
     let i = find_hand(&b, "Bash").unwrap();
     b.play_card(i, Some(0)).unwrap();
-    b.run_until_idle(&mut rng(1));
+    b.run_until_idle();
     assert_eq!(b.monsters[0].creature.current_health, hp0 - 8);
     assert_eq!(
         b.monsters[0]
@@ -83,7 +83,7 @@ fn bash_applies_vulnerable_then_strike_benefit() {
     // 易伤下打打击：(6)×1.5 = 9
     let i2 = find_hand(&b, "Strike_R").unwrap();
     b.play_card(i2, Some(0)).unwrap();
-    b.run_until_idle(&mut rng(2));
+    b.run_until_idle();
     assert_eq!(b.monsters[0].creature.current_health, hp0 - 8 - 9);
 }
 
@@ -92,12 +92,12 @@ fn defend_blocks_monster_attack_and_clears_next_turn() {
     let mut b = fixture(&[("Defend_R", false), ("Strike_R", false)]);
     let i = find_hand(&b, "Defend_R").unwrap();
     b.play_card(i, None).unwrap();
-    b.run_until_idle(&mut rng(1));
+    b.run_until_idle();
     assert_eq!(b.player.current_block, 5);
     // 结束回合：怪打 10 → 格挡吃 5 → 穿透 5
     let hp0 = b.player.current_health;
     b.end_turn();
-    b.run_until_idle(&mut rng(2));
+    b.run_until_idle();
     assert_eq!(b.player.current_health, hp0 - 5);
     // 新回合：格挡清零、能量回满、手牌补 5
     assert_eq!(b.player.current_block, 0, "回合开始掉格挡（无 Barricade）");
@@ -115,9 +115,9 @@ fn turn_loop_two_rounds_and_discard_flow() {
     for t in 0..2 {
         let i = find_hand(&b, "Strike_R").unwrap();
         b.play_card(i, Some(0)).unwrap();
-        b.run_until_idle(&mut rng(t as i64));
+        b.run_until_idle();
         b.end_turn();
-        b.run_until_idle(&mut rng(t as i64 + 100));
+        b.run_until_idle();
     }
     assert_eq!(b.monsters[0].creature.current_health, hp0 - 12);
     assert_eq!(b.mgr.turn, 3);
@@ -133,7 +133,7 @@ fn poison_ticks_at_round_end_hp_loss() {
     b.monsters[0].creature.powers.push(Power::future("Poison", 5));
     let hp0 = b.monsters[0].creature.current_health;
     b.end_turn();
-    b.run_until_idle(&mut rng(3));
+    b.run_until_idle();
     assert_eq!(b.monsters[0].creature.current_health, hp0 - 5, "毒按层数扣血");
     assert_eq!(
         b.monsters[0]
@@ -154,7 +154,7 @@ fn monster_block_wiped_at_its_turn_then_poison_bypasses() {
     b.monsters[0].creature.powers.push(Power::future("Poison", 5));
     let hp0 = b.monsters[0].creature.current_health;
     b.end_turn();
-    b.run_until_idle(&mut rng(3));
+    b.run_until_idle();
     // MonsterStartTurn：怪物回合开始掉格挡（applyPreTurnLogic，记录 01 §8）
     assert_eq!(b.monsters[0].creature.current_block, 0);
     // 毒 HP_LOSS 扣血（decrement_block 对 HP_LOSS 的旁路另有单元测试）
@@ -171,13 +171,13 @@ fn monster_debuffs_just_applied_skip_first_tick() {
         power: Power::new(PowerKind::Vulnerable, 2),
         from_monster: true,
     });
-    b.run_until_idle(&mut rng(4));
+    b.run_until_idle();
     assert_eq!(
         b.player.powers.iter().find(|p| p.kind == PowerKind::Vulnerable).map(|p| p.amount),
         Some(2)
     );
     b.end_turn();
-    b.run_until_idle(&mut rng(5));
+    b.run_until_idle();
     // 本回合结束时 justApplied 跳过 → 仍 2；下回合结束 → 1
     assert_eq!(
         b.player.powers.iter().find(|p| p.kind == PowerKind::Vulnerable).map(|p| p.amount),
@@ -185,7 +185,7 @@ fn monster_debuffs_just_applied_skip_first_tick() {
         "justApplied 首跳"
     );
     b.end_turn();
-    b.run_until_idle(&mut rng(6));
+    b.run_until_idle();
     assert_eq!(
         b.player.powers.iter().find(|p| p.kind == PowerKind::Vulnerable).map(|p| p.amount),
         Some(1)
@@ -205,7 +205,7 @@ fn player_strength_and_weak_on_attacker() {
     let hp0 = b.monsters[0].creature.current_health;
     let i = find_hand(&b, "Strike_R").unwrap();
     b.play_card(i, Some(0)).unwrap();
-    b.run_until_idle(&mut rng(7));
+    b.run_until_idle();
     // (6+3)×0.75 = 6.75 → 6
     assert_eq!(b.monsters[0].creature.current_health, hp0 - 6);
 }
@@ -217,7 +217,7 @@ fn wrath_stance_doubles_outgoing() {
     let hp0 = b.monsters[0].creature.current_health;
     let i = find_hand(&b, "Strike_R").unwrap();
     b.play_card(i, Some(0)).unwrap();
-    b.run_until_idle(&mut rng(8));
+    b.run_until_idle();
     assert_eq!(b.monsters[0].creature.current_health, hp0 - 12);
 }
 
@@ -227,11 +227,11 @@ fn battle_over_when_monster_dies() {
     b.monsters[0].creature.current_health = 5;
     let i = find_hand(&b, "Strike_R").unwrap();
     b.play_card(i, Some(0)).unwrap();
-    b.run_until_idle(&mut rng(9));
+    b.run_until_idle();
     assert!(b.is_battle_over, "怪死亡 → 战斗结束");
     assert!(b.monsters[0].creature.is_dying);
     // 死亡后额外伤害动作被 clearPostCombat 保留白名单放行（此处验证状态不再推进）
-    let _ = b.tick(&mut rng(10));
+    let _ = b.tick();
     assert!(b.is_battle_over);
     let _ = DamageType::Normal; // 引用保持导入
 }

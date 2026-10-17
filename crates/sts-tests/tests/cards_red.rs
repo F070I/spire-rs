@@ -76,7 +76,7 @@ fn find_hand(b: &BattleState, id: &str) -> Option<usize> {
 fn play(b: &mut BattleState, id: &str, target: Option<usize>) {
     let i = find_hand(b, id).expect(id);
     b.play_card(i, target).unwrap();
-    b.run_until_idle(&mut rng(11));
+    b.run_until_idle();
 }
 
 #[test]
@@ -111,7 +111,7 @@ fn flex_strength_then_end_of_turn_loss() {
         Some(2)
     );
     b.end_turn();
-    b.run_until_idle(&mut rng(12));
+    b.run_until_idle();
     // 回合末：LoseStrength（原版 ID "Flex"）收回力量；Strength 归 0 → 移除
     assert!(b.player.powers.iter().all(|p| p.kind != PowerKind::Strength));
 }

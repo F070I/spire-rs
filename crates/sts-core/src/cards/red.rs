@@ -15,7 +15,10 @@ pub const HANDLED: &[&str] = &[
     "Corruption", "Dark Embrace", "Demon Form", "Disarm", "Double Tap", "Entrench",
     "Evolve", "Feed", "Feel No Pain", "Fiend Fire", "Flame Barrier", "Ghostly Armor",
     "Hemokinesis", "Immolate", "Infernal Blade", "Juggernaut", "Limit Break", "Metallicize",
-    "Anger",
+    "Anger", "Defend_R", "Strike_R", "Exhume", "Impervious", "Offering",
+    "Power Through", "Pummel", "Reaper", "Reckless Charge", "Rupture", "Searing Blow",
+    "Second Wind", "Seeing Red", "Sentinel", "Sever Soul", "Shockwave", "Spot Weakness",
+    "Sword Boomerang", "Uppercut",
     "Armaments",
     "Bash",
     "Blood for Blood",
@@ -698,6 +701,195 @@ pub fn effects(b: &BattleState, card: &CardInst, target: Option<usize>, eb: &mut
                 power: Power::new(PowerKind::Metallicize, card.eff_magic()),
                 from_monster: false,
             });
+        }
+        // Defend_R：GainBlock（基础卡显式化；isDebug 分支为调试代码不移植）
+        "Defend_R" => {
+            eb.bot(GameAction::GainBlock { target: TargetRef::Player, amount: card.eff_block() });
+        }
+        // Strike_R：Damage（基础卡显式化）
+        "Strike_R" => {
+            if let Some(mi) = target {
+                eb.bot(GameAction::Damage {
+                    target: TargetRef::Monster(mi),
+                    info: attack_info(b, mi, card.eff_damage(), DamageType::Normal),
+                });
+            }
+        }
+        // Exhume：ExhumeAction——消耗堆取 1 回手（选择屏 TODO 批次 6）
+        "Exhume" => {
+            eb.bot(GameAction::CardRoutine {
+                call: RoutineCall {
+                    id: "ExhumeAction", target: None, amount: 0, amount2: 0,
+                    card_uuid: card.uuid, sid: card.sid, upgraded: card.upgraded,
+                },
+            });
+        }
+        // Impervious：GainBlock 30（消耗：静态标志）
+        "Impervious" => {
+            eb.bot(GameAction::GainBlock { target: TargetRef::Player, amount: card.eff_block() });
+        }
+        // Offering：LoseHP 6 + GainEnergy 2 + DrawCard(magic 3/5)（消耗：静态）
+        "Offering" => {
+            eb.bot(GameAction::LoseHp {
+                target: TargetRef::Player, source: Some(TargetRef::Player), amount: 6,
+            });
+            eb.bot(GameAction::GainEnergy { amount: 2 });
+            eb.bot(GameAction::DrawCard { amount: card.eff_magic(), end_turn_draw: false });
+        }
+        // Power Through：MakeTempCardInHand(Wound ×2) + GainBlock 15
+        "Power Through" => {
+            eb.bot(GameAction::MakeTempCardInHand {
+                sid: super::sid_of("Wound"), upgraded: false, count: 2,
+            });
+            eb.bot(GameAction::GainBlock { target: TargetRef::Player, amount: card.eff_block() });
+        }
+        // Pummel：magic 次伤害
+        "Pummel" => {
+            if let Some(mi) = target {
+                for _ in 0..card.eff_magic() {
+                    eb.bot(GameAction::Damage {
+                        target: TargetRef::Monster(mi),
+                        info: attack_info(b, mi, card.eff_damage(), DamageType::Normal),
+                    });
+                }
+            }
+        }
+        // Reaper：VampireDamageAllEnemiesAction（全体伤害 + 实扣血吸血；消耗：静态）
+        "Reaper" => {
+            eb.bot(GameAction::CardRoutine {
+                call: RoutineCall {
+                    id: "VampireDamageAllEnemiesAction", target: None, amount: 0, amount2: 0,
+                    card_uuid: card.uuid, sid: card.sid, upgraded: card.upgraded,
+                },
+            });
+        }
+        // Reckless Charge：Damage + 洗入 Dazed 到抽牌堆随机位
+        "Reckless Charge" => {
+            if let Some(mi) = target {
+                eb.bot(GameAction::Damage {
+                    target: TargetRef::Monster(mi),
+                    info: attack_info(b, mi, card.eff_damage(), DamageType::Normal),
+                });
+                eb.bot(GameAction::MakeTempCardInDrawPile {
+                    sid: super::sid_of("Dazed"), upgraded: false, count: 1, random_spot: true,
+                });
+            }
+        }
+        // Rupture：ApplyPower——wasHPLost 钩子 TODO 3.5（Future 占位，报告清账）
+        "Rupture" => {
+            eb.bot(GameAction::ApplyPower {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                power: Power::future("Rupture", card.eff_magic()),
+                from_monster: false,
+            });
+        }
+        // Second Wind：消耗全部非攻击牌，每张 +magic 格挡
+        "Second Wind" => {
+            eb.bot(GameAction::CardRoutine {
+                call: RoutineCall {
+                    id: "SecondWindAction", target: None, amount: card.eff_block(), amount2: 0,
+                    card_uuid: card.uuid, sid: card.sid, upgraded: card.upgraded,
+                },
+            });
+        }
+        // Seeing Red：GainEnergy 2（消耗：静态标志）
+        "Seeing Red" => {
+            eb.bot(GameAction::GainEnergy { amount: 2 });
+        }
+        // Sentinel：GainBlock；自身被消耗 → +2 能量（consume 消耗分支已接）
+        "Sentinel" => {
+            eb.bot(GameAction::GainBlock { target: TargetRef::Player, amount: card.eff_block() });
+        }
+        // Sever Soul：ExhaustAllNonAttack + Damage
+        "Sever Soul" => {
+            eb.bot(GameAction::CardRoutine {
+                call: RoutineCall {
+                    id: "ExhaustAllNonAttackAction", target: None, amount: 0, amount2: 0,
+                    card_uuid: card.uuid, sid: card.sid, upgraded: card.upgraded,
+                },
+            });
+            if let Some(mi) = target {
+                eb.bot(GameAction::Damage {
+                    target: TargetRef::Monster(mi),
+                    info: attack_info(b, mi, card.eff_damage(), DamageType::Normal),
+                });
+            }
+        }
+        // Shockwave：全体 Weak +magic 与 Frail +magic（消耗：静态）
+        "Shockwave" => {
+            for mi in 0..b.monsters.len() {
+                if !b.monsters[mi].creature.is_dying && !b.monsters[mi].creature.is_dead {
+                    eb.bot(GameAction::ApplyPower {
+                        target: TargetRef::Monster(mi),
+                        source: Some(TargetRef::Player),
+                        power: Power::new(PowerKind::Weak, card.eff_magic()),
+                        from_monster: false,
+                    });
+                    eb.bot(GameAction::ApplyPower {
+                        target: TargetRef::Monster(mi),
+                        source: Some(TargetRef::Player),
+                        power: Power::new(PowerKind::Frail, card.eff_magic()),
+                        from_monster: false,
+                    });
+                }
+            }
+        }
+        // Spot Weakness：不造成伤害——use() 仅 SpotWeaknessAction(magic, m)
+        "Spot Weakness" => {
+            if let Some(mi) = target {
+                if b.monsters[mi].is_attacking_intent() {
+                    eb.bot(GameAction::ApplyPower {
+                        target: TargetRef::Player,
+                        source: Some(TargetRef::Player),
+                        power: Power::new(PowerKind::Strength, card.eff_magic()),
+                        from_monster: false,
+                    });
+                }
+            }
+        }
+        // Sword Boomerang：magic 次随机敌人 3 伤
+        "Sword Boomerang" => {
+            for _ in 0..card.eff_magic() {
+                eb.bot(GameAction::CardRoutine {
+                    call: RoutineCall {
+                        id: "AttackDamageRandomEnemyAction", target: None,
+                        amount: 3, amount2: 0,
+                        card_uuid: card.uuid, sid: card.sid, upgraded: card.upgraded,
+                    },
+                });
+            }
+        }
+        // Uppercut：Damage + Weak(magic) + Vulnerable(magic)
+        "Uppercut" => {
+            if let Some(mi) = target {
+                eb.bot(GameAction::Damage {
+                    target: TargetRef::Monster(mi),
+                    info: attack_info(b, mi, card.eff_damage(), DamageType::Normal),
+                });
+                eb.bot(GameAction::ApplyPower {
+                    target: TargetRef::Monster(mi),
+                    source: Some(TargetRef::Player),
+                    power: Power::new(PowerKind::Weak, card.eff_magic()),
+                    from_monster: false,
+                });
+                eb.bot(GameAction::ApplyPower {
+                    target: TargetRef::Monster(mi),
+                    source: Some(TargetRef::Player),
+                    power: Power::new(PowerKind::Vulnerable, card.eff_magic()),
+                    from_monster: false,
+                });
+            }
+        }
+        // Searing Blow：Damage(baseDamage + misc)（无限升级：misc 累进）
+        "Searing Blow" => {
+            if let Some(mi) = target {
+                let base = card.st().base_damage + card.misc;
+                eb.bot(GameAction::Damage {
+                    target: TargetRef::Monster(mi),
+                    info: attack_info(b, mi, base, DamageType::Normal),
+                });
+            }
         }
         // Whirlwind：X 费——每点能量对全体打一次（WhirlwindAction；amount=当前能量快照）
         "Whirlwind" => {

@@ -88,7 +88,7 @@ fn upgraded_strike_and_bash_in_battle() {
     let hp0 = b.monsters[0].creature.current_health;
     let i = find_hand(&b, "Bash").unwrap();
     b.play_card(i, Some(0)).unwrap();
-    b.run_until_idle(&mut rng(1));
+    b.run_until_idle();
     // Bash+：10 伤 + 易伤 3
     assert_eq!(b.monsters[0].creature.current_health, hp0 - 10);
     assert_eq!(
@@ -103,7 +103,7 @@ fn upgraded_strike_and_bash_in_battle() {
     // Strike+：9×1.5 = 13.5 → 13
     let i2 = find_hand(&b, "Strike_R").unwrap();
     b.play_card(i2, Some(0)).unwrap();
-    b.run_until_idle(&mut rng(2));
+    b.run_until_idle();
     assert_eq!(b.monsters[0].creature.current_health, hp0 - 10 - 13);
 }
 
@@ -121,7 +121,7 @@ fn status_unplayable_without_medical_kit() {
     b.relics_ctx.has_medical_kit = true;
     let i = find_hand(&b, "Wound").unwrap();
     assert!(b.play_card(i, None).is_ok());
-    b.run_until_idle(&mut rng(1));
+    b.run_until_idle();
     // Wound：消耗型状态 → 消耗堆（静态 exhaust 标志）
     assert!(find_hand(&b, "Wound").is_none());
 }
@@ -143,7 +143,7 @@ fn x_cost_snapshot_and_zero_energy_pass() {
     let i = find_hand(&b, "Whirlwind").unwrap();
     // X 费：能量校验恒过（cost=-1），energyOnUse 快照 2；WhirlwindAction 消耗全部快照能量
     assert!(b.play_card(i, Some(0)).is_ok());
-    b.run_until_idle(&mut rng(2));
+    b.run_until_idle();
     assert_eq!(b.energy, 0, "X 费卡由其动作本体扣能");
     // 2 点能量 → 2 次全体伤害（baseDamage 5，怪 60 血）
     assert_eq!(b.monsters[0].creature.current_health, 60 - 10);
@@ -167,7 +167,7 @@ fn ethereal_exhausts_at_end_of_turn() {
     let mut b = fixture(&[("Dazed", false), ("Defend_R", false)]);
     b.game_hand_size = 0; // 隔离：新回合不抽牌，断言回合末状态本身
     b.end_turn();
-    b.run_until_idle(&mut rng(3));
+    b.run_until_idle();
     // Dazed（虚无）→ 消耗堆；Defend → 弃牌堆
     assert!(b.exhaust_pile.group.iter().any(|c| c.st().id == "Dazed"));
     assert!(b.discard_pile.group.iter().any(|c| c.st().id == "Defend_R"));
@@ -179,7 +179,7 @@ fn self_retain_returns_to_hand() {
     let mut b = fixture(&[("Perseverance", false), ("Defend_R", false)]);
     b.game_hand_size = 0; // 隔离：新回合不抽牌
     b.end_turn();
-    b.run_until_idle(&mut rng(3));
+    b.run_until_idle();
     // Perseverance（selfRetain）留在手牌；Defend 弃牌
     assert!(find_hand(&b, "Perseverance").is_some(), "自保留卡回手");
     assert!(b.discard_pile.group.iter().any(|c| c.st().id == "Defend_R"));
@@ -191,7 +191,7 @@ fn runic_pyramid_skips_end_of_turn_discard() {
     let mut b = fixture(&[("Strike_R", false), ("Defend_R", false)]);
     b.relics_ctx.has_runic_pyramid = true;
     b.end_turn();
-    b.run_until_idle(&mut rng(4));
+    b.run_until_idle();
     assert_eq!(b.hand.group.len(), 2, "拉尼卡金字塔：回合末不弃牌");
     assert!(b.discard_pile.group.is_empty());
 }

@@ -68,7 +68,28 @@ impl CardInst {
 
     /// `canUpgrade`（记录 02 §3）：默认单次；CURSE/STATUS 不可。
     pub fn can_upgrade(&self) -> bool {
+        // Searing Blow：无限升级（canUpgrade 恒 true，记录 02 §3）
+        if self.st().id == "Searing Blow" {
+            return true;
+        }
         !matches!(self.st().kind, CardType::Curse | CardType::Status) && !self.upgraded
+    }
+
+    /// 应用升级（锻造/测试路径）：标准卡置位 upgraded；Searing Blow 走 misc 累进。
+    /// 83 张 custom_upgrade 卡的其余特例在批次 3 逐个转译。
+    pub fn apply_upgrade(&mut self) {
+        if !self.can_upgrade() {
+            return;
+        }
+        if self.st().id == "Searing Blow" {
+            self.misc += 4 + self.times_upgraded as i32;
+            self.times_upgraded += 1;
+            self.upgraded = true;
+            return;
+        }
+        self.upgraded = true;
+        self.times_upgraded += 1;
+        self.cost_for_turn = self.eff_cost();
     }
 
     /// 从静态表新建（cost_for_turn = 生效费用；升级费用卡同步，原版 upgradeBaseCost 联动语义）。
@@ -158,6 +179,14 @@ pub struct Monster {
 }
 
 impl Monster {
+    /// 脚本怪意图：当前招式为攻击（Some）即攻击意图（真怪 Intent 在批次 3.9）。
+    pub fn is_attacking_intent(&self) -> bool {
+        self.script
+            .get(self.move_idx.min(self.script.len().saturating_sub(1)))
+            .map(|m| m.is_some())
+            .unwrap_or(false)
+    }
+
     pub fn scripted(name: &str, hp: i32, script: Vec<Option<i32>>) -> Self {
         Self {
             creature: Creature::new(name, hp, false),
@@ -191,8 +220,32 @@ pub struct BattleState {
     /// 充能球（空槽占位补齐；批次 3.8 完整化）。
     pub orbs: Vec<crate::orb::Orb>,
     pub max_orbs: usize,
+    /// 战斗期 RNG（shuffle/card_random/ai/misc）——4.1 接线。
+    pub rngs: BattleRngs,
     /// 遗物/神龛事实占位（批次 3.6 接入后由 RunState 查询）。
     pub relics_ctx: RelicCtx,
+}
+
+/// 战斗期 RNG 子集（4.1 接线）：每层重播种 （记录 01 §4）。
+/// monsterHp 流在怪物批次（3.9）加入。
+#[derive(Clone, Debug)]
+pub struct BattleRngs {
+    pub shuffle: sts_data::rng::StsRandom,
+    pub card_random: sts_data::rng::StsRandom,
+    pub ai: sts_data::rng::StsRandom,
+    pub misc: sts_data::rng::StsRandom,
+}
+
+impl BattleRngs {
+    pub fn new(seed: i64, floor_num: i64) -> Self {
+        let s = seed.wrapping_add(floor_num);
+        Self {
+            shuffle: sts_data::rng::StsRandom::new(s),
+            card_random: sts_data::rng::StsRandom::new(s),
+            ai: sts_data::rng::StsRandom::new(s),
+            misc: sts_data::rng::StsRandom::new(s),
+        }
+    }
 }
 
 /// 遗物侧事实（批次 3.6 前手工测试构造）。
@@ -234,6 +287,7 @@ impl BattleState {
             is_battle_over: false,
             orbs: Vec::new(),
             max_orbs: 0,
+            rngs: BattleRngs::new(0, 0),
             relics_ctx: RelicCtx::default(),
         };
         for (sid, up) in deck {
@@ -244,6 +298,11 @@ impl BattleState {
         s
     }
 
+    /// 幕/层转换时重播种（nextRoomTransition 等价，记录 01 §7-5）。
+    pub fn set_rng_seed(&mut self, seed: i64, floor_num: i64) {
+        self.rngs = BattleRngs::new(seed, floor_num);
+    }
+
     fn next_uuid(&mut self) -> u64 {
         let u = self.uuid_next;
         self.uuid_next += 1;
@@ -252,7 +311,7 @@ impl BattleState {
 
     /// `preBattlePrep`（记录 09 §9）：洗牌建抽牌堆、清场、准备能量；随后开场序列由
     /// `start_battle` 完成（waitTimer 后的 16 步动作序列的即时等价）。
-    pub fn start_battle(&mut self, shuffle_rng: &mut sts_data::rng::StsRandom) {
+    pub fn start_battle(&mut self) {
         self.mgr.clear();
         // drawPile.initializeDeck(masterDeck)：makeSameInstanceOf 拷贝 → shuffle → innate/瓶装置顶（TODO 3.x）
         let copies: Vec<CardInst> = self
@@ -268,7 +327,9 @@ impl BattleState {
             c.uuid = self.next_uuid();
             self.draw_pile.add_top(c);
         }
-        self.draw_pile.shuffle(shuffle_rng);
+        let mut sh = self.rngs.shuffle.copy();
+        self.draw_pile.shuffle(&mut sh);
+        self.rngs.shuffle = sh;
         self.hand.group.clear();
         self.discard_pile.group.clear();
         self.exhaust_pile.group.clear();
@@ -350,43 +411,43 @@ impl BattleState {
 
     /// 推进一步：一次消费一个动作（或一个 cardQueue 项 / 一个怪物回合）。
     /// 返回是否仍在执行（false = WaitingOnUser 且全部队列空）。
-    pub fn tick(&mut self, rng: &mut sts_data::rng::StsRandom) -> bool {
+    pub fn tick(&mut self) -> bool {
         let m = &mut self.mgr;
         match m.phase {
-            Phase::WaitingOnUser => self.get_next_action(rng),
+            Phase::WaitingOnUser => self.get_next_action(),
             Phase::ExecutingActions => {
                 // 即时模型：currentAction 在取出当帧内完成（记录 01 §3 update 的收敛态）
                 m.phase = Phase::WaitingOnUser;
-                self.get_next_action(rng)
+                self.get_next_action()
             }
         }
     }
 
     /// 运行到重新等待玩家（测试与批量模拟用）。
-    pub fn run_until_idle(&mut self, rng: &mut sts_data::rng::StsRandom) {
-        while self.tick(rng) {}
+    pub fn run_until_idle(&mut self) {
+        while self.tick() {}
     }
 
     /// `getNextAction` 的六分支优先级（记录 01 §3，顺序不得改动）。
-    fn get_next_action(&mut self, rng: &mut sts_data::rng::StsRandom) -> bool {
+    fn get_next_action(&mut self) -> bool {
         // 1. actions
         if let Some(action) = self.mgr.actions.pop_front() {
             self.mgr.phase = Phase::ExecutingActions;
             self.mgr.has_control = true;
-            self.execute_action(action, rng);
+            self.execute_action(action);
             return true;
         }
         // 2. preTurnActions
         if let Some(action) = self.mgr.pre_turn.pop_front() {
             self.mgr.phase = Phase::ExecutingActions;
-            self.execute_action(action, rng);
+            self.execute_action(action);
             return true;
         }
         // 3. cardQueue —— 打卡全时序（记录 09 §1 阶段 B/C/D）
         if !self.mgr.card_queue.is_empty() {
             self.mgr.using_card = true;
             let item = self.mgr.card_queue.remove(0);
-            self.consume_card_queue_item(item, rng);
+            self.consume_card_queue_item(item);
             return true;
         }
         // 4. 怪物排队
@@ -440,7 +501,7 @@ impl BattleState {
         }
         // 6. 新回合推进
         if self.mgr.turn_has_ended && !self.monsters_basically_dead() {
-            self.begin_player_turn(rng);
+            self.begin_player_turn();
             return true;
         }
         // 全空 → 等待玩家
@@ -505,6 +566,16 @@ impl BattleState {
         self.check_battle_over();
     }
 
+    /// 卡牌被消耗后的统一钩子（DarkEmbrace/FeelNoPain/Sentinel）。
+    /// 消耗堆落位由调用方完成；count = 本次消耗张数。
+    pub fn after_card_exhausted(&mut self, card_id: &str, count: i32) {
+        self.on_exhaust_hook(count);
+        // Sentinel：若从手牌被消耗 → +2 能量（sentinelOnExhaust）
+        if card_id == "Sentinel" {
+            self.energy = (self.energy + 2).min(999);
+        }
+    }
+
     /// 消耗钩子（CardGroup.moveToExhaustPile 后段）：DarkEmbrace 抽牌 / FeelNoPain 格挡。
     /// 每消耗 1 张调用一次（count 语义由调用方展开）。
     pub fn on_exhaust_hook(&mut self, count: i32) {
@@ -567,10 +638,14 @@ impl BattleState {
         let n = self.hand.group.len() as i32;
         if is_random {
             for _ in 0..amount.min(n) {
-                // 随机弃：cardRandomRng（TODO 4.1 接线；取顶占位）
-                if let Some(c) = self.hand.group.pop() {
-                    self.discard_pile.add_top(c);
+                // DiscardAction 随机：getRandomCard(cardRandomRng)（记录 09 §5）
+                let len = self.hand.group.len();
+                if len == 0 {
+                    break;
                 }
+                let idx = self.rngs.card_random.random_int_inclusive(len as i32 - 1) as usize;
+                let c = self.hand.group.remove(idx);
+                self.discard_pile.add_top(c);
             }
         } else if n <= amount {
             while let Some(c) = self.hand.group.pop() {
@@ -594,7 +669,7 @@ impl BattleState {
     }
 
     /// 新回合序列（记录 01 §3-6 / 09 §9 的即时等价）。
-    fn begin_player_turn(&mut self, _rng: &mut sts_data::rng::StsRandom) {
+    fn begin_player_turn(&mut self) {
         // 1) atEndOfRound（记录 03 §10：先玩家全体 powers，后每只存活怪物的 powers）
         let mut deferred: Vec<GameAction> = Vec::new();
         // 玩家侧：回合型减益递减 + 毒 + LoseStrength（Flex：回合末收回力量）
@@ -739,7 +814,7 @@ impl BattleState {
         }
     }
 
-    fn execute_action(&mut self, action: GameAction, rng: &mut sts_data::rng::StsRandom) {
+    fn execute_action(&mut self, action: GameAction) {
         match action {
             GameAction::Damage { target, info } => self.exec_damage(target, info),
             GameAction::LoseHp { target, amount, .. } => {
@@ -837,11 +912,13 @@ impl BattleState {
                     // 回合充能（原版寄生在 PlayerTurnEffect；Ice Cream/Conserve TODO 3.6）
                     self.energy = self.energy_master;
                 }
-                self.exec_draw_card(amount, rng);
+                self.exec_draw_card(amount);
             }
             GameAction::EmptyDeckShuffle => {
                 // 构造器遗物 onShuffle TODO(3.6)
-                self.discard_pile.shuffle(rng);
+                let mut r = self.rngs.shuffle.copy();
+                self.discard_pile.shuffle(&mut r);
+                self.rngs.shuffle = r;
             }
             GameAction::GainEnergy { amount } => {
                 self.energy = (self.energy + amount).min(999);
@@ -917,8 +994,9 @@ impl BattleState {
                     let uuid = self.next_uuid();
                     let c = CardInst::new(sid, upgraded, uuid);
                     if random_spot {
-                        // addToRandomSpot：cardRandomRng（TODO 4.1 接线；中位占位）
-                        let pos = self.draw_pile.group.len() / 2;
+                        // addToRandomSpot：cardRandomRng.random(size-1)（CardGroup:514）
+                        let len = self.draw_pile.group.len();
+                        let pos = if len == 0 { 0 } else { self.rngs.card_random.random_int_inclusive(len as i32 - 1) as usize };
                         self.draw_pile.group.insert(pos, c);
                     } else {
                         self.draw_pile.add_top(c);
@@ -1010,7 +1088,7 @@ impl BattleState {
     }
 
     /// DrawCardAction（记录 09 §4）：手满钳制、牌堆空洗牌分解的即时等价。
-    fn exec_draw_card(&mut self, mut amount: i32, rng: &mut sts_data::rng::StsRandom) {
+    fn exec_draw_card(&mut self, mut amount: i32) {
         if self.player.powers.iter().any(|p| p.kind == PowerKind::NoDraw) {
             return;
         }
@@ -1033,7 +1111,7 @@ impl BattleState {
                 }
                 // EmptyDeckShuffle 语义：弃牌堆全部移入抽牌堆后洗牌（遗物 onShuffle TODO 3.6）
                 self.draw_pile.group.append(&mut self.discard_pile.group);
-                self.draw_pile.shuffle(rng);
+                self.draw_pile.shuffle(&mut self.rngs.shuffle);
                 continue;
             }
             let card = self.draw_pile.pop_top().unwrap();
@@ -1112,7 +1190,7 @@ impl BattleState {
 
     /// 记录 09 §1 阶段 B→E 的即时等价：canUse → onPlayCard 钩子链 → useCard
     /// （calculateCardDamage → use 效果入队 → UseCardAction 等价 → 手牌移除 → 扣能）。
-    fn consume_card_queue_item(&mut self, item: CardQueueItem, _rng: &mut sts_data::rng::StsRandom) {
+    fn consume_card_queue_item(&mut self, item: CardQueueItem) {
         let Some(uuid) = item.card else {
             // null 项 = callEndOfTurnActions（回合末触发链）——由 end_turn 入队占位，TODO 3.5
             return;
@@ -1157,7 +1235,7 @@ impl BattleState {
                 let mut c = card;
                 c.reset_attributes();
                 self.exhaust_pile.add_top(c);
-                self.on_exhaust_hook(1);
+                self.after_card_exhausted(st.id, 1);
             } else {
                 let mut c = card;
                 c.reset_attributes();

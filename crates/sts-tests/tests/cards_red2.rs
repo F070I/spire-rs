@@ -48,7 +48,7 @@ fn play(b: &mut BattleState, id: &str, target: Option<usize>) {
     b.energy = b.energy.max(9); // 能量充足化：本批测试专测卡效果而非费用
     let i = find_hand(b, id).expect(id);
     b.play_card(i, target).unwrap();
-    b.run_until_idle(&mut rng(21));
+    b.run_until_idle();
 }
 
 #[test]
@@ -56,7 +56,7 @@ fn metallicize_block_each_round() {
     let mut b = fixture2(&[("Metallicize", false), ("Defend_R", false)]);
     play(&mut b, "Metallicize", None);
     b.end_turn();
-    b.run_until_idle(&mut rng(22));
+    b.run_until_idle();
     // 回合末 +3 格挡 → 怪 10 攻吃 3 剩 7 → 下一回合掉格挡后应从 3 起步？
     // 顺序：endTurn → 怪回合（格挡 3 吃伤）→ 新回合：Metallicize 在 atEndOfRound 已加，掉格挡在 atStartOfTurn
     // 精确断言：回合末时序后玩家仍有格挡 ≥ 3（本回合格挡3被10攻击穿透7）
@@ -71,7 +71,7 @@ fn barricade_prevents_block_loss() {
     play(&mut b, "Defend_R", None);
     assert_eq!(b.player.current_block, 5);
     b.end_turn();
-    b.run_until_idle(&mut rng(23));
+    b.run_until_idle();
     // 屏障：格挡保留到下回合（本回合 5 + 顶怪 10 攻 → 剩 0？5 被 10 吃穿 → 0）
     // 格挡先吃伤再"保留"——5 格挡 + 10 攻 = 穿透 5
     assert_eq!(b.player.current_block, 0);
@@ -82,7 +82,7 @@ fn barricade_prevents_block_loss() {
         .powers
         .push(sts_core::power::Power::new(PowerKind::Barricade, -1));
     b2.end_turn();
-    b2.run_until_idle(&mut rng(24));
+    b2.run_until_idle();
     assert_eq!(b2.player.current_block, 5, "屏障：15 - 10 攻，新回合不掉格挡");
 }
 
@@ -91,7 +91,7 @@ fn demon_form_grows_each_turn() {
     let mut b = fixture2(&[("Demon Form", false), ("Defend_R", false)]);
     play(&mut b, "Demon Form", None);
     b.end_turn();
-    b.run_until_idle(&mut rng(25));
+    b.run_until_idle();
     // 回合开始（抽牌后）：+2 力量
     assert_eq!(
         b.player
@@ -185,7 +185,7 @@ fn evolve_draws_on_status_draw() {
     b.draw_pile.add_top(dazed); // 顶 = 先抽到 Dazed
     b.draw_pile.add_top(defend);
     b.mgr.add_bottom(sts_core::action::GameAction::DrawCard { amount: 2, end_turn_draw: false });
-    b.run_until_idle(&mut rng(26));
+    b.run_until_idle();
     // 抽 2：Defend（正常）→ Dazed（状态 → Evolve 抽 1）——但抽完已空，Evolve 不再产出
     assert!(b.hand.group.iter().any(|c| c.st().id == "Dazed"));
     assert!(b.hand.group.iter().any(|c| c.st().id == "Defend_R"));

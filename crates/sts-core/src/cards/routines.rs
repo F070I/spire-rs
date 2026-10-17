@@ -9,6 +9,7 @@
 use crate::action::{GameAction, RoutineCall, TargetRef};
 use crate::battle::{BattleState, CardInst};
 use crate::cards::{attack_info, damage_matrix};
+use crate::damage::DamageInfo;
 use crate::power::DamageType;
 
 type RoutineFn = fn(&mut BattleState, &RoutineCall);
@@ -31,6 +32,16 @@ const ROUTINES: &[(&str, RoutineFn)] = &[
     ("FeedAction", feed),
     // actions/unique/InfernalBladeAction：随机卡进手（0 费）——TODO 4.1 RNG
     ("InfernalBladeAction", infernal_blade),
+    // actions/unique/VampireDamageAllEnemiesAction：全体伤害 + 实扣血吸血
+    ("VampireDamageAllEnemiesAction", vampire_all),
+    // actions/unique/ExhumeAction：消耗堆取 1 回手（选择屏 TODO 批次 6，占位取最新）
+    ("ExhumeAction", exhume),
+    // actions/unique/SecondWindAction（BlockPerNonAttackAction）：消耗非攻击，每张 block
+    ("SecondWindAction", second_wind),
+    // actions/unique/ExhaustAllNonAttackAction
+    ("ExhaustAllNonAttackAction", exhaust_all_non_attack),
+    // actions/unique/AttackDamageRandomEnemyAction：随机敌人 amount 伤
+    ("AttackDamageRandomEnemyAction", attack_random),
 ];
 
 pub fn run(b: &mut BattleState, call: &RoutineCall) {
@@ -98,7 +109,9 @@ fn exhaust_action(b: &mut BattleState, call: &RoutineCall) {
 
 /// 消耗一张手牌（进消耗堆 + Blood for Blood 费用联动）。
 pub fn exhaust_one(b: &mut BattleState, c: CardInst) {
+    let id = c.st().id;
     b.exhaust_pile.add_top(c);
+    b.after_card_exhausted(id, 1);
     blood_for_blood_trigger(b);
 }
 
@@ -162,9 +175,98 @@ fn feed(b: &mut BattleState, call: &RoutineCall) {
     }
 }
 
+/// SecondWindAction：消耗全部非攻击牌，每张获得 block 格挡。
+fn second_wind(b: &mut BattleState, call: &RoutineCall) {
+    let n = b
+        .hand
+        .group
+        .iter()
+        .filter(|c| c.st().kind != sts_data::gen::CardType::Attack)
+        .count();
+    let mut i = 0;
+    while i < b.hand.group.len() {
+        if b.hand.group[i].st().kind != sts_data::gen::CardType::Attack {
+            let c = b.hand.group.remove(i);
+            exhaust_one(b, c);
+        } else {
+            i += 1;
+        }
+    }
+    if n > 0 {
+        b.player.add_block(call.amount * n as i32);
+    }
+}
+
+/// ExhaustAllNonAttackAction：消耗全部非攻击牌。
+fn exhaust_all_non_attack(b: &mut BattleState, _call: &RoutineCall) {
+    let mut i = 0;
+    while i < b.hand.group.len() {
+        if b.hand.group[i].st().kind != sts_data::gen::CardType::Attack {
+            let c = b.hand.group.remove(i);
+            exhaust_one(b, c);
+        } else {
+            i += 1;
+        }
+    }
+}
+
+/// AttackDamageRandomEnemyAction：随机存活敌人 amount 伤（cardRandomRng TODO 4.1 语义对齐：原版用该流）。
+fn attack_random(b: &mut BattleState, call: &RoutineCall) {
+    let alive: Vec<usize> = b
+        .monsters
+        .iter()
+        .enumerate()
+        .filter(|(_, m)| !m.creature.is_dying && !m.creature.is_dead)
+        .map(|(i, _)| i)
+        .collect();
+    if alive.is_empty() {
+        return;
+    }
+    let mi = if alive.len() == 1 {
+        alive[0]
+    } else {
+        let idx = b.rngs.card_random.random_int_inclusive(alive.len() as i32 - 1) as usize;
+        alive[idx]
+    };
+    b.exec_damage(
+        TargetRef::Monster(mi),
+        DamageInfo::pure(true, call.amount, DamageType::Normal),
+    );
+}
+
 /// InfernalBladeAction：随机攻击/技能/能力卡进手（0 费）——TODO 4.1 RNG（占位不动）。
 fn infernal_blade(_b: &mut BattleState, _call: &RoutineCall) {
     // TODO 4.1：cardRng 从职业色+无色池抽卡
+}
+
+/// VampireDamageAllEnemiesAction（Reaper）：全体伤害；每目标实扣血（lastDamageTaken）合计回复。
+fn vampire_all(b: &mut BattleState, call: &RoutineCall) {
+    let base = sts_data::gen::CARDS[call.sid].base_damage;
+    let matrix = damage_matrix(b, base, DamageType::Normal);
+    let mut heal_total = 0;
+    for (mi, dmg) in matrix {
+        let alive = mi < b.monsters.len()
+            && !b.monsters[mi].creature.is_dying
+            && !b.monsters[mi].creature.is_dead;
+        if alive {
+            b.exec_damage(
+                TargetRef::Monster(mi),
+                DamageInfo::pure(false, dmg, DamageType::Normal),
+            );
+            heal_total += b.monsters[mi].creature.last_damage_taken;
+        }
+    }
+    if heal_total > 0 {
+        b.player.heal(heal_total);
+    }
+}
+
+/// ExhumeAction：消耗堆取 1 回手（TODO 批次 6 选择屏；占位取最新消耗的卡）。
+fn exhume(b: &mut BattleState, call: &RoutineCall) {
+    let _ = call;
+    if let Some(c) = b.exhaust_pile.group.pop() {
+        b.hand.add_top(c);
+    }
 }
 
 /// ModifyDamageAction：按 uuid 找到卡实例，misc += amount（Rampage 永久成长）。

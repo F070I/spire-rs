@@ -1,6 +1,6 @@
 # 模块记录：批次 3.2 铁甲战士卡牌灌注
 
-状态：🚧 进行中——52/75 张已转译，本记录跟踪进度
+状态：✅ **75/75 全部转译完成**（2026-10-17）；残留例程/选择屏占位见清账
 实现位置：`crates/sts-core/src/cards/red.rs` + `routines.rs` + `tests/cards_red.rs`
 
 ## 已转译清单（52 张）
@@ -8,6 +8,7 @@
 批次 A（基建样板）：Bash, Body Slam, Clash*, Clothesline, Headbutt*, Heavy Blade, Iron Wave, Perfected Strike, Pommel Strike, Shrug It Off, Thunderclap, Twin Strike, Warcry*, Wild Strike（*含选择屏/例程 TODO）
 批次 B（试点）：Anger, Armaments, Blood for Blood, Bloodletting, Burning Pact, Cleave, Dropkick, Flex, Havoc*, Inflame, Intimidate, Rage, Rampage, True Grit, Whirlwind
 批次 C（第 2 批）：Barricade, Battle Trance, Berserk, Bludgeon, Carnage, Combust, Corruption, Dark Embrace, Demon Form, Disarm, Double Tap, Entrench, Evolve, Feed, Feel No Pain, Fiend Fire, Flame Barrier, Ghostly Armor, Hemokinesis, Immolate, Infernal Blade*, Juggernaut, Limit Break, Metallicize
+批次 D（收尾）：Defend_R, Strike_R（显式化）, Exhume*, Impervious, Offering, Power Through, Pummel, Reaper, Reckless Charge, Rupture*, Searing Blow, Second Wind, Seeing Red, Sentinel, Sever Soul, Shockwave, Spot Weakness, Sword Boomerang, Uppercut
 
 ## 机制新增（随试点落地）
 
@@ -18,12 +19,21 @@
 - 例程新增：FiendFireAction（消耗整手按张伤害）、LimitBreakAction（力量叠加翻倍）、FeedAction（斩杀加最大生命）、InfernalBladeAction（TODO 4.1 随机池）
 - Blood for Blood 费用联动：消耗时手/抽/弃牌堆 B4B -1（挂接点核对 TODO 3.10）
 
+## 4.1 RNG 接线（随本批完成）
+
+- BattleRngs：shuffle/card_random/ai/misc 四条流（seed+floorNum 每层重播种；monsterHp 留 3.9）
+- 回填占位：随机弃牌（DiscardAction）、addToRandomSpot、随机敌人（Sword Boomerang）、洗牌（开局/牌堆空）
+- tick/run_until_idle/start_battle 签名去 rng 参数（流由 BattleState 持有）
+
 ## 数值纠错记录（源码 > 记忆）
 
 - Bloodletting 是 **0 费**卡（回 2/3 能）
 - True Grit baseBlock=**7**（非 5）
 - Rampage misc 成长 +**5**（升级 +3 → 8）
 - Weak 只在攻击方 give 段 ×0.75——被打方身上的 Weak 不影响来伤害（第二次踩同一坑，指南需强调）
+- Reaper：4 伤全体 + 每点实扣血回 1（不是 20 伤）
+- Reckless Charge：7 伤（非 14）；Sever Soul **无自身消耗**；Spot Weakness **不造成伤害**（纯力量条件卡）
+- Second Wind：SW 自身无消耗标志，格挡数 = 动作执行时的手牌非攻击数
 
 ## 选择屏 / 随机占位清单（批次 6 / 4.1 清账）
 
@@ -37,7 +47,11 @@
 
 ## 测试结果
 
-85 测试通过（第 2 批新增 10），clippy 0。
+96 测试通过（收尾批新增 11），clippy 0。红卡全量完成。
+
+## Searing Blow 特例
+
+- can_upgrade 恒 true（ID 判定）；apply_upgrade 走 misc 累进（+4+timesUpgraded）；eff_damage 路径用 base_damage + misc。83 张 custom_upgrade 其余卡在批次 3 逐个转译（extrator 已标记）。
 
 ## 下一批
 
