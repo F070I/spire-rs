@@ -889,22 +889,105 @@ impl RunState4b {
         let Some(opt) = ev.options.get(index) else {
             return Err("选项越界");
         };
+        // 效果应用（复合展开依序执行）
         match opt.effect {
+            crate::event::Effect::And(effects) => {
+                for e in effects {
+                    self.apply_effect(e);
+                }
+            }
+            single => self.apply_effect(&single),
+        }
+        self.event = None;
+        self.phase = RoomPhase::RoomDone;
+        Ok(())
+    }
+
+    /// 单效果应用（choose_event 与复合 And 的公共实现）。
+    fn apply_effect(&mut self, effect: &crate::event::Effect) {
+        match *effect {
             crate::event::Effect::GainGold(g) => self.gold += g,
             crate::event::Effect::LoseGold(g) => self.gold = (self.gold - g).max(0),
+            crate::event::Effect::LoseGoldAll => self.gold = 0,
             crate::event::Effect::LoseHp(h) => {
                 self.player_hp = (self.player_hp - h).max(1); // 事件伤害不致死（原版语义）
             }
+            crate::event::Effect::LoseHpMaxPct(p) => {
+                let dmg = self.player_max_hp * p / 100;
+                self.player_hp = (self.player_hp - dmg).max(1);
+            }
             crate::event::Effect::GainHp(h) => {
                 self.player_hp = (self.player_hp + h).min(self.player_max_hp);
+            }
+            crate::event::Effect::HealMaxPct(p) => {
+                self.player_hp = (self.player_hp + self.player_max_hp * p / 100)
+                    .min(self.player_max_hp);
+            }
+            crate::event::Effect::HealFull => self.player_hp = self.player_max_hp,
+            crate::event::Effect::GainMaxHp(n) => {
+                self.player_max_hp += n;
+                self.player_hp += n;
             }
             crate::event::Effect::UpgradeRandom => {
                 if let Some(c) = self.deck.iter_mut().find(|c| c.can_upgrade()) {
                     c.apply_upgrade();
                 }
             }
+            crate::event::Effect::UpgradeAll => {
+                for c in self.deck.iter_mut() {
+                    if c.can_upgrade() {
+                        c.apply_upgrade();
+                    }
+                }
+            }
+            crate::event::Effect::UpgradeStrikesDefends => {
+                for c in self.deck.iter_mut() {
+                    if (c.st().id.starts_with("Strike_") || c.st().id.starts_with("Defend_"))
+                        && c.can_upgrade()
+                    {
+                        c.apply_upgrade();
+                    }
+                }
+            }
             crate::event::Effect::RemoveCard => {
                 self.deck.pop();
+            }
+            crate::event::Effect::RemoveAllCurses => {
+                // Fountain of Cleansing：不可移除诅咒豁免（AscendersBane）
+                self.deck.retain(|c| {
+                    c.st().kind != sts_data::gen::CardType::Curse
+                        || c.st().id == "AscendersBane"
+                });
+            }
+            crate::event::Effect::RemoveTypedCards => {
+                // Falling：技能/能力/攻击各移除一张（原版取各类型顶卡，简化为第一张）
+                for ty in [
+                    sts_data::gen::CardType::Skill,
+                    sts_data::gen::CardType::Power,
+                    sts_data::gen::CardType::Attack,
+                ] {
+                    if let Some(pos) = self.deck.iter().position(|c| c.st().kind == ty) {
+                        self.deck.remove(pos);
+                    }
+                }
+            }
+            crate::event::Effect::RemoveRelic => {
+                // N'loth/WeMeetAgain：移除一件遗物（数值效果不回退——近似，TODO 3.6）
+                self.relics.pop();
+            }
+            crate::event::Effect::DuplicateCard => {
+                if let Some(c) = self.deck.last().cloned() {
+                    self.deck.push(CardInst::new(c.sid, c.upgraded, self.uuid_next));
+                    self.uuid_next += 1;
+                }
+            }
+            crate::event::Effect::TransformCard => {
+                // Transmogrifier/Drug Dealer：随机卡 → 随机新卡（常规池）
+                if self.deck.pop().is_some() {
+                    let sid = self.random_obtainable_card_sid();
+                    self.deck.push(CardInst::new(sid, false, self.uuid_next));
+                    self.uuid_next += 1;
+                }
             }
             crate::event::Effect::GainCommonRelic => {
                 self.apply_relic_effect("Vajra");
@@ -914,6 +997,58 @@ impl RunState4b {
                 self.apply_relic_effect("Girya");
                 self.relics.push("Girya");
             }
+            crate::event::Effect::GainRandomRelic => {
+                // 原版 returnRandomRelicTier：miscRng 抽稀有度——三档均分近似
+                let roll = self.rngs.misc.random_int_inclusive(2);
+                let id = match roll {
+                    0 => "Vajra",
+                    1 => "Orichalcum",
+                    _ => "Girya",
+                };
+                self.apply_relic_effect(id);
+                self.relics.push(id);
+            }
+            crate::event::Effect::GainRelic(id) => {
+                self.apply_relic_effect(id);
+                self.relics.push(id);
+            }
+            crate::event::Effect::GainPotion => {
+                if let Some(slot) = self.potions.iter().position(|s| s.is_none()) {
+                    self.potions[slot] = Some("Fire Potion"); // TODO 4.1：potionRng 按稀有度抽
+                }
+            }
+            crate::event::Effect::LosePotion => {
+                if let Some(slot) = self.potions.iter().position(|s| s.is_some()) {
+                    self.potions[slot] = None;
+                }
+            }
+            crate::event::Effect::GainRandomCard => {
+                let sid = self.random_obtainable_card_sid();
+                self.deck.push(CardInst::new(sid, false, self.uuid_next));
+                self.uuid_next += 1;
+            }
+            crate::event::Effect::GainColorlessCards(n) => {
+                let pool: Vec<usize> = sts_data::gen::CARDS
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, c)| {
+                        c.color == sts_data::gen::CardColor::Colorless
+                            && matches!(
+                                c.kind,
+                                sts_data::gen::CardType::Attack
+                                    | sts_data::gen::CardType::Skill
+                                    | sts_data::gen::CardType::Power
+                            )
+                    })
+                    .map(|(i, _)| i)
+                    .collect();
+                for _ in 0..n {
+                    let i =
+                        self.rngs.card_random.random_int_inclusive(pool.len() as i32 - 1) as usize;
+                    self.deck.push(CardInst::new(pool[i], false, self.uuid_next));
+                    self.uuid_next += 1;
+                }
+            }
             crate::event::Effect::AddCurse => {
                 let sid = sts_data::gen::CARDS
                     .iter()
@@ -922,11 +1057,37 @@ impl RunState4b {
                 self.deck.push(CardInst::new(sid, false, self.uuid_next));
                 self.uuid_next += 1;
             }
+            crate::event::Effect::AddCurseCard(id) => {
+                let sid = sts_data::gen::CARDS
+                    .iter()
+                    .position(|c| c.id == id)
+                    .unwrap_or(0);
+                self.deck.push(CardInst::new(sid, false, self.uuid_next));
+                self.uuid_next += 1;
+            }
+            crate::event::Effect::And(_) => {} // 复合只在顶层展开（无嵌套使用场景）
             crate::event::Effect::Nothing => {}
         }
-        self.event = None;
-        self.phase = RoomPhase::RoomDone;
-        Ok(())
+    }
+
+    /// 随机可获得卡（A/S/P 常规池；cardRandomRng）。
+    fn random_obtainable_card_sid(&mut self) -> usize {
+        let pool: Vec<usize> = sts_data::gen::CARDS
+            .iter()
+            .enumerate()
+            .filter(|(_, c)| {
+                c.color != sts_data::gen::CardColor::Curse
+                    && matches!(
+                        c.kind,
+                        sts_data::gen::CardType::Attack
+                            | sts_data::gen::CardType::Skill
+                            | sts_data::gen::CardType::Power
+                    )
+            })
+            .map(|(i, _)| i)
+            .collect();
+        let i = self.rngs.card_random.random_int_inclusive(pool.len() as i32 - 1) as usize;
+        pool[i]
     }
 
     /// 事件：跳过。
@@ -935,6 +1096,12 @@ impl RunState4b {
             self.event = None;
             self.phase = RoomPhase::RoomDone;
         }
+    }
+
+    /// 测试辅助：强制进入指定事件（跳过地图导航）。
+    pub fn force_event(&mut self, id: &str) {
+        self.event = Some((crate::event::get(id).id, -1));
+        self.phase = RoomPhase::EventChoice;
     }
 
     /// 篝火锻造：升级主牌组一张卡（兼容旧调用）。
