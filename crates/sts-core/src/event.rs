@@ -356,6 +356,79 @@ pub static EVENTS: &[EventDef] = &[
             EventOption { text: "离开", effect: Effect::Nothing },
         ],
     },
+    EventDef {
+        id: "Dead Adventurer",
+        title: "死去的冒险者",
+        body: "冒险者的尸体旁散落着物品。",
+        options: &[
+            EventOption { text: "搜刮（+50 金，失去 6 生命）", effect: Effect::GainGold(50) },
+            EventOption { text: "埋葬（+普通遗物）", effect: Effect::GainCommonRelic },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "The Spirits",
+        title: "低语之灵",
+        body: "灵体的低语围绕着你。",
+        options: &[
+            EventOption { text: "倾听（移除一张卡）", effect: Effect::RemoveCard },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "Mysterious Sphere",
+        title: "神秘球体",
+        body: "球体内部有什么在流动。",
+        options: &[
+            EventOption { text: "触摸（失去 5 生命，+稀有遗物）", effect: Effect::GainRareRelic },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "The Top",
+        title: "陀螺",
+        body: "一个精美的陀螺静静躺在地上。",
+        options: &[
+            EventOption { text: "捡起（+普通遗物）", effect: Effect::GainCommonRelic },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "Ghosts",
+        title: "鬼影",
+        body: "鬼影在雾中若隐若现。",
+        options: &[
+            EventOption { text: "跟随（+50 金，失去 8 生命）", effect: Effect::GainGold(50) },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "The Test",
+        title: "试炼",
+        body: "一个声音要求你证明自己。",
+        options: &[
+            EventOption { text: "接受（失去 12 生命，+稀有遗物）", effect: Effect::GainRareRelic },
+            EventOption { text: "拒绝", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "Bird Cave",
+        title: "鸟洞",
+        body: "洞穴深处传来鸟鸣。",
+        options: &[
+            EventOption { text: "探索（+普通遗物，失去 4 生命）", effect: Effect::GainCommonRelic },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "Vampires",
+        title: "吸血鬼",
+        body: "吸血鬼提出了一个危险的交易。",
+        options: &[
+            EventOption { text: "接受（移除打击卡，+诅咒）", effect: Effect::AddCurse },
+            EventOption { text: "拒绝", effect: Effect::Nothing },
+        ],
+    },
 ];
 
 /// 按 ID 查事件（未知 → 首个事件兜底）。
