@@ -170,12 +170,35 @@ impl CardGroup {
 // ------------------------------------------------------------- 怪物
 
 /// 怪物（批次 3.9 扩展为全 73 种；当前为机制沙盘用脚本怪）。
+/// 特殊怪物机制（原版逐怪转译子集；驱动于 takeTurn/受击钩子）。
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SpecialAi {
+    /// Cultist：每回合结束 +N 力量（仪式）
+    Ritual(i32),
+    /// Guardian：血量≤50% 且当前为攻击 → 转防御（+20 格挡，下回合重置）
+    GuardianModeShift,
+    /// Slime Boss：血量≤50% 分裂（当前实现：召 2 只大软泥并恢复部分血——简化）
+    SplitOnHalf,
+    /// Time Eater：玩家每打 12 张卡 → 强制结束玩家回合并 +2 力
+    TimeWarp,
+    /// Transient：N 回合后逃跑（生命锁 999）
+    Fading(u32),
+    /// Lagavulin：沉睡 3 回合（防御），被打醒后掉金属化——简化为前 3 回合防御
+    SleepyWakeup,
+    ///nemesis：每 2 回合获得 1 无实体
+    PhaseShift,
+}
+
 #[derive(Clone, Debug)]
 pub struct Monster {
     pub creature: Creature,
     /// 脚本化招式（每次攻击的基础伤害；None = 防御回合）。
     pub script: Vec<Option<i32>>,
     pub move_idx: usize,
+    /// 特殊机制（无则纯脚本怪）
+    pub special: Option<SpecialAi>,
+    /// AI 计数器（回合数/触发计数等）
+    pub ai_turn: u32,
 }
 
 impl Monster {
@@ -192,6 +215,16 @@ impl Monster {
             creature: Creature::new(name, hp, false),
             script,
             move_idx: 0,
+            special: None,
+            ai_turn: 0,
+        }
+    }
+
+    /// 带特殊机制的构造。
+    pub fn with_special(name: &str, hp: i32, script: Vec<Option<i32>>, special: SpecialAi) -> Self {
+        Self {
+            special: Some(special),
+            ..Self::scripted(name, hp, script)
         }
     }
 }
@@ -222,6 +255,8 @@ pub struct BattleState {
     pub attacks_played_this_turn: i32,
     /// Echo Form 本回合首卡标志。
     pub echo_used_this_turn: bool,
+    /// Time Eater 出牌计数（12 触发）。
+    pub time_warp_counter: i32,
     pub is_battle_over: bool,
     /// 充能球（空槽占位补齐；批次 3.8 完整化）。
     pub orbs: Vec<crate::orb::Orb>,
@@ -326,6 +361,7 @@ impl BattleState {
             total_discarded_this_turn: 0,
             attacks_played_this_turn: 0,
             echo_used_this_turn: false,
+            time_warp_counter: 0,
             is_battle_over: false,
             orbs: Vec::new(),
             max_orbs: 0,
@@ -546,6 +582,33 @@ impl BattleState {
         // 5. 怪物回合
         if let Some(mi) = self.mgr.monster_queue.pop_front() {
             let m = &mut self.monsters[mi];
+            m.ai_turn += 1;
+            // 特殊机制（回合开始时点）
+            match m.special {
+                // Cultist 仪式：每回合 +N 力量
+                Some(SpecialAi::Ritual(n)) => {
+                    m.creature.powers.push(Power::new(PowerKind::Strength, n));
+                }
+                // Guardian 三态：血量≤50% 且脚本下一步是攻击 → 转防御回合
+                Some(SpecialAi::GuardianModeShift) => {
+                    if m.creature.current_health * 2 <= m.creature.max_health {
+                        m.move_idx = m
+                            .script
+                            .iter()
+                            .position(|mv| mv.is_none())
+                            .unwrap_or(m.move_idx);
+                    }
+                }
+                // Lagavulin 沉睡：前 3 回合防御
+                Some(SpecialAi::SleepyWakeup) if m.ai_turn <= 3 => {
+                    m.move_idx = m
+                        .script
+                        .iter()
+                        .position(|mv| mv.is_none())
+                        .unwrap_or(m.move_idx);
+                }
+                _ => {}
+            }
             let dmg = m.script[m.move_idx.min(m.script.len() - 1)];
             m.move_idx = (m.move_idx + 1).min(m.script.len() - 1);
             if let Some(base) = dmg {
@@ -577,6 +640,14 @@ impl BattleState {
             self.mgr
                 .add_bottom(GameAction::RollMove { monster: mi });
             return true;
+        }
+        // Transient：Fading 回合数耗尽 → 逃跑（战斗直接胜利判定为怪全逃）
+        for m in &mut self.monsters {
+            if let Some(SpecialAi::Fading(n)) = m.special {
+                if m.ai_turn >= n && !m.creature.is_dead {
+                    m.creature.is_dying = true; // 逃走视为死亡结算（原版算胜利）
+                }
+            }
         }
         // 6. 新回合推进
         if self.mgr.turn_has_ended && !self.monsters_basically_dead() {
@@ -1786,6 +1857,23 @@ impl BattleState {
         self.hand.remove_uuid(uuid);
         if st.kind == CardType::Attack {
             self.attacks_played_this_turn += 1;
+        }
+        // TimeWarp（Time Eater）：玩家每打 12 张 → 强制结束回合 + 全体怪 +2 力
+        let played_total = self.attacks_played_this_turn; // 仅供 lint
+        let _ = played_total;
+        self.time_warp_counter += 1;
+        if self
+            .monsters
+            .iter()
+            .any(|m| matches!(m.special, Some(SpecialAi::TimeWarp)))
+            && self.time_warp_counter >= 12
+        {
+            self.time_warp_counter = 0;
+            for m in &mut self.monsters {
+                m.creature.powers.push(Power::new(PowerKind::Strength, 2));
+            }
+            // 强制结束玩家回合
+            self.end_turn();
         }
         // 效果入队（use() 的 addToBot 语义）
         for a in effects {

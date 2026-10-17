@@ -9,7 +9,7 @@
 //! 未编排（后续批）：Neow、幕间转换、事件文本、存档触发点。
 
 use crate::action::{GameAction, TargetRef};
-use crate::battle::{BattleState, CardInst, Monster, RelicCtx};
+use crate::battle::{BattleState, CardInst, Monster, RelicCtx, SpecialAi};
 use crate::power::{Power, PowerKind};
 use crate::map::{generate_dungeon, MapRoomNode, MAP_HEIGHT, MAP_WIDTH, PATH_DENSITY};
 use sts_data::encounters;
@@ -444,7 +444,19 @@ impl RunState4b {
         // 怪物 AI 表（批次 3.9 第一批）：HP 区间 + 招式脚本按遭遇名查表
         let ai = sts_data::monster_ai::get(encounter);
         let hp = sts_data::monster_ai::scaled_hp(ai, 0, &mut self.monster_rng);
-        let monsters = vec![Monster::scripted(encounter, hp, ai.moves.to_vec())];
+        let special = match encounter {
+            "Cultist" => Some(SpecialAi::Ritual(3)),
+            "The Guardian" => Some(SpecialAi::GuardianModeShift),
+            "Slime Boss" => Some(SpecialAi::SplitOnHalf),
+            "Time Eater" => Some(SpecialAi::TimeWarp),
+            "Transient" => Some(SpecialAi::Fading(5)),
+            "Lagavulin" => Some(SpecialAi::SleepyWakeup),
+            "Nemesis" => Some(SpecialAi::PhaseShift),
+            _ => None,
+        };
+        let mut mon = Monster::scripted(encounter, hp, ai.moves.to_vec());
+        mon.special = special;
+        let monsters = vec![mon];
         let mut b = BattleState::new(
             self.player_hp,
             3,
