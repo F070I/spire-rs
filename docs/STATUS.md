@@ -31,6 +31,11 @@
 
 ## 剩余工作（按优先级）
 
+### 批次 6：终端 UI ✅（2026-10-17 可玩骨架）
+- 行协议：stdin 命令 → PlayerCommand 等价 → stdout 渲染（Neow/地图/战斗/奖励/存读档）
+- 冒烟验证全链通：Neow→选节点→Bash 出牌→结算
+- crossterm 暂缓（工具链缺 dlltool；接口不变，换后端零成本）
+
 ### 批次 4b：爬塔流程编排 ✅（2026-10-17 完成）
 1. ✅ RunState↔BattleState 接线（flow4b.rs：choose_node/enter_room/start_battle/settle_battle）
 2. ✅ 房间流程：战斗触发/奖励（金币+卡3选1+遗物+药水）/篝火（回血+锻造）/药水使用
@@ -44,7 +49,7 @@
 - 其他：Rage/Rupture/Establishment/Panache/InfiniteBlades(HOOK已接)/Magnetism/HelloWorld/Mayhem/Phantasmal/RetainCard/Equilibrium/Buffer/Repair/Bias/Echo/Loop/Electro/LockOn/DrawCardNextTurn/Regret/Burn/Pain/Decay/Doubt/Shame/Void/Normality/Necronomicurse/CurseOfTheBell 等诅咒/状态触发
 - Mark/PressurePoints/Judgement 机制
 
-### 批次 5：存档/解锁/metrics
+### 批次 5：存档 ✅（save_json/load_json roundtrip + 垃圾输入防护；解锁/metrics 未做）
 ### 批次 6：终端 UI + 三平台发行
 
 ## 关键架构决策（冻结）
