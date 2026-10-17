@@ -102,6 +102,10 @@ pub enum GameAction {
     ChannelOrb { kind: crate::orb::OrbKind },
     /// `EvokeOrbAction`：引动 N 个球（最老优先）。
     EvokeOrb { count: i32 },
+    /// `EvokeOrbAction` 变体：引动但不移除（Dualcast 半段——双倍效果不消耗球）。
+    EvokeWithoutRemove { count: i32 },
+    /// `IncreaseMaxOrbAction`：球槽 +amount（可为负：Consume）。
+    IncreaseOrbSlots { amount: i32 },
     /// `ChangeStanceAction`。
     ChangeStance { stance: crate::stance::StanceKind },
     /// `ScryAction`：观/弃（选择屏，批次 6 交互；核心先实现"进入选择"标记）。

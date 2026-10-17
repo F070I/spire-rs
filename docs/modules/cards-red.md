@@ -1,5 +1,8 @@
 # 模块记录：批次 3.2 铁甲战士卡牌灌注
 
+> 批次 3.4 蓝卡进度（2026-10-17）：**76/76 全部转译完成**（cards/blue.rs，10 专项测试 + 全量 118）。
+> ID 珍品（蓝）：Claw→"Gash"、Equilibrium→"Undo"、Recursion→"Redo"、Overclock→"Steam Power"、SteamBarrier→"Steam"、LockOn→"Lockon"、Defend_Blue→"Defend_B"、Strike_Blue→"Strike_B"、ConserveBattery→"Conserve Battery"（第 9-17 例）。
+> 机制：BattleRngs 外新增 IncreaseOrbSlots（含负值）、EvokeWithoutRemove（双施法）、Focus 对通道球的 applyFocus（Dark 只修被动）、雷/霜引动计数器（雷击/暴风雪）、MachineLearning 手牌上限配对钩子、Chaos 随机球（misc 流近似 TODO 4.1）。
 > 批次 3.3 绿卡进度（2026-10-17）：**75/75 全部转译完成**（cards/green.rs，12 专项测试 + 全量 108）。
 > ID 珍品：Nightmare 类 ID="Night Terror"、Alchemize 类 ID="Venomology"、SneakyStrike 类 ID="Underhanded Strike"、WraithForm 类 ID="Wraith Form v2"（第 5-8 例）。
 > 新增 PowerKind：Poison（正式化）/Accuracy/Blur/Choke/DodgeAndRoll/Energized/Thorns；

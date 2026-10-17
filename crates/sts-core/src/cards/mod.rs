@@ -7,6 +7,7 @@
 //! - 卡牌专属例程（原版卡牌 Action 类）在 `routines.rs` 注册执行。
 
 pub mod builder;
+pub mod blue;
 pub mod green;
 pub mod red;
 pub mod routines;
@@ -23,16 +24,18 @@ pub fn handled_ids() -> Vec<&'static str> {
     let mut v = Vec::new();
     v.extend_from_slice(red::HANDLED);
     v.extend_from_slice(green::HANDLED);
+    v.extend_from_slice(blue::HANDLED);
     v
 }
 
 /// 分发入口（consume_card_queue_item 调用）。
-pub fn effects(b: &BattleState, card: &CardInst, target: Option<usize>) -> Vec<GameAction> {
+pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>) -> Vec<GameAction> {
     let mut eb = EffectBuilder::new();
     let id = card.st().id;
     let handled = match card.st().color_dir {
         "red" => red::HANDLED.contains(&id),
         "green" => green::HANDLED.contains(&id),
+        "blue" => blue::HANDLED.contains(&id),
         // 批次 3.3-3.4 逐色接入
         _ => false,
     };
@@ -40,6 +43,7 @@ pub fn effects(b: &BattleState, card: &CardInst, target: Option<usize>) -> Vec<G
         match card.st().color_dir {
             "red" => red::effects(b, card, target, &mut eb),
             "green" => green::effects(b, card, target, &mut eb),
+            "blue" => blue::effects(b, card, target, &mut eb),
             _ => unreachable!("handled 表与分发分支不同步"),
         }
     } else {
@@ -49,7 +53,7 @@ pub fn effects(b: &BattleState, card: &CardInst, target: Option<usize>) -> Vec<G
 }
 
 /// 未转译卡的通用行为（与原版不等价，灌注进度跟踪；G3 门后应只剩特殊卡）。
-pub fn generic_effects(b: &BattleState, card: &CardInst, target: Option<usize>, eb: &mut EffectBuilder) {
+pub fn generic_effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: &mut EffectBuilder) {
     let st = card.st();
     match st.kind {
         CardType::Attack => {

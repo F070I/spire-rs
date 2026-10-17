@@ -63,6 +63,33 @@ pub enum PowerKind {
     Energized,
     /// ThornsPower（Caltrops）：被攻击时反伤（onAttacked 钩子 TODO 3.5）。
     Thorns,
+    // ---- 批次 3.4 蓝卡（故障机器人）----
+    /// DrawPower（Machine Learning）：手牌上限 +amount（ApplyPower/Remove 已接）。
+    MachineLearning,
+    /// AmplifyPower：下张能力翻倍（onUseCard 钩子 TODO 3.5）。
+    Amplify,
+    /// HeatsinkPower：每抽到能力牌多抽 amount（onCardDraw 钩子 TODO 3.5）。
+    Heatsinks,
+    /// HelloPower（Hello World）：每回合加随机牌（TODO 4.1）。
+    HelloWorld,
+    /// StaticDischargePower：受击引雷（onAttacked 钩子 TODO 3.5）。
+    StaticDischarge,
+    /// ElectroPower：闪电全体（channel 钩子 TODO 3.8）。
+    Electro,
+    /// LockOnPower：球对目标 1.5×（damage 钩子 TODO 3.8）。
+    LockOn,
+    /// EquilibriumPower：回合末保留整手（EOT 钩子 TODO 3.5）。
+    Equilibrium,
+    /// BufferPower：抵挡 amount 次 HP 流失（承伤钩子 TODO 3.5）。
+    Buffer,
+    /// RepairPower：战斗结束回 amount 血（onVictory 钩子 TODO 3.5）。
+    Repair,
+    /// BiasPower：每回合 Focus -2（回合钩子 TODO 3.5）。
+    Bias,
+    /// EchoPower（Echo Form）：每回合首卡翻倍（onUseCard 钩子 TODO 3.5）。
+    Echo,
+    /// SteamBarrierPower：每回合格挡递减（回合钩子 TODO 3.5）。
+    SteamBarrier,
     // ---- 批次 3.3 绿卡第 2 批 ----
     ThousandCuts,
     AfterImage,

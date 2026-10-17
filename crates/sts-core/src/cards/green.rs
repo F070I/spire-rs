@@ -25,7 +25,7 @@ pub const HANDLED: &[&str] = &[
     "Venomology", "Terror", "Underhanded Strike",
 ];
 
-pub fn effects(b: &BattleState, card: &CardInst, target: Option<usize>, eb: &mut EffectBuilder) {
+pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: &mut EffectBuilder) {
     match card.st().id {
         // Accuracy：ApplyPower(Accuracy, magic)（Shiv +伤：钩子 TODO 3.5）
         "Accuracy" => {

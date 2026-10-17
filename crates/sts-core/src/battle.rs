@@ -226,6 +226,9 @@ pub struct BattleState {
     pub max_orbs: usize,
     /// 战斗期 RNG（shuffle/card_random/ai/misc）——4.1 接线。
     pub rngs: BattleRngs,
+    /// 本战斗引动的闪电/冰霜数（Thunder Strike/Blizzard）。
+    pub lightning_channeled_this_combat: i32,
+    pub frost_channeled_this_combat: i32,
     /// 遗物/神龛事实占位（批次 3.6 接入后由 RunState 查询）。
     pub relics_ctx: RelicCtx,
 }
@@ -294,6 +297,8 @@ impl BattleState {
             orbs: Vec::new(),
             max_orbs: 0,
             rngs: BattleRngs::new(0, 0),
+            lightning_channeled_this_combat: 0,
+            frost_channeled_this_combat: 0,
             relics_ctx: RelicCtx::default(),
         };
         for (sid, up) in deck {
@@ -518,13 +523,35 @@ impl BattleState {
 
     /// 引动球（channelOrb：找第一个空槽；槽满 → 引动最老再通道，记录 03 §8）。
     pub fn channel_orb(&mut self, kind: crate::orb::OrbKind) {
-        let orb = match kind {
+        let mut orb = match kind {
             crate::orb::OrbKind::Lightning => crate::orb::Orb { kind, passive_amount: 3, evoke_amount: 8 },
             crate::orb::OrbKind::Frost => crate::orb::Orb { kind, passive_amount: 2, evoke_amount: 5 },
             crate::orb::OrbKind::Dark => crate::orb::Orb { kind, passive_amount: 6, evoke_amount: 6 },
             crate::orb::OrbKind::Plasma => crate::orb::Orb { kind, passive_amount: 1, evoke_amount: 2 },
             crate::orb::OrbKind::EmptySlot => return,
         };
+        // applyFocus（AbstractOrb:74-82）：非 Plasma 受 Focus 修正；Dark 只修被动（记录 03 §8）
+        let focus = self
+            .player
+            .powers
+            .iter()
+            .find(|p| p.kind == PowerKind::Focus)
+            .map(|p| p.amount)
+            .unwrap_or(0);
+        if focus != 0 && kind != crate::orb::OrbKind::Plasma {
+            if kind == crate::orb::OrbKind::Dark {
+                orb.passive_amount = (orb.passive_amount + focus).max(0);
+            } else {
+                orb.passive_amount = (orb.passive_amount + focus).max(0);
+                orb.evoke_amount = (orb.evoke_amount + focus).max(0);
+            }
+        }
+        if kind == crate::orb::OrbKind::Lightning {
+            self.lightning_channeled_this_combat += 1;
+        }
+        if kind == crate::orb::OrbKind::Frost {
+            self.frost_channeled_this_combat += 1;
+        }
         if self.orbs.len() < self.max_orbs {
             self.orbs.push(orb);
         } else if !self.orbs.is_empty() {
@@ -658,6 +685,16 @@ impl BattleState {
                 self.discard_pile.add_top(c);
             }
         }
+    }
+
+    /// Tempest 等耗尽全部能量。
+    pub fn drain_all_energy(&mut self) {
+        self.energy = 0;
+    }
+
+    /// RemoveAllBlockAction 语义：直接清怪格挡（不触发 brokeBlock 钩子）。
+    pub fn remove_monster_block(&mut self, mi: usize) {
+        self.monsters[mi].creature.lose_block();
     }
 
     /// Combust 伤害矩阵：THORNS 类型不经 give/receive 修正（isPureDamage）。
@@ -937,6 +974,10 @@ impl BattleState {
                     player_has_ginger: from_monster && self.relics_ctx.has_ginger,
                     player_has_turnip: from_monster && self.relics_ctx.has_turnip,
                 };
+                // DrawPower（Machine Learning）语义：手牌上限 +amount（记录 03 §2）
+                if power.kind == PowerKind::MachineLearning {
+                    self.game_hand_size += power.amount;
+                }
                 // ApplyPowerAction 构造器：Corruption → 四堆全部 SKILL modifyCostForCombat(-9)
                 if power.kind == PowerKind::Corruption {
                     for pile in [&mut self.hand, &mut self.draw_pile, &mut self.discard_pile, &mut self.exhaust_pile] {
@@ -966,6 +1007,18 @@ impl BattleState {
                 }
             }
             GameAction::RemovePower { target, kind } => {
+                // DrawPower.onRemove：手牌上限还原（副作用配对，记录 03 §2）
+                if kind == PowerKind::MachineLearning {
+                    if let Some(p) = self
+                        .player
+                        .powers
+                        .iter()
+                        .find(|p| p.kind == PowerKind::MachineLearning)
+                        .cloned()
+                    {
+                        self.game_hand_size -= p.amount;
+                    }
+                }
                 let powers = self.creature_powers_mut(target);
                 power::ops::remove_power(powers, kind);
             }
@@ -1078,6 +1131,63 @@ impl BattleState {
                 for _ in 0..count {
                     let uuid = self.next_uuid();
                     self.discard_pile.add_top(CardInst::new(sid, upgraded, uuid));
+                }
+            }
+            GameAction::EvokeWithoutRemove { count } => {
+                // EvokeWithoutRemovingOrbAction：触发 onEvoke 但不移除球（Dualcast 半段）
+                for _ in 0..count {
+                    let out = self.orbs.first().map(crate::orb::evoke_effect);
+                    if let Some(out) = out {
+                        if out.thorns_damage > 0 {
+                            if let Some(mi) = self.first_alive_monster() {
+                                self.exec_damage(
+                                    TargetRef::Monster(mi),
+                                    crate::damage::DamageInfo::pure(
+                                        false,
+                                        out.thorns_damage,
+                                        crate::orb::ORB_DAMAGE_TYPE,
+                                    ),
+                                );
+                            }
+                        }
+                        if out.block > 0 {
+                            self.player.add_block(out.block);
+                        }
+                        if out.dark_damage > 0 {
+                            if let Some(mi) = self.highest_hp_monster() {
+                                self.exec_damage(
+                                    TargetRef::Monster(mi),
+                                    crate::damage::DamageInfo::pure(
+                                        false,
+                                        out.dark_damage,
+                                        crate::orb::ORB_DAMAGE_TYPE,
+                                    ),
+                                );
+                            }
+                        }
+                        if out.energy > 0 {
+                            self.energy = (self.energy + out.energy).min(999);
+                        }
+                    }
+                }
+                self.check_battle_over();
+            }
+            GameAction::IncreaseOrbSlots { amount } => {
+                if amount > 0 {
+                    for _ in 0..amount {
+                        self.orbs.push(crate::orb::Orb {
+                            kind: crate::orb::OrbKind::EmptySlot,
+                            passive_amount: 0,
+                            evoke_amount: 0,
+                        });
+                    }
+                    self.max_orbs += amount as usize;
+                } else {
+                    // Consume：移除最右侧球槽（连带其球）
+                    for _ in 0..(-amount) {
+                        self.orbs.pop();
+                    }
+                    self.max_orbs = (self.max_orbs as i32 + amount).max(0) as usize;
                 }
             }
             GameAction::ChannelOrb { kind } => self.channel_orb(kind),

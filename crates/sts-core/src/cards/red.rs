@@ -49,7 +49,7 @@ pub const HANDLED: &[&str] = &[
     "Wild Strike",
 ];
 
-pub fn effects(b: &BattleState, card: &CardInst, target: Option<usize>, eb: &mut EffectBuilder) {
+pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: &mut EffectBuilder) {
     match card.st().id {
         // cards/red/Bash.java use()：DamageAction + ApplyPowerAction(Vulnerable, magic)
         "Bash" => {
