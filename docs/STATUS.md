@@ -2,7 +2,7 @@
 
 > 本文档为 token 预算接近尾声时的交接快照。下个会话/接手者按此继续。
 
-## 已完成（git 最新 commit：bdf601d，236 测试全过，clippy 0）
+## 已完成（git 最新 commit：bde6a67，241 测试全过，clippy 0）
 
 ### 批次 1：地基
 - sts-data::rng：RandomXS128 + JDK LCG + STS Random 包装（基线交叉验证）
@@ -48,6 +48,14 @@
   之后入队（Happy Flower/Art of War 同坑两次）。
 - **源码路径迁移**：`C:\Users\17366\Desktop\MySlayTheSpire-master`（原
   OneDrive\Desktop 已迁空）。
+
+## 本轮追加（批次 4h + 收尾，2026-10-17）
+
+- **诅咒/状态手牌触发（bde6a67）**：Regret（回合末 HP 流失=手牌数）/Shame
+  （自施 Frail 1，justApplied 活过回合边界）/Decay（THORNS 2）/Pain（每出牌
+  掉 1 血）/Normality（3 张上限）——triggerOnEndOfTurnForPlayingCard 与
+  triggerOnOtherCardPlayed 系全接。测试 +5。
+- STATUS/记忆同步至 4h；下一轮主菜 = 多怪遭遇重构。
 
 ## 本轮追加（批次 4c-4e，2026-10-17）
 
