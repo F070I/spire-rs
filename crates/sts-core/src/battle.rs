@@ -220,6 +220,8 @@ pub struct BattleState {
     pub total_discarded_this_turn: i32,
     /// 本回合打出的攻击牌数（Finisher 等）。
     pub attacks_played_this_turn: i32,
+    /// Echo Form 本回合首卡标志。
+    pub echo_used_this_turn: bool,
     pub is_battle_over: bool,
     /// 充能球（空槽占位补齐；批次 3.8 完整化）。
     pub orbs: Vec<crate::orb::Orb>,
@@ -293,6 +295,7 @@ impl BattleState {
             game_hand_size,
             total_discarded_this_turn: 0,
             attacks_played_this_turn: 0,
+            echo_used_this_turn: false,
             is_battle_over: false,
             orbs: Vec::new(),
             max_orbs: 0,
@@ -622,6 +625,16 @@ impl BattleState {
         self.check_battle_over();
     }
 
+    /// 攻击者索引（DamageInfo 纯数据无 owner 引用——占位首活怪 TODO 完整 owner 链）。
+    fn attacker_monster_index(&self, _info: &crate::damage::DamageInfo) -> Option<usize> {
+        self.first_alive_monster()
+    }
+
+    /// Buffer 判定：本次伤害会否穿透格挡造成 HP 流失。
+    fn hp_loss_imminent(c: &Creature, amount: i32) -> bool {
+        amount > c.current_block
+    }
+
     /// 卡牌被消耗后的统一钩子（DarkEmbrace/FeelNoPain/Sentinel）。
     /// 消耗堆落位由调用方完成；count = 本次消耗张数。
     pub fn after_card_exhausted(&mut self, card_id: &str, count: i32) {
@@ -689,9 +702,25 @@ impl BattleState {
         }
     }
 
+    /// 弃牌钩子（手动弃牌每张触发）：Tactician +1 能量。
+    pub fn on_manual_discard_hook(&mut self, count: i32) {
+        if let Some(t) = self
+            .player
+            .powers
+            .iter()
+            .find(|p| p.kind == PowerKind::Future && p.id == "Tactician")
+            .map(|p| p.amount)
+        {
+            if t > 0 {
+                self.energy = (self.energy + t * count).min(999);
+            }
+        }
+    }
+
     /// 弃牌动作（DiscardAction，记录 09 §5）：随机/全弃；选择屏在批次 6。
     fn exec_discard(&mut self, amount: i32, is_random: bool, _any_number: bool) {
-        let n = self.hand.group.len() as i32;
+        let before = self.hand.group.len() as i32;
+        let n = before;
         if is_random {
             for _ in 0..amount.min(n) {
                 // DiscardAction 随机：getRandomCard(cardRandomRng)（记录 09 §5）
@@ -707,6 +736,11 @@ impl BattleState {
             while let Some(c) = self.hand.group.pop() {
                 self.discard_pile.add_top(c);
             }
+        }
+        let discarded = before - self.hand.group.len() as i32;
+        if discarded > 0 {
+            self.total_discarded_this_turn += discarded;
+            self.on_manual_discard_hook(discarded);
         }
     }
 
@@ -791,6 +825,25 @@ impl BattleState {
         if metallicize > 0 {
             self.player.add_block(metallicize);
         }
+        // BrutalityPower.atEndOfTurn：掉 1 HP + 抽 amount 张
+        if let Some(br) = self
+            .player
+            .powers
+            .iter()
+            .find(|p| p.kind == PowerKind::Future && p.id == "Brutality")
+            .map(|p| p.amount)
+        {
+            if br > 0 {
+                deferred.push(GameAction::LoseHp {
+                    target: TargetRef::Player,
+                    source: Some(TargetRef::Player),
+                    amount: 1,
+                });
+                for _ in 0..br {
+                    deferred.push(GameAction::DrawCard { amount: 1, end_turn_draw: false });
+                }
+            }
+        }
         // NoxiousFumesPower.atEndOfTurn：全体怪物 +amount 毒
         if let Some(fumes) = self
             .player
@@ -850,6 +903,7 @@ impl BattleState {
         // 2) 计数清零（记录 01 §3：cardsPlayedThisTurn/totalDiscardedThisTurn 等）
         self.total_discarded_this_turn = 0;
         self.attacks_played_this_turn = 0;
+        self.echo_used_this_turn = false;
         // 3-5) 回合开始钩子（遗物/卡/能力 atStartOfTurn）—— TODO 3.5/3.6
         self.mgr.turn += 1;
         self.mgr.skip_monster_turn = false;
@@ -1273,16 +1327,64 @@ impl BattleState {
                 }
             }
             TargetRef::Player => {
+                // 快照钩子数据（避免借用冲突）
+                let (has_intangible, buffer_amt, thorns, static_dis) = {
+                    let c = &self.player;
+                    (
+                        c.powers.iter().any(|p| p.kind == PowerKind::IntangiblePlayer),
+                        c.powers
+                            .iter()
+                            .find(|p| p.kind == PowerKind::Buffer && p.amount > 0)
+                            .map(|p| p.amount),
+                        c.powers
+                            .iter()
+                            .find(|p| p.kind == PowerKind::Thorns)
+                            .map(|p| p.amount)
+                            .unwrap_or(0),
+                        c.powers
+                            .iter()
+                            .find(|p| p.kind == PowerKind::StaticDischarge)
+                            .map(|p| p.amount)
+                            .unwrap_or(0),
+                    )
+                };
                 let c = &mut self.player;
                 let mut amount = amount;
-                if amount > 1 && c.powers.iter().any(|p| p.kind == PowerKind::IntangiblePlayer) {
+                if amount > 1 && has_intangible {
                     amount = 1;
+                }
+                // BufferPower：抵挡 HP 流失（先于格挡，amount--）
+                if buffer_amt.is_some() && Self::hp_loss_imminent(c, amount) {
+                    if let Some(buf) = c.powers.iter_mut().find(|p| p.kind == PowerKind::Buffer) {
+                        buf.amount -= 1;
+                    }
+                    return;
                 }
                 let (remain, _broke) = c.decrement_block(info.ty, amount);
                 c.last_damage_taken = remain.min(c.current_health);
                 c.current_health = (c.current_health - remain).max(0);
-                if c.current_health == 0 {
+                let dying = c.current_health == 0;
+                if dying {
                     c.is_dying = true; // FairyPotion/LizardTail TODO 3.6
+                }
+                // 受击钩子（未格挡攻击伤后）：Thorns 反伤 / StaticDischarge 引雷
+                if remain > 0 && info.ty == DamageType::Normal {
+                    if thorns > 0 {
+                        if let Some(atk) = self.attacker_monster_index(&info) {
+                            self.mgr.add_bottom(GameAction::Damage {
+                                target: TargetRef::Monster(atk),
+                                info: crate::damage::DamageInfo::pure(false, thorns, DamageType::Thorns),
+                            });
+                        }
+                    }
+                    if static_dis > 0 {
+                        if let Some(mi) = self.first_alive_monster() {
+                            self.mgr.add_bottom(GameAction::Damage {
+                                target: TargetRef::Monster(mi),
+                                info: crate::damage::DamageInfo::pure(false, static_dis, DamageType::Thorns),
+                            });
+                        }
+                    }
                 }
             }
         }
@@ -1423,6 +1525,7 @@ impl BattleState {
         if self.can_use(&card).is_err() {
             return;
         }
+        let target = item.target;
         // onPlayCard 钩子链（记录 09 §1-4）：玩家 powers → 怪物 powers → 遗物 → 架势 →
         // blights → 手/弃/抽牌堆卡——TODO 3.5/3.6 钩子接入（当前无钩子能力）
         // ThousandCutsPower.onUseCard：每打出一张牌 → 全体 amount 伤
@@ -1439,9 +1542,120 @@ impl BattleState {
                 ty: DamageType::Thorns,
             });
         }
+        // RagePower.onUseCard：打出攻击 → +amount 格挡
+        if st.kind == CardType::Attack {
+            if let Some(r) = self
+                .player
+                .powers
+                .iter()
+                .find(|p| p.kind == PowerKind::Rage)
+                .map(|p| p.amount)
+            {
+                self.mgr
+                    .add_bottom(GameAction::GainBlock { target: TargetRef::Player, amount: r });
+            }
+        }
+        // AfterImagePower.onUseCard：出牌 → +1 无实体
+        if self
+            .player
+            .powers
+            .iter()
+            .any(|p| p.kind == PowerKind::AfterImage)
+        {
+            self.mgr.add_bottom(GameAction::ApplyPower {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                power: Power::new(PowerKind::IntangiblePlayer, 1),
+                from_monster: false,
+            });
+        }
+        // DoubleTapPower.onUseCard：下张攻击翻倍——复制攻击效果（原版靠 limbo 复制队列；
+        // 简化：攻击卡打出时 amount 层数 ×2 伤害段——按原版 onUseCard 复制本卡进队列，
+        // 此处通过重入 cardQueue 模拟）
+        let dt = self
+            .player
+            .powers
+            .iter()
+            .find(|p| p.kind == PowerKind::DoubleTap)
+            .map(|p| p.amount)
+            .unwrap_or(0);
+        let burst = self
+            .player
+            .powers
+            .iter()
+            .find(|p| p.kind == PowerKind::Burst)
+            .map(|p| p.amount)
+            .unwrap_or(0);
+        let echo = self
+            .player
+            .powers
+            .iter()
+            .find(|p| p.kind == PowerKind::Echo)
+            .map(|p| p.amount)
+            .unwrap_or(0);
+        let dup_times = if st.kind == CardType::Attack && dt > 0 {
+            dt
+        } else if st.kind == CardType::Skill && burst > 0 {
+            burst
+        } else if echo > 0 && !self.echo_used_this_turn {
+            // Echo Form：每回合首卡翻倍
+            self.echo_used_this_turn = true;
+            1
+        } else {
+            0
+        };
+        if dup_times > 0 {
+            for _ in 0..dup_times {
+                // 重新入队本卡（免能量：原版复制不扣能）
+                self.mgr.card_queue.push(CardQueueItem {
+                    card: Some(uuid),
+                    target,
+                    energy_on_use: 0,
+                    autoplay_card: true,
+                    random_target: false,
+                    is_end_turn_auto_play: false,
+                    free_to_play: true,
+                });
+            }
+            // 消耗 DoubleTap/Burst 一层
+            for kind in [PowerKind::DoubleTap, PowerKind::Burst] {
+                let amt = self
+                    .player
+                    .powers
+                    .iter()
+                    .find(|p| p.kind == kind)
+                    .map(|p| p.amount)
+                    .unwrap_or(0);
+                if amt > 0 && (st.kind == CardType::Attack || st.kind == CardType::Skill) {
+                    self.mgr.add_top(GameAction::ReducePower {
+                        target: TargetRef::Player,
+                        kind,
+                        amount: 1,
+                    });
+                    break;
+                }
+            }
+        }
+        // ChokePower：打出牌时给该怪 amount 伤（Choke 挂在怪身上）
+        if let Some(mi) = target {
+            if let Some(ch) = self.monsters[mi]
+                .creature
+                .powers
+                .iter()
+                .find(|p| p.kind == PowerKind::Choke)
+                .map(|p| p.amount)
+            {
+                if ch > 0 {
+                    self.mgr.add_bottom(GameAction::LoseHp {
+                        target: TargetRef::Monster(mi),
+                        source: Some(TargetRef::Player),
+                        amount: ch,
+                    });
+                }
+            }
+        }
 
         // use() 效果：cards 模块分发（记录 09 §1 阶段 C-4）
-        let target = item.target;
         let effects = crate::cards::effects(self, &card, target);
         // Corruption：技能免能量 + 打出后消耗（CorruptionPower 语义）
         let corruption_free = self
