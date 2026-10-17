@@ -486,6 +486,8 @@ impl RunState4b {
         b.start_battle();
         // 真怪初始化：开局能力（usePreBattleAction）+ 首招 roll（aiRng）
         b.setup_real_monsters();
+        // FairyPotion 死亡复活钩子（腰带含仙药）
+        b.has_fairy_potion = self.potions.contains(&Some("FairyPotion"));
         // 战初遗物钩子（原版 atBattleStart 时点）
         if b.relics_ctx.vajra_strength > 0 {
             b.mgr.add_bottom(GameAction::ApplyPower {
@@ -787,9 +789,40 @@ impl RunState4b {
         let Some(Some(potion_id)) = self.potions.get(slot).copied() else {
             return Err("空药水槽");
         };
+        let mut consumed = true;
         match potion_id {
-            // Fire Potion：20 伤（战斗中）
+            // Blood Potion：回 20% maxHP（战斗内外同义）
+            "Blood Potion" => {
+                let heal = self.player_max_hp * 20 / 100;
+                self.player_hp = (self.player_hp + heal).min(self.player_max_hp);
+                if self.phase == RoomPhase::InBattle {
+                    self.battle.as_mut().unwrap().player.current_health = self.player_hp;
+                }
+            }
+            // ---- 数值强化（战斗内 ApplyPower）----
+            "Strength Potion" => self.potion_apply_power(PowerKind::Strength, 2),
+            "Dexterity Potion" => self.potion_apply_power(PowerKind::Dexterity, 2),
+            "FocusPotion" => self.potion_apply_power(PowerKind::Focus, 2),
+            "Ancient Potion" => self.potion_apply_power(PowerKind::Artifact, 1),
+            "HeartOfIron" => self.potion_apply_power(PowerKind::Metallicize, 6),
+            "EssenceOfSteel" => self.potion_apply_power(PowerKind::PlatedArmor, 4),
+            "LiquidBronze" => self.potion_apply_power(PowerKind::Thorns, 3),
+            "Regen Potion" => self.potion_apply_power(PowerKind::Regen, 5),
+            "CultistPotion" => self.potion_apply_power(PowerKind::Ritual, 1),
+            "SpeedPotion" => {
+                // +5 敏捷 + LoseDexterity 5（回合末收回）
+                self.potion_apply_power(PowerKind::Dexterity, 5);
+                self.potion_apply_power(PowerKind::LoseDexterity, 5);
+            }
+            "SteroidPotion" => {
+                // +5 力量 + LoseStrength 5（回合末收回）
+                self.potion_apply_power(PowerKind::Strength, 5);
+                self.potion_apply_power(PowerKind::LoseStrength, 5);
+            }
+            "GhostInAJar" => self.potion_apply_power(PowerKind::IntangiblePlayer, 1),
+            // ---- 目标类（战斗中需目标）----
             "Fire Potion" => {
+                // THORNS：无视格挡（源码 DamageType.THORNS）
                 if self.phase == RoomPhase::InBattle {
                     if let Some(mi) = target {
                         let b = self.battle.as_mut().unwrap();
@@ -798,24 +831,332 @@ impl RunState4b {
                             info: crate::damage::DamageInfo::pure(
                                 true,
                                 20,
-                                crate::power::DamageType::Normal,
+                                crate::power::DamageType::Thorns,
                             ),
                         });
                     }
                 }
             }
-            // Blood Potion：回 20% maxHP
-            "Blood Potion" => {
-                let heal = self.player_max_hp / 5;
+            "Poison Potion" => {
+                if self.phase == RoomPhase::InBattle {
+                    if let Some(mi) = target {
+                        let b = self.battle.as_mut().unwrap();
+                        b.mgr.add_bottom(GameAction::ApplyPower {
+                            target: TargetRef::Monster(mi),
+                            source: Some(TargetRef::Player),
+                            power: Power::new(PowerKind::Poison, 6),
+                            from_monster: false,
+                        });
+                    }
+                }
+            }
+            "FearPotion" => {
+                if self.phase == RoomPhase::InBattle {
+                    if let Some(mi) = target {
+                        let b = self.battle.as_mut().unwrap();
+                        b.mgr.add_bottom(GameAction::ApplyPower {
+                            target: TargetRef::Monster(mi),
+                            source: Some(TargetRef::Player),
+                            power: Power::new(PowerKind::Vulnerable, 3),
+                            from_monster: false,
+                        });
+                    }
+                }
+            }
+            "Weak Potion" => {
+                if self.phase == RoomPhase::InBattle {
+                    if let Some(mi) = target {
+                        let b = self.battle.as_mut().unwrap();
+                        b.mgr.add_bottom(GameAction::ApplyPower {
+                            target: TargetRef::Monster(mi),
+                            source: Some(TargetRef::Player),
+                            power: Power::new(PowerKind::Weak, 3),
+                            from_monster: false,
+                        });
+                    }
+                }
+            }
+            // ---- 全体类 ----
+            "Explosive Potion" => {
+                // 10 伤全体（NORMAL 可格挡——源码 createDamageMatrix(potency, true)）
+                if self.phase == RoomPhase::InBattle {
+                    let b = self.battle.as_mut().unwrap();
+                    let matrix = b.combust_matrix(10);
+                    b.mgr.add_bottom(GameAction::DamageAll {
+                        matrix,
+                        ty: crate::power::DamageType::Normal,
+                    });
+                }
+            }
+            "EssenceOfDarkness" => {
+                // 全体怪 -1 专注
+                if self.phase == RoomPhase::InBattle {
+                    let b = self.battle.as_mut().unwrap();
+                    for i in 0..b.monsters.len() {
+                        b.mgr.add_bottom(GameAction::ApplyPower {
+                            target: TargetRef::Monster(i),
+                            source: Some(TargetRef::Player),
+                            power: Power::new(PowerKind::Focus, -1),
+                            from_monster: false,
+                        });
+                    }
+                }
+            }
+            // ---- 格挡/能量/抽牌 ----
+            "Block Potion" => {
+                if self.phase == RoomPhase::InBattle {
+                    let b = self.battle.as_mut().unwrap();
+                    b.mgr
+                        .add_bottom(GameAction::GainBlock { target: TargetRef::Player, amount: 12 });
+                }
+            }
+            "Energy Potion" => {
+                if self.phase == RoomPhase::InBattle {
+                    let b = self.battle.as_mut().unwrap();
+                    b.mgr.add_bottom(GameAction::GainEnergy { amount: 2 });
+                }
+            }
+            "Swift Potion" => {
+                if self.phase == RoomPhase::InBattle {
+                    let b = self.battle.as_mut().unwrap();
+                    b.mgr.add_bottom(GameAction::DrawCard { amount: 3, end_turn_draw: false });
+                }
+            }
+            "SneckoOil" => {
+                // 抽 5 + 手牌费用随机化（0-3，cardRandomRng）
+                if self.phase == RoomPhase::InBattle {
+                    let b = self.battle.as_mut().unwrap();
+                    b.mgr.add_bottom(GameAction::DrawCard { amount: 5, end_turn_draw: false });
+                    let mut r = b.rngs.card_random.copy();
+                    for c in b.hand.group.iter_mut() {
+                        c.cost_for_turn = r.random_int_inclusive(3);
+                    }
+                    b.rngs.card_random = r;
+                }
+            }
+            // ---- 卡牌生成 ----
+            "BottledMiracle" => {
+                // 奇迹 ×2 进手牌
+                if self.phase == RoomPhase::InBattle {
+                    let b = self.battle.as_mut().unwrap();
+                    b.mgr.add_bottom(GameAction::MakeTempCardInHand {
+                        sid: sts_data::gen::CARDS
+                            .iter()
+                            .position(|c| c.id == "Miracle")
+                            .unwrap(),
+                        upgraded: false,
+                        count: 2,
+                    });
+                }
+            }
+            "CunningPotion" => {
+                // 小刀 ×3 进手牌
+                if self.phase == RoomPhase::InBattle {
+                    let b = self.battle.as_mut().unwrap();
+                    b.mgr.add_bottom(GameAction::MakeTempCardInHand {
+                        sid: sts_data::gen::CARDS.iter().position(|c| c.id == "Shiv").unwrap(),
+                        upgraded: false,
+                        count: 3,
+                    });
+                }
+            }
+            "AttackPotion" | "SkillPotion" | "PowerPotion" | "ColorlessPotion" => {
+                // Discovery：三选一——无选择屏，简化为随机 1 张进手牌（TODO 选择屏）
+                if self.phase == RoomPhase::InBattle {
+                    let kind = match potion_id {
+                        "AttackPotion" => sts_data::gen::CardType::Attack,
+                        "SkillPotion" => sts_data::gen::CardType::Skill,
+                        "PowerPotion" => sts_data::gen::CardType::Power,
+                        _ => sts_data::gen::CardType::Skill,
+                    };
+                    let colorless = potion_id == "ColorlessPotion";
+                    let b = self.battle.as_mut().unwrap();
+                    let pool: Vec<usize> = sts_data::gen::CARDS
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, c)| {
+                            c.kind == kind
+                                && (!colorless
+                                    || c.color == sts_data::gen::CardColor::Colorless)
+                                && c.color != sts_data::gen::CardColor::Curse
+                        })
+                        .map(|(i, _)| i)
+                        .collect();
+                    let mut r = b.rngs.card_random.copy();
+                    let pick = pool[r.random_int_inclusive(pool.len() as i32 - 1) as usize];
+                    b.rngs.card_random = r;
+                    b.mgr.add_bottom(GameAction::MakeTempCardInHand {
+                        sid: pick,
+                        upgraded: false,
+                        count: 1,
+                    });
+                }
+            }
+            "LiquidMemories" => {
+                // 弃牌堆顶 → 手牌 ×1（原版选择，简化取顶）
+                if self.phase == RoomPhase::InBattle {
+                    let b = self.battle.as_mut().unwrap();
+                    if let Some(c) = b.discard_pile.group.pop() {
+                        b.hand.add_top(c);
+                    }
+                }
+            }
+            // ---- 特殊机制 ----
+            "Ambrosia" => {
+                // 变身 Divinity
+                if self.phase == RoomPhase::InBattle {
+                    let b = self.battle.as_mut().unwrap();
+                    b.mgr.add_bottom(GameAction::ChangeStance {
+                        stance: crate::stance::StanceKind::Divinity,
+                    });
+                }
+            }
+            "StancePotion" => {
+                // 二选一（Calm/Wrath）——无选择屏，取 Calm（TODO 选择屏）
+                if self.phase == RoomPhase::InBattle {
+                    let b = self.battle.as_mut().unwrap();
+                    b.mgr.add_bottom(GameAction::ChangeStance {
+                        stance: crate::stance::StanceKind::Calm,
+                    });
+                }
+            }
+            "BlessingOfTheForge" => {
+                // Armaments+：本战斗手牌全部升级
+                if self.phase == RoomPhase::InBattle {
+                    let b = self.battle.as_mut().unwrap();
+                    for c in b.hand.group.iter_mut() {
+                        if c.can_upgrade() {
+                            c.apply_upgrade();
+                        }
+                    }
+                }
+            }
+            "ElixirPotion" => {
+                // 消耗手牌全部状态/诅咒
+                if self.phase == RoomPhase::InBattle {
+                    let b = self.battle.as_mut().unwrap();
+                    let mut i = 0;
+                    let mut n = 0;
+                    while i < b.hand.group.len() {
+                        let k = b.hand.group[i].st().kind;
+                        if k == sts_data::gen::CardType::Status
+                            || k == sts_data::gen::CardType::Curse
+                        {
+                            let c = b.hand.group.remove(i);
+                            b.exhaust_pile.add_top(c);
+                            n += 1;
+                        } else {
+                            i += 1;
+                        }
+                    }
+                    if n > 0 {
+                        b.on_exhaust_hook(n);
+                    }
+                }
+            }
+            "DistilledChaos" => {
+                // 打出抽牌堆顶卡 ×3（自动目标）
+                if self.phase == RoomPhase::InBattle {
+                    let b = self.battle.as_mut().unwrap();
+                    for _ in 0..3 {
+                        if let Some(c) = b.draw_pile.group.pop() {
+                            let uuid = c.uuid;
+                            b.hand.add_top(c);
+                            b.mgr.card_queue.push(crate::action::CardQueueItem {
+                                card: Some(uuid),
+                                target: None,
+                                energy_on_use: b.energy,
+                                autoplay_card: true,
+                                random_target: true,
+                                is_end_turn_auto_play: false,
+                                free_to_play: true,
+                            });
+                        }
+                    }
+                }
+            }
+            "DuplicationPotion" => {
+                // Duplication power：本回合接下来 N 张卡打出两次——钩子 TODO（暂不生效）
+            }
+            "EntropicBrew" => {
+                // 填满全部药水槽（含本槽——原版先消耗再入瓶，slot 0 也被替换）
+                let pool: Vec<&'static str> =
+                    sts_data::gen::potions::POTIONS.iter().map(|p| p.id).collect();
+                let mut roll = || {
+                    let i = self.rngs.misc.random_int_inclusive(pool.len() as i32 - 1) as usize;
+                    pool[i]
+                };
+                for s2 in self.potions.iter_mut() {
+                    if s2.is_none() {
+                        *s2 = Some(roll());
+                    }
+                }
+                self.potions[slot] = Some(roll());
+                consumed = false; // 本槽已被随机药水替换，不再置空
+            }
+            "FairyPotion" => {
+                // 手动使用：回 30%；死亡自动复活由 BattleState.has_fairy_potion 钩子
+                let heal = self.player_max_hp * 30 / 100;
                 self.player_hp = (self.player_hp + heal).min(self.player_max_hp);
                 if self.phase == RoomPhase::InBattle {
                     self.battle.as_mut().unwrap().player.current_health = self.player_hp;
                 }
             }
+            "Fruit Juice" => {
+                // 最大生命 +5（increaseMaxHp 同步当前）
+                self.player_max_hp += 5;
+                self.player_hp += 5;
+                if self.phase == RoomPhase::InBattle {
+                    let b = self.battle.as_mut().unwrap();
+                    b.player.current_health = self.player_hp;
+                    b.player.max_health = self.player_max_hp;
+                }
+            }
+            "GamblersBrew" => {
+                // 弃任意张抽同数（选择屏 TODO）——简化抽 1
+                if self.phase == RoomPhase::InBattle {
+                    let b = self.battle.as_mut().unwrap();
+                    b.mgr.add_bottom(GameAction::DrawCard { amount: 1, end_turn_draw: false });
+                }
+            }
+            "SmokeBomb" => {
+                // 逃离非 Boss 战（smoked 无奖励语义 TODO——当前按胜利结算）
+                if self.phase == RoomPhase::InBattle {
+                    let b = self.battle.as_mut().unwrap();
+                    if !b.is_boss_fight {
+                        for m in b.monsters.iter_mut() {
+                            if !m.creature.is_dying {
+                                m.creature.is_dying = true; // 逃跑视为战斗结束
+                            }
+                        }
+                        b.check_battle_over();
+                    }
+                }
+            }
+            "PotionOfCapacity" if self.phase == RoomPhase::InBattle => {
+                // 球槽 +2
+                let b = self.battle.as_mut().unwrap();
+                b.mgr.add_bottom(GameAction::IncreaseOrbSlots { amount: 2 });
+            }
             _ => {}
         }
-        self.potions[slot] = None;
+        if consumed {
+            self.potions[slot] = None;
+        }
         Ok(())
+    }
+
+    /// 战斗内玩家施加能力（药水辅助）。
+    fn potion_apply_power(&mut self, kind: PowerKind, amount: i32) {
+        if self.phase == RoomPhase::InBattle {
+            let b = self.battle.as_mut().unwrap();
+            b.mgr.add_bottom(GameAction::ApplyPower {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                power: Power::new(kind, amount),
+                from_monster: false,
+            });
+        }
     }
 
     /// 商店：买卡（index 对应 cards 列表）。

@@ -124,6 +124,12 @@ pub enum PowerKind {
     Curiosity,
     /// PlatedArmorPower：回合末 +amount 格挡；未格挡受击掉 1 层（Deca A19+）。
     PlatedArmor,
+    /// RitualPower（玩家版，CultistPotion）：回合末 +amount 力。
+    Ritual,
+    /// RegenPower：回合末回 amount 血并 -1（到 0 移除）。
+    Regen,
+    /// LoseDexterityPower（Speed Potion 配对）：回合末敏捷 -= amount。
+    LoseDexterity,
     /// 兜底：尚未转译的能力（批次 3.5 逐个消灭；带原版 ID 以便审计）。
     Future,
 }

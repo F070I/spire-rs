@@ -401,6 +401,8 @@ pub struct BattleState {
     pub red_skull_active: bool,
     /// Centennial Puzzle：战斗首次掉血已触发。
     pub centennial_used: bool,
+    /// 药水腰带有仙药（死亡时自动复活 30%——flow4b 进战斗时注入）。
+    pub has_fairy_potion: bool,
     /// 遗物/神龛事实占位（批次 3.6 接入后由 RunState 查询）。
     pub relics_ctx: RelicCtx,
 }
@@ -569,6 +571,7 @@ impl BattleState {
             cards_played_this_turn: 0,
             red_skull_active: false,
             centennial_used: false,
+            has_fairy_potion: false,
             relics_ctx: RelicCtx::default(),
         };
         for (sid, up) in deck {
@@ -1117,7 +1120,7 @@ impl BattleState {
     }
 
     /// Combust 伤害矩阵：THORNS 类型不经 give/receive 修正（isPureDamage）。
-    fn combust_matrix(&self, base: i32) -> Vec<(usize, i32)> {
+    pub fn combust_matrix(&self, base: i32) -> Vec<(usize, i32)> {
         self.monsters
             .iter()
             .enumerate()
@@ -1571,13 +1574,19 @@ impl BattleState {
         // 玩家侧：回合型减益递减 + 毒 + LoseStrength（Flex：回合末收回力量）
         // + Metallicize（回合末 +amount 格挡）/ Combust（回合末掉 1 血、全体 magic 伤）
         let mut lose_str: Option<i32> = None;
+        let mut lose_dex: Option<i32> = None;
         let mut metallicize = 0;
         let mut combust: Option<i32> = None;
+        let mut ritual = 0;
+        let mut regen = 0;
         for p in &mut self.player.powers {
             match p.kind {
                 PowerKind::Metallicize => metallicize = p.amount,
                 PowerKind::Combust => combust = Some(p.amount),
                 PowerKind::LoseStrength => lose_str = Some(p.amount),
+                PowerKind::LoseDexterity => lose_dex = Some(p.amount),
+                PowerKind::Ritual => ritual = p.amount,
+                PowerKind::Regen => regen = p.amount,
                 _ => {}
             }
             if power::ops::end_of_round_tick(p) {
@@ -1748,6 +1757,44 @@ impl BattleState {
             self.player
                 .powers
                 .retain(|p| p.kind != PowerKind::LoseStrength);
+        }
+        // LoseDexterityPower.atEndOfTurn：敏捷 -= amount，自身移除
+        if let Some(amt) = lose_dex {
+            if let Some(dp) = self
+                .player
+                .powers
+                .iter_mut()
+                .find(|p| p.kind == PowerKind::Dexterity)
+            {
+                if power::ops::reduce_power(dp, amt) == power::ops::ReduceResult::Remove {
+                    self.mgr.add_bottom(GameAction::RemovePower {
+                        target: TargetRef::Player,
+                        kind: PowerKind::Dexterity,
+                    });
+                }
+            }
+            self.player
+                .powers
+                .retain(|p| p.kind != PowerKind::LoseDexterity);
+        }
+        // RitualPower（玩家，CultistPotion）：回合末 +amount 力
+        if ritual > 0 {
+            self.player.powers.push(Power::new(PowerKind::Strength, ritual));
+        }
+        // RegenPower.atEndOfTurn：回 amount 血并 -1（到 0 移除——RegenAction 语义）
+        if regen > 0 {
+            self.player.heal(regen);
+            if let Some(rp) = self
+                .player
+                .powers
+                .iter_mut()
+                .find(|p| p.kind == PowerKind::Regen)
+            {
+                rp.amount -= 1;
+            }
+            self.player
+                .powers
+                .retain(|p| !(p.kind == PowerKind::Regen && p.amount <= 0));
         }
         // 2) 计数清零（记录 01 §3：cardsPlayedThisTurn/totalDiscardedThisTurn 等）
         self.total_discarded_this_turn = 0;
@@ -2346,9 +2393,16 @@ impl BattleState {
                         }
                     }
                 }
-                let dying = c.current_health == 0;
+                let mut dying = c.current_health == 0;
+                // FairyPotion：死亡瞬间自动复活 30% 最大生命（消耗一瓶）
+                if dying && self.has_fairy_potion {
+                    self.has_fairy_potion = false;
+                    let heal = c.max_health * 30 / 100;
+                    c.current_health = heal;
+                    dying = false;
+                }
                 if dying {
-                    c.is_dying = true; // FairyPotion/LizardTail TODO 3.6
+                    c.is_dying = true; // LizardTail TODO 3.6
                 }
                 // CentennialPuzzle.wasHPLost：战斗首次掉血 → 抽 3（一次）
                 if remain > 0 && self.relics_ctx.centennial_puzzle && !self.centennial_used {
@@ -2381,7 +2435,7 @@ impl BattleState {
         self.check_battle_over();
     }
 
-    fn check_battle_over(&mut self) {
+    pub fn check_battle_over(&mut self) {
         if !self.is_battle_over && self.monsters.iter().all(|m| m.creature.is_dying || m.creature.is_dead) && !self.monsters.is_empty() {
             self.is_battle_over = true;
             self.mgr.clear_post_combat();
