@@ -467,6 +467,8 @@ impl RunState4b {
                     let hp = sts_data::monster_ai::scaled_hp(ai, 0, &mut self.monster_rng);
                     let mut mon = Monster::scripted(name, hp, ai.moves.to_vec());
                     mon.special = Self::member_special(name);
+                    // 加权招式怪（批次 5b）：有 WEIGHTED 表即启用（初始掷在 setup 后）
+                    mon.weighted = sts_data::monster_ai::get_weighted(name).is_some();
                     out.push(mon);
                 }
                 out
@@ -493,6 +495,8 @@ impl RunState4b {
         b.start_battle();
         // 真怪初始化：开局能力（usePreBattleAction）+ 首招 roll（aiRng）
         b.setup_real_monsters();
+        // 加权怪初始掷（首招意图可见）
+        b.roll_weighted_initial();
         // FairyPotion 死亡复活钩子（腰带含仙药）
         b.has_fairy_potion = self.potions.contains(&Some("FairyPotion"));
         // 战初遗物钩子（原版 atBattleStart 时点）
@@ -1699,6 +1703,7 @@ impl RunState4b {
         b.set_rng_seed(self.seed, self.floor);
         b.start_battle();
         b.setup_real_monsters();
+        b.roll_weighted_initial();
         b.has_fairy_potion = self.potions.contains(&Some("FairyPotion"));
         b.relics_ctx = self.relics_ctx;
         self.battle = Some(b);
@@ -1717,6 +1722,7 @@ impl RunState4b {
                     let hp = sts_data::monster_ai::scaled_hp(ai, 0, &mut self.monster_rng);
                     let mut mon = Monster::scripted(name, hp, ai.moves.to_vec());
                     mon.special = Self::member_special(name);
+                    mon.weighted = sts_data::monster_ai::get_weighted(name).is_some();
                     out.push(mon);
                 }
                 out

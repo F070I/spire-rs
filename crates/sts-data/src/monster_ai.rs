@@ -123,6 +123,65 @@ pub fn scaled_hp(ai: &MonsterAi, ascension: u8, rng: &mut crate::rng::StsRandom)
     }
 }
 
+/// 批次 5b：加权招式表（getMove 转译——简化为纯加权滚，省略连击钳制）。
+/// 条目 (伤害, 附带格挡, 权重%)；伤害 -1 = 防御/强化回合（走格挡路径）。
+pub struct WeightedMoves {
+    pub id: &'static str,
+    pub moves: &'static [(i32, i32, u32)],
+}
+
+pub static WEIGHTED: &[WeightedMoves] = &[
+    // JawWorm：首招必咬碎；其后 thrash 25%/chomp 30%/skull bash 45%（thrash 带 6 格挡）
+    WeightedMoves {
+        id: "Jaw Worm",
+        moves: &[(7, 6, 25), (11, 0, 30), (8, 0, 45)],
+    },
+    // Louse：咬 ~75%（5-7 取 6）/强化 25%（以格挡近似）
+    WeightedMoves { id: "Louse", moves: &[(6, 0, 75), (-1, 0, 25)] },
+    // Acid Slime L：冲撞 16 40%/喷吐 10 30%/舔击 30%
+    WeightedMoves { id: "Acid Slime L", moves: &[(16, 0, 40), (10, 0, 30), (-1, 0, 30)] },
+    // Acid Slime M：冲撞 10 40%/喷吐 7 40%/舔击 20%
+    WeightedMoves { id: "Acid Slime M", moves: &[(10, 0, 40), (7, 0, 40), (-1, 0, 20)] },
+    // Acid Slime S：randomBoolean 冲撞 3/减益
+    WeightedMoves { id: "Acid Slime S", moves: &[(3, 0, 50), (-1, 0, 50)] },
+    // Spike Slime L：火焰冲撞 8 70%/虚弱舔 30%
+    WeightedMoves { id: "Spike Slime L", moves: &[(8, 0, 70), (-1, 0, 30)] },
+    // Spike Slime M：火焰冲撞 7 70%/虚弱舔 30%
+    WeightedMoves { id: "Spike Slime M", moves: &[(7, 0, 70), (-1, 0, 30)] },
+    // Spike Slime S：永远冲撞 5
+    WeightedMoves { id: "Spike Slime S", moves: &[(5, 0, 100)] },
+    // Fungi Beast：撕咬 6 60%/成长 40%
+    WeightedMoves { id: "Fungi Beast", moves: &[(6, 0, 60), (-1, 0, 40)] },
+    // Slaver Blue：刺击 12 60%/耙击 7 40%（附虚弱——脚本层省略）
+    WeightedMoves { id: "Blue Slaver", moves: &[(12, 0, 60), (7, 0, 40)] },
+    // Slaver Red：刺击 13 55%/刮擦 8 35%/束缚 10%（以格挡近似）
+    WeightedMoves { id: "Red Slaver", moves: &[(13, 0, 55), (8, 0, 35), (-1, 0, 10)] },
+    // Sentry：光束 9 50%/螺栓（晕眩）50%
+    WeightedMoves { id: "Sentry", moves: &[(9, 0, 50), (-1, 0, 50)] },
+    // Gremlin Fat：钝击 4 70%/逃跑强化（格挡近似）30%
+    WeightedMoves { id: "Gremlin Fat", moves: &[(4, 0, 70), (-1, 0, 30)] },
+    // Gremlin Tsundere：护盾 50%/猛击 6 50%
+    WeightedMoves { id: "Gremlin Tsundere", moves: &[(-1, 7, 50), (6, 0, 50)] },
+];
+
+/// 按加权表取招式（num = aiRng.random(99)）。
+pub fn pick_weighted(wm: &WeightedMoves, num: i32) -> (i32, i32) {
+    let total: u32 = wm.moves.iter().map(|m| m.2).sum();
+    let mut acc: u32 = 0;
+    for (dmg, block, w) in wm.moves {
+        acc += w;
+        if (num as u32) < acc * 100 / total {
+            return (*dmg, *block);
+        }
+    }
+    let last = wm.moves.last().copied().unwrap_or((-1, 0, 0));
+    (last.0, last.1)
+}
+
+pub fn get_weighted(id: &str) -> Option<&'static WeightedMoves> {
+    WEIGHTED.iter().find(|w| w.id == id)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -147,3 +206,4 @@ mod tests {
         assert_eq!(get("Transient").hp_min, 999);
     }
 }
+

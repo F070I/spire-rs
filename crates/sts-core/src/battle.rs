@@ -246,6 +246,10 @@ pub struct Monster {
     pub move_history: Vec<u8>,
     /// 真怪私有状态。
     pub brain: Brain,
+    /// 加权招式怪（批次 5b）：RollMove 时按 WEIGHTED 表重掷 script[0]。
+    pub weighted: bool,
+    /// 加权招式附带格挡（thrash 系——随 Damage 一起入队）。
+    pub bonus_block: i32,
 }
 
 impl Monster {
@@ -330,6 +334,8 @@ impl Monster {
             hits: 1,
             move_history: Vec::new(),
             brain: Brain::default(),
+            weighted: false,
+            bonus_block: 0,
         }
     }
 
@@ -1031,6 +1037,14 @@ impl BattleState {
                     target: TargetRef::Player,
                     info,
                 });
+                // 加权招式附带格挡（Jaw Worm Thrash 等 ATTACK_DEFEND）
+                if m.bonus_block > 0 {
+                    self.mgr.add_bottom(GameAction::GainBlock {
+                        target: TargetRef::Monster(mi),
+                        amount: m.bonus_block,
+                    });
+                    m.bonus_block = 0;
+                }
             } else {
                 // 防御回合：+6 格挡（脚本默认）
                 self.mgr.add_bottom(GameAction::GainBlock {
@@ -1593,6 +1607,32 @@ impl BattleState {
         }
     }
 
+
+    /// 测试辅助：把脚本怪切成加权怪（weighted_moves.rs 用）。
+    pub fn weighted_override_for_test(&mut self) {
+        for m in self.monsters.iter_mut() {
+            m.weighted = true;
+        }
+    }
+
+    /// 批次 5b：加权怪初始掷（start_battle 后首招立即可见——原版 applyPreTurnLogic 语义）。
+    pub fn roll_weighted_initial(&mut self) {
+        for i in 0..self.monsters.len() {
+            let weighted = self.monsters[i].weighted;
+            if !weighted {
+                continue;
+            }
+            let name = self.monsters[i].creature.name.clone();
+            if let Some(wm) = sts_data::monster_ai::get_weighted(&name) {
+                let num = self.rngs.ai.random_int_inclusive(99);
+                let (dmg, block) = sts_data::monster_ai::pick_weighted(wm, num);
+                let m = &mut self.monsters[i];
+                m.script = vec![if dmg < 0 { None } else { Some(dmg) }];
+                m.move_idx = 0;
+                m.bonus_block = block;
+            }
+        }
+    }
 
     /// 批次 4e：遗物战斗开始钩子第二批（atBattleStart；is_elite/is_boss 由 flow4b 预设）。
     pub fn apply_relic_battle_start(&mut self) {
@@ -2349,7 +2389,16 @@ impl BattleState {
             GameAction::RollMove { monster } => {
                 // 脚本怪：推进招式指针（真怪状态机在 exec_real_move 末尾自 roll）
                 let m = &mut self.monsters[monster];
-                if !m.script.is_empty() {
+                if m.weighted {
+                    // 加权怪：aiRng 掷下招（getMove 转译——连击钳制省略）
+                    if let Some(wm) = sts_data::monster_ai::get_weighted(&m.creature.name) {
+                        let num = self.rngs.ai.random_int_inclusive(99);
+                        let (dmg, block) = sts_data::monster_ai::pick_weighted(wm, num);
+                        m.script = vec![if dmg < 0 { None } else { Some(dmg) }];
+                        m.move_idx = 0;
+                        m.bonus_block = block;
+                    }
+                } else if !m.script.is_empty() {
                     m.move_idx = m.move_idx.min(m.script.len() - 1);
                 }
             }
