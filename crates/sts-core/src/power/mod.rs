@@ -34,6 +34,20 @@ pub enum PowerKind {
     LoseStrength,
     /// RagePower（ID "Rage"）：每打出一张攻击获得 amount 格挡（onPlayCard 钩子 TODO 3.5）。
     Rage,
+    // ---- 批次 3.2 第 2 批（POWER 卡钩子面第一批）----
+    Barricade,
+    Berserk,
+    Combust,
+    Corruption,
+    DarkEmbrace,
+    DemonForm,
+    DoubleTap,
+    Evolve,
+    FeelNoPain,
+    FireBreathing,
+    FlameBarrier,
+    Juggernaut,
+    Metallicize,
     /// 兜底：尚未转译的能力（批次 3.5 逐个消灭；带原版 ID 以便审计）。
     Future,
 }

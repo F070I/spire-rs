@@ -11,6 +11,10 @@ use sts_data::gen;
 use crate::power::{DamageType, Power, PowerKind};
 
 pub const HANDLED: &[&str] = &[
+    "Barricade", "Battle Trance", "Berserk", "Bludgeon", "Carnage", "Combust",
+    "Corruption", "Dark Embrace", "Demon Form", "Disarm", "Double Tap", "Entrench",
+    "Evolve", "Feed", "Feel No Pain", "Fiend Fire", "Flame Barrier", "Ghostly Armor",
+    "Hemokinesis", "Immolate", "Infernal Blade", "Juggernaut", "Limit Break", "Metallicize",
     "Anger",
     "Armaments",
     "Bash",
@@ -444,6 +448,255 @@ pub fn effects(b: &BattleState, card: &CardInst, target: Option<usize>, eb: &mut
                     sid: card.sid,
                     upgraded: card.upgraded,
                 },
+            });
+        }
+        // Barricade：ApplyPower(Barricade)（amount=-1 不叠加；不掉格挡语义见 begin_player_turn）
+        "Barricade" => {
+            eb.bot(GameAction::ApplyPower {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                power: Power::new(PowerKind::Barricade, -1),
+                from_monster: false,
+            });
+        }
+        // Battle Trance：DrawCard(magic 3) + NoDrawPower（本回合不再抽牌）
+        "Battle Trance" => {
+            eb.bot(GameAction::DrawCard { amount: card.eff_magic(), end_turn_draw: false });
+            eb.bot(GameAction::ApplyPower {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                power: Power::new(PowerKind::NoDraw, -1),
+                from_monster: false,
+            });
+        }
+        // Berserk：Vulnerable(magic) 自身 + BerserkPower(1)（每回合 +1 能量，递减）
+        "Berserk" => {
+            eb.bot(GameAction::ApplyPower {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                power: Power::new(PowerKind::Vulnerable, card.eff_magic()),
+                from_monster: false,
+            });
+            eb.bot(GameAction::ApplyPower {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                power: Power::new(PowerKind::Berserk, 1),
+                from_monster: false,
+            });
+        }
+        // Bludgeon：Damage 32
+        "Bludgeon" => {
+            if let Some(mi) = target {
+                eb.bot(GameAction::Damage {
+                    target: TargetRef::Monster(mi),
+                    info: attack_info(b, mi, card.eff_damage(), DamageType::Normal),
+                });
+            }
+        }
+        // Carnage：Damage 20（虚无：静态标志）
+        "Carnage" => {
+            if let Some(mi) = target {
+                eb.bot(GameAction::Damage {
+                    target: TargetRef::Monster(mi),
+                    info: attack_info(b, mi, card.eff_damage(), DamageType::Normal),
+                });
+            }
+        }
+        // Combust：ApplyPower(Combust, magic)
+        "Combust" => {
+            eb.bot(GameAction::ApplyPower {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                power: Power::new(PowerKind::Combust, card.eff_magic()),
+                from_monster: false,
+            });
+        }
+        // Corruption：ApplyPower(Corruption)（技能 0 费+消耗：ApplyPower 执行与打卡链已接）
+        "Corruption" => {
+            eb.bot(GameAction::ApplyPower {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                power: Power::new(PowerKind::Corruption, -1),
+                from_monster: false,
+            });
+        }
+        // Dark Embrace：ApplyPower(DarkEmbrace, 1)
+        "Dark Embrace" => {
+            eb.bot(GameAction::ApplyPower {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                power: Power::new(PowerKind::DarkEmbrace, 1),
+                from_monster: false,
+            });
+        }
+        // Demon Form：ApplyPower(DemonForm, magic)
+        "Demon Form" => {
+            eb.bot(GameAction::ApplyPower {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                power: Power::new(PowerKind::DemonForm, card.eff_magic()),
+                from_monster: false,
+            });
+        }
+        // Disarm：ApplyPower(Strength, -magic)（敌人减力）+ 消耗（静态）
+        "Disarm" => {
+            if let Some(mi) = target {
+                eb.bot(GameAction::ApplyPower {
+                    target: TargetRef::Monster(mi),
+                    source: Some(TargetRef::Player),
+                    power: Power::new(PowerKind::Strength, -card.eff_magic()),
+                    from_monster: false,
+                });
+            }
+        }
+        // Double Tap：ApplyPower(DoubleTap, magic)（下张攻击翻倍——onUseCard 钩子 TODO 3.5）
+        "Double Tap" => {
+            eb.bot(GameAction::ApplyPower {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                power: Power::new(PowerKind::DoubleTap, card.eff_magic()),
+                from_monster: false,
+            });
+        }
+        // Entrench：DoubleYourBlockAction——格挡翻倍（addBlock(currentBlock)）
+        "Entrench" => {
+            let cur = b.player.current_block;
+            if cur > 0 {
+                eb.bot(GameAction::GainBlock { target: TargetRef::Player, amount: cur });
+            }
+        }
+        // Evolve：ApplyPower(Evolve, magic)
+        "Evolve" => {
+            eb.bot(GameAction::ApplyPower {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                power: Power::new(PowerKind::Evolve, card.eff_magic()),
+                from_monster: false,
+            });
+        }
+        // Feed：FeedAction 例程（伤害 + 斩杀 increaseMaxHp(magic 3)）
+        "Feed" => {
+            if let Some(mi) = target {
+                eb.bot(GameAction::CardRoutine {
+                    call: RoutineCall {
+                        id: "FeedAction",
+                        target: Some(mi),
+                        amount: card.eff_magic(),
+                        amount2: 0,
+                        card_uuid: card.uuid,
+                        sid: card.sid,
+                        upgraded: card.upgraded,
+                    },
+                });
+            }
+        }
+        // Feel No Pain：ApplyPower(FeelNoPain, magic)
+        "Feel No Pain" => {
+            eb.bot(GameAction::ApplyPower {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                power: Power::new(PowerKind::FeelNoPain, card.eff_magic()),
+                from_monster: false,
+            });
+        }
+        // Fiend Fire：FiendFireAction 例程（消耗整手 + 每张一次伤害）
+        "Fiend Fire" => {
+            if let Some(mi) = target {
+                eb.bot(GameAction::CardRoutine {
+                    call: RoutineCall {
+                        id: "FiendFireAction",
+                        target: Some(mi),
+                        amount: 0,
+                        amount2: 0,
+                        card_uuid: card.uuid,
+                        sid: card.sid,
+                        upgraded: card.upgraded,
+                    },
+                });
+            }
+        }
+        // Flame Barrier：GainBlock + ApplyPower(FlameBarrier, magic)（受击反伤 TODO 3.5）
+        "Flame Barrier" => {
+            eb.bot(GameAction::GainBlock { target: TargetRef::Player, amount: card.eff_block() });
+            eb.bot(GameAction::ApplyPower {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                power: Power::new(PowerKind::FlameBarrier, card.eff_magic()),
+                from_monster: false,
+            });
+        }
+        // Ghostly Armor：GainBlock 11（虚无：静态标志）
+        "Ghostly Armor" => {
+            eb.bot(GameAction::GainBlock { target: TargetRef::Player, amount: card.eff_block() });
+        }
+        // Hemokinesis：LoseHP(magic 2) + Damage 15
+        "Hemokinesis" => {
+            if let Some(mi) = target {
+                eb.bot(GameAction::LoseHp {
+                    target: TargetRef::Player,
+                    source: Some(TargetRef::Player),
+                    amount: card.eff_magic(),
+                });
+                eb.bot(GameAction::Damage {
+                    target: TargetRef::Monster(mi),
+                    info: attack_info(b, mi, card.eff_damage(), DamageType::Normal),
+                });
+            }
+        }
+        // Immolate：DamageAll + 洗入 Burn 到弃牌堆
+        "Immolate" => {
+            let matrix = damage_matrix(b, card.eff_damage(), DamageType::Normal);
+            eb.bot(GameAction::DamageAll { matrix, ty: DamageType::Normal });
+            eb.bot(GameAction::MakeTempCardInDiscard {
+                sid: super::sid_of("Burn"),
+                upgraded: false,
+                count: 1,
+            });
+        }
+        // Infernal Blade：随机卡进手（0 费）——TODO 4.1 RNG（例程占位）
+        "Infernal Blade" => {
+            eb.bot(GameAction::CardRoutine {
+                call: RoutineCall {
+                    id: "InfernalBladeAction",
+                    target: None,
+                    amount: 1,
+                    amount2: 0,
+                    card_uuid: card.uuid,
+                    sid: card.sid,
+                    upgraded: card.upgraded,
+                },
+            });
+        }
+        // Juggernaut：ApplyPower(Juggernaut, magic)（获格挡反伤：钩子已接 GainBlock）
+        "Juggernaut" => {
+            eb.bot(GameAction::ApplyPower {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                power: Power::new(PowerKind::Juggernaut, card.eff_magic()),
+                from_monster: false,
+            });
+        }
+        // Limit Break：LimitBreakAction 例程（力量叠加翻倍）
+        "Limit Break" => {
+            eb.bot(GameAction::CardRoutine {
+                call: RoutineCall {
+                    id: "LimitBreakAction",
+                    target: None,
+                    amount: 0,
+                    amount2: 0,
+                    card_uuid: card.uuid,
+                    sid: card.sid,
+                    upgraded: card.upgraded,
+                },
+            });
+        }
+        // Metallicize：ApplyPower(Metallicize, magic)（回合末 +格挡：钩子已接）
+        "Metallicize" => {
+            eb.bot(GameAction::ApplyPower {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                power: Power::new(PowerKind::Metallicize, card.eff_magic()),
+                from_monster: false,
             });
         }
         // Whirlwind：X 费——每点能量对全体打一次（WhirlwindAction；amount=当前能量快照）

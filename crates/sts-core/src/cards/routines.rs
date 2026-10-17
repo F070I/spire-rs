@@ -6,9 +6,9 @@
 //! 占位约定：需要选择屏（批次 6）或随机（4.1 RNG 接线）的点用确定性占位并加
 //! `// TODO` 注释；进度在 docs/modules/cards-red.md 清账。
 
-use crate::action::{GameAction, RoutineCall};
+use crate::action::{GameAction, RoutineCall, TargetRef};
 use crate::battle::{BattleState, CardInst};
-use crate::cards::damage_matrix;
+use crate::cards::{attack_info, damage_matrix};
 use crate::power::DamageType;
 
 type RoutineFn = fn(&mut BattleState, &RoutineCall);
@@ -23,6 +23,14 @@ const ROUTINES: &[(&str, RoutineFn)] = &[
     ("ExhaustAction", exhaust_action),
     // actions/unique/ModifyDamageAction：Rampage 永久成长（misc += amount）
     ("ModifyDamageAction", modify_damage),
+    // actions/unique/FiendFireAction：消耗整手 + 每张一次伤害
+    ("FiendFireAction", fiend_fire),
+    // actions/unique/LimitBreakAction：力量翻倍（叠加）
+    ("LimitBreakAction", limit_break),
+    // actions/unique/FeedAction：伤害 + 斩杀加最大生命
+    ("FeedAction", feed),
+    // actions/unique/InfernalBladeAction：随机卡进手（0 费）——TODO 4.1 RNG
+    ("InfernalBladeAction", infernal_blade),
 ];
 
 pub fn run(b: &mut BattleState, call: &RoutineCall) {
@@ -104,6 +112,59 @@ pub fn blood_for_blood_trigger(b: &mut BattleState) {
             }
         }
     }
+}
+
+/// FiendFireAction：count = 打出时手牌数；全部消耗后每张一次 baseDamage。
+fn fiend_fire(b: &mut BattleState, call: &RoutineCall) {
+    let count = b.hand.group.len();
+    // 消耗整手（每张触发消耗钩子）
+    while let Some(c) = b.hand.group.pop() {
+        exhaust_one(b, c);
+    }
+    for _ in 0..count {
+        if let Some(mi) = call.target {
+            b.mgr.add_bottom(GameAction::Damage {
+                target: TargetRef::Monster(mi),
+                info: attack_info(b, mi, sts_data::gen::CARDS[call.sid].base_damage, DamageType::Normal),
+            });
+        }
+    }
+}
+
+/// LimitBreakAction：有力量则 ApplyPower(Strength, 当前量)——叠加即翻倍。
+fn limit_break(b: &mut BattleState, call: &RoutineCall) {
+    let _ = call;
+    let str_amt = b
+        .player
+        .powers
+        .iter()
+        .find(|p| p.kind == crate::power::PowerKind::Strength)
+        .map(|p| p.amount)
+        .unwrap_or(0);
+    if str_amt > 0 {
+        b.mgr.add_bottom(GameAction::ApplyPower {
+            target: TargetRef::Player,
+            source: Some(TargetRef::Player),
+            power: crate::power::Power::new(crate::power::PowerKind::Strength, str_amt),
+            from_monster: false,
+        });
+    }
+}
+
+/// FeedAction：伤害；目标因此死亡 → increaseMaxHp(magic)。
+fn feed(b: &mut BattleState, call: &RoutineCall) {
+    if let Some(mi) = call.target {
+        let info = attack_info(b, mi, sts_data::gen::CARDS[call.sid].base_damage, DamageType::Normal);
+        b.exec_damage(TargetRef::Monster(mi), info);
+        if b.monsters[mi].creature.is_dying {
+            b.player.increase_max_hp(call.amount);
+        }
+    }
+}
+
+/// InfernalBladeAction：随机攻击/技能/能力卡进手（0 费）——TODO 4.1 RNG（占位不动）。
+fn infernal_blade(_b: &mut BattleState, _call: &RoutineCall) {
+    // TODO 4.1：cardRng 从职业色+无色池抽卡
 }
 
 /// ModifyDamageAction：按 uuid 找到卡实例，misc += amount（Rampage 永久成长）。

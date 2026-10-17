@@ -505,6 +505,32 @@ impl BattleState {
         self.check_battle_over();
     }
 
+    /// 消耗钩子（CardGroup.moveToExhaustPile 后段）：DarkEmbrace 抽牌 / FeelNoPain 格挡。
+    /// 每消耗 1 张调用一次（count 语义由调用方展开）。
+    pub fn on_exhaust_hook(&mut self, count: i32) {
+        let monsters_alive = !self.monsters_basically_dead();
+        let mut draws = 0;
+        let mut block = 0;
+        for p in &self.player.powers {
+            match p.kind {
+                // DarkEmbracePower.onExhaust：抽 amount 张（怪未全灭时）
+                PowerKind::DarkEmbrace if monsters_alive => draws += p.amount * count,
+                // FeelNoPainPower.onExhaust：获得 amount 格挡
+                PowerKind::FeelNoPain => block += p.amount * count,
+                _ => {}
+            }
+        }
+        for _ in 0..draws {
+            self.mgr.add_bottom(GameAction::DrawCard {
+                amount: 1,
+                end_turn_draw: false,
+            });
+        }
+        if block > 0 {
+            self.player.add_block(block);
+        }
+    }
+
     fn first_alive_monster(&self) -> Option<usize> {
         self.monsters
             .iter()
@@ -553,6 +579,16 @@ impl BattleState {
         }
     }
 
+    /// Combust 伤害矩阵：THORNS 类型不经 give/receive 修正（isPureDamage）。
+    fn combust_matrix(&self, base: i32) -> Vec<(usize, i32)> {
+        self.monsters
+            .iter()
+            .enumerate()
+            .filter(|(_, m)| !m.creature.is_dying && !m.creature.is_dead)
+            .map(|(i, _)| (i, base))
+            .collect()
+    }
+
     fn monsters_basically_dead(&self) -> bool {
         self.monsters.iter().all(|m| m.creature.is_dying || m.creature.is_dead)
     }
@@ -562,10 +598,16 @@ impl BattleState {
         // 1) atEndOfRound（记录 03 §10：先玩家全体 powers，后每只存活怪物的 powers）
         let mut deferred: Vec<GameAction> = Vec::new();
         // 玩家侧：回合型减益递减 + 毒 + LoseStrength（Flex：回合末收回力量）
+        // + Metallicize（回合末 +amount 格挡）/ Combust（回合末掉 1 血、全体 magic 伤）
         let mut lose_str: Option<i32> = None;
+        let mut metallicize = 0;
+        let mut combust: Option<i32> = None;
         for p in &mut self.player.powers {
-            if p.kind == PowerKind::LoseStrength {
-                lose_str = Some(p.amount);
+            match p.kind {
+                PowerKind::Metallicize => metallicize = p.amount,
+                PowerKind::Combust => combust = Some(p.amount),
+                PowerKind::LoseStrength => lose_str = Some(p.amount),
+                _ => {}
             }
             if power::ops::end_of_round_tick(p) {
                 deferred.push(GameAction::RemovePower {
@@ -604,6 +646,20 @@ impl BattleState {
                 }
             }
         }
+        // MetallicizePower.atEndOfTurn：获得 amount 格挡
+        if metallicize > 0 {
+            self.player.add_block(metallicize);
+        }
+        // CombustPower.atEndOfTurn：失去 1 HP（HP_LOSS）+ 对全体造成 magic 伤害
+        if let Some(dmg) = combust {
+            deferred.push(GameAction::LoseHp {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                amount: 1,
+            });
+            let matrix = self.combust_matrix(dmg);
+            deferred.push(GameAction::DamageAll { matrix, ty: DamageType::Thorns });
+        }
         for a in deferred {
             self.mgr.add_bottom(a);
         }
@@ -632,7 +688,13 @@ impl BattleState {
         self.mgr.skip_monster_turn = false;
         self.mgr.turn_has_ended = false;
         // 6) 掉格挡：无 Barricade/Blur → 全清（Calipers 掉 15——TODO 3.6）
-        if !self.relics_ctx.has_barricade_power {
+        let has_barricade = self.relics_ctx.has_barricade_power
+            || self
+                .player
+                .powers
+                .iter()
+                .any(|p| p.kind == PowerKind::Barricade);
+        if !has_barricade {
             self.player.lose_block();
         }
         // 7) 抽牌（endTurnDraw=true → 充能）+ PostDraw 钩子 + 启用按钮
@@ -640,6 +702,31 @@ impl BattleState {
             amount: self.game_hand_size,
             end_turn_draw: true,
         });
+        // applyStartOfTurnPostDrawPowers（原版在入队抽牌后**内联调用**，动作排在抽牌之后）
+        let mut post_draw: Vec<GameAction> = Vec::new();
+        for p in &mut self.player.powers {
+            match p.kind {
+                // DemonFormPower.atStartOfTurnPostDraw：ApplyPower(Strength, amount)
+                PowerKind::DemonForm => post_draw.push(GameAction::ApplyPower {
+                    target: TargetRef::Player,
+                    source: Some(TargetRef::Player),
+                    power: Power::new(PowerKind::Strength, p.amount),
+                    from_monster: false,
+                }),
+                // BerserkPower.atStartOfTurnPostDraw：GainEnergy(1)，amount--，归 0 移除
+                PowerKind::Berserk => {
+                    post_draw.push(GameAction::GainEnergy { amount: 1 });
+                    p.amount -= 1;
+                }
+                _ => {}
+            }
+        }
+        self.player
+            .powers
+            .retain(|p| p.kind != PowerKind::Berserk || p.amount > 0);
+        for a in post_draw {
+            self.mgr.add_bottom(a);
+        }
         self.mgr.add_bottom(GameAction::EnableEndTurnButton);
     }
 
@@ -660,7 +747,32 @@ impl BattleState {
             }
             GameAction::GainBlock { target, amount } => {
                 let b = match target {
-                    TargetRef::Player => self.player.add_block(amount),
+                    TargetRef::Player => {
+                        let gained = self.player.add_block(amount);
+                        // JuggernautPower.onGainedBlock：获得格挡 > 0 → 随机敌人 THORNS 伤
+                        if gained > 0 {
+                            if let Some(j) = self
+                                .player
+                                .powers
+                                .iter()
+                                .find(|p| p.kind == PowerKind::Juggernaut)
+                                .map(|p| p.amount)
+                            {
+                                if let Some(mi) = self.first_alive_monster() {
+                                    // TODO 4.1：随机敌人
+                                    self.mgr.add_bottom(GameAction::Damage {
+                                        target: TargetRef::Monster(mi),
+                                        info: crate::damage::DamageInfo::pure(
+                                            true,
+                                            j,
+                                            DamageType::Thorns,
+                                        ),
+                                    });
+                                }
+                            }
+                        }
+                        gained
+                    }
                     TargetRef::Monster(i) => self.monsters[i].creature.add_block(amount),
                 };
                 let _ = b;
@@ -679,6 +791,16 @@ impl BattleState {
                     player_has_ginger: from_monster && self.relics_ctx.has_ginger,
                     player_has_turnip: from_monster && self.relics_ctx.has_turnip,
                 };
+                // ApplyPowerAction 构造器：Corruption → 四堆全部 SKILL modifyCostForCombat(-9)
+                if power.kind == PowerKind::Corruption {
+                    for pile in [&mut self.hand, &mut self.draw_pile, &mut self.discard_pile, &mut self.exhaust_pile] {
+                        for c in &mut pile.group {
+                            if c.st().kind == CardType::Skill {
+                                c.cost_for_turn = 0;
+                            }
+                        }
+                    }
+                }
                 let powers = self.creature_powers_mut(target);
                 let just = power.kind != PowerKind::Future
                     && power::is_turn_based_decrement(power.kind)
@@ -737,7 +859,14 @@ impl BattleState {
                     if m.creature.is_dying || m.creature.is_dead {
                         continue;
                     }
-                    m.creature.lose_block();
+                    let has_barricade = m
+                        .creature
+                        .powers
+                        .iter()
+                        .any(|p| p.kind == PowerKind::Barricade);
+                    if !has_barricade {
+                        m.creature.lose_block();
+                    }
                 }
             }
             GameAction::RollMove { monster } => {
@@ -837,7 +966,7 @@ impl BattleState {
         self.check_battle_over();
     }
 
-    fn exec_damage(&mut self, target: TargetRef, info: DamageInfo) {
+    pub fn exec_damage(&mut self, target: TargetRef, info: DamageInfo) {
         // THORNS 豁免取消判定（记录 09 §7）；死亡/逃跑目标 TODO 3.9 完整化
         let amount = info.output;
         match target {
@@ -908,7 +1037,30 @@ impl BattleState {
                 continue;
             }
             let card = self.draw_pile.pop_top().unwrap();
+            // powers onCardDraw（记录 09 §4：进手后触发）——Evolve/FireBreathing
+            let kind = card.st().kind;
+            let is_status = kind == CardType::Status;
+            let is_status_or_curse = is_status || kind == CardType::Curse;
             self.hand.add_top(card);
+            let mut hooks: Vec<GameAction> = Vec::new();
+            for p in &self.player.powers {
+                match p.kind {
+                    // EvolvePower.onCardDraw：抽到状态牌 → 抽 amount 张（No Draw 时不触发）
+                    PowerKind::Evolve if is_status => hooks.push(GameAction::DrawCard {
+                        amount: p.amount,
+                        end_turn_draw: false,
+                    }),
+                    // FireBreathingPower.onCardDraw：抽到状态/诅咒 → THORNS 全体 magic 伤
+                    PowerKind::FireBreathing if is_status_or_curse => {
+                        let matrix = self.combust_matrix(p.amount);
+                        hooks.push(GameAction::DamageAll { matrix, ty: DamageType::Thorns });
+                    }
+                    _ => {}
+                }
+            }
+            for a in hooks {
+                self.mgr.add_bottom(a);
+            }
             amount -= 1;
         }
     }
@@ -928,15 +1080,20 @@ impl BattleState {
                 i += 1;
             }
         }
-        // 2) 虚无卡消耗（消耗钩子序 relics→powers→card TODO 3.x）
+        // 2) 虚无卡消耗（消耗钩子序 relics→powers→card：DarkEmbrace/FeelNoPain 生效）
         let mut i = 0;
+        let mut ethereal_count = 0;
         while i < self.hand.group.len() {
             if self.hand.group[i].st().flags & gen::FLAG_ETHEREAL != 0 {
                 let c = self.hand.group.remove(i);
                 self.exhaust_pile.add_top(c);
+                ethereal_count += 1;
             } else {
                 i += 1;
             }
+        }
+        if ethereal_count > 0 {
+            self.on_exhaust_hook(ethereal_count);
         }
         // 3) 其余弃牌
         if !self.relics_ctx.has_runic_pyramid {
@@ -976,8 +1133,17 @@ impl BattleState {
         // use() 效果：cards 模块分发（记录 09 §1 阶段 C-4）
         let target = item.target;
         let effects = crate::cards::effects(self, &card, target);
-        // 扣能（Corruption/freeToPlay TODO）
-        self.energy -= card.cost_for_turn.max(0);
+        // Corruption：技能免能量 + 打出后消耗（CorruptionPower 语义）
+        let corruption_free = self
+            .player
+            .powers
+            .iter()
+            .any(|p| p.kind == PowerKind::Corruption)
+            && st.kind == CardType::Skill;
+        // 扣能（freeToPlay/autoplay TODO）
+        if !corruption_free {
+            self.energy -= card.cost_for_turn.max(0);
+        }
         // 手牌移除（useCard 步骤 6-7）
         self.hand.remove_uuid(uuid);
         // 效果入队（use() 的 addToBot 语义）
@@ -986,11 +1152,12 @@ impl BattleState {
         }
         // UseCardAction 去向（记录 09 §2）：POWER → 不入堆；exhaust → 消耗堆；否则弃牌堆
         if st.kind != CardType::Power {
-            if st.flags & gen::FLAG_EXHAUST != 0 {
-                // 消耗钩子序 relics→powers→card TODO 3.x
+            if st.flags & gen::FLAG_EXHAUST != 0 || corruption_free {
+                // 消耗钩子序 relics→powers→card：DarkEmbrace/FeelNoPain（TODO 3.6 relics）
                 let mut c = card;
                 c.reset_attributes();
                 self.exhaust_pile.add_top(c);
+                self.on_exhaust_hook(1);
             } else {
                 let mut c = card;
                 c.reset_attributes();
