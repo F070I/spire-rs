@@ -277,6 +277,7 @@ pub struct RelicCtx {
     pub burning_blood_heal: i32, // 燃烧之血：战斗结束回 N
 }
 
+#[allow(clippy::derivable_impls)]
 impl Default for RelicCtx {
     fn default() -> Self {
         Self {
