@@ -2,7 +2,7 @@
 
 > 本文档为 token 预算接近尾声时的交接快照。下个会话/接手者按此继续。
 
-## 已完成（git 最新 commit：bde6a67，241 测试全过，clippy 0）
+## 已完成（git 最新 commit：b3250e6，251 测试全过，clippy 0）
 
 ### 批次 1：地基
 - sts-data::rng：RandomXS128 + JDK LCG + STS Random 包装（基线交叉验证）
@@ -48,6 +48,18 @@
   之后入队（Happy Flower/Art of War 同坑两次）。
 - **源码路径迁移**：`C:\Users\17366\Desktop\MySlayTheSpire-master`（原
   OneDrive\Desktop 已迁空）。
+
+## 本轮追加（批次 5a 多怪遭遇，2026-10-17）
+
+- **多怪遭遇 5a（b3250e6）**：encounters::composition 全转译 MonsterHelper
+  getEncounter——组合表（2/3 Louse、3 Sentries、3 Cultists、Slavers 三人组、
+  Shield and Spear 等 30+ 键）+ 随机池（大软泥 50/50、Gremlin Gang 4 抽 8 池
+  不放回、Lots of Slimes 5 抽、Exordium Thugs/Wildlife 弱强分层、Shapes 6 池）。
+  个体怪 AI 表 +21 条（HP 按构造器校准；纠错 Red Slaver 46-50/Looter 44-48）。
+  flow4b 成员工厂（build_battle_for + member_special 按成员名映射）；
+  build_real 修正 Awakened One 带教徒、Donu & Deca 源码顺序 Deca 在前。
+  force_encounter 测试辅助。测试 +8。
+- 下一轮 5b：个体招式保真（rng 加权 getMove 转译——当前为简化序列）。
 
 ## 本轮追加（批次 4h + 收尾，2026-10-17）
 
