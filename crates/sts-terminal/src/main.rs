@@ -161,11 +161,10 @@ fn main() {
                     }
                     RoomPhase::TreasureChoice => { let _ = run.open_treasure(); }
                     RoomPhase::EventChoice => {
-                        let _ = run.choose_event(selection);
+                        let _ = run.choose_event(selection.min(3));
                     }
                     _ => {}
                 }
-                selection = 0;
                 selection = 0;
                 render(&run, &mut out);
             }
