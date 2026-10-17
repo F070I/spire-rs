@@ -99,6 +99,81 @@ pub static EVENTS: &[EventDef] = &[
             EventOption { text: "离开", effect: Effect::Nothing },
         ],
     },
+    EventDef {
+        id: "The Library",
+        title: "图书馆",
+        body: "一座漂浮的图书馆静候访客。",
+        options: &[
+            EventOption { text: "阅读（升级一张卡）", effect: Effect::UpgradeRandom },
+            EventOption { text: "抄写（+诅咒）", effect: Effect::AddCurse },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "Moai Head",
+        title: "石像",
+        body: "一座石像凝视着你，似乎在索求什么。",
+        options: &[
+            EventOption { text: "献祭（失去 7 生命，+普通遗物）", effect: Effect::GainCommonRelic },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "GoopPuddle",
+        title: "黏液坑",
+        body: "地上的黏液泛着微光。",
+        options: &[
+            EventOption { text: "捡起（失去 3 生命，+50 金）", effect: Effect::GainGold(50) },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "The Wing Statue",
+        title: "有翼石像",
+        body: "石像的手中握着什么东西。",
+        options: &[
+            EventOption { text: "祈祷（+最大生命 5）", effect: Effect::GainHp(5) },
+            EventOption { text: "砸开（+100 金，失去 7 生命）", effect: Effect::GainGold(100) },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "Golden Shrine",
+        title: "黄金神龛",
+        body: "神龛上的黄金反射着你的脸。",
+        options: &[
+            EventOption { text: "祈祷（+75 金）", effect: Effect::GainGold(75) },
+            EventOption { text: "破坏（+150 金，+诅咒）", effect: Effect::AddCurse },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "Accursed Blacksmith",
+        title: "被诅咒的铁匠",
+        body: "铁匠愿意为你打造，但需要献祭。",
+        options: &[
+            EventOption { text: "锻造（升级一张卡）", effect: Effect::UpgradeRandom },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "The Forgotten Altar",
+        title: "被遗忘的祭坛",
+        body: "血迹斑斑的祭坛等待着献祭。",
+        options: &[
+            EventOption { text: "献祭（失去 7 生命，移除一张卡）", effect: Effect::RemoveCard },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
+    EventDef {
+        id: "Designer",
+        title: "设计师",
+        body: "一位神秘设计师提出交易。",
+        options: &[
+            EventOption { text: "购买服务（75 金，升级一张卡）", effect: Effect::UpgradeRandom },
+            EventOption { text: "离开", effect: Effect::Nothing },
+        ],
+    },
 ];
 
 /// 按 ID 查事件（未知 → 首个事件兜底）。
