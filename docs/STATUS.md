@@ -29,7 +29,13 @@
 ### 4.1 RNG 接线
 - BattleRngs：shuffle/card_random/ai/misc（seed+floorNum 重播种），随机占位全回填
 
-## ## 本轮追加（UI 后续推进 5，2026-10-17）
+## ## 本轮追加（UI 后续推进 6，2026-10-17）
+
+- 事件累计 42 件：+8（死去的冒险者/低语之灵/神秘球体/陀螺/鬼影/试炼/鸟洞/吸血鬼）（8e7f6eb）
+- 真怪余量：SpecialAi 至 13 种（+Rebirth 复活/HiveDeath/Summoner 召唤），
+  exec_damage rebirth 快照重构（77d877f）
+
+## 本轮追加（UI 后续推进 5，2026-10-17）
 
 - 事件累计 34 件：+10（哥布林轮盘/闪亮之光/红面具墓/竞技场/摩艾/巢穴/冒险者/矿坑/墓地/城堡）（5cecdeb）
 - 真怪继续：SpecialAi 至 10 种（+Donu&Deca 交替/Hexaghost 计数/GremlinNob 怒气——玩家打技能+1力）（25ce780）
