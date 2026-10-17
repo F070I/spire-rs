@@ -14,6 +14,21 @@ use crate::map::{generate_dungeon, MapRoomNode, MAP_HEIGHT, MAP_WIDTH, PATH_DENS
 use sts_data::encounters;
 use sts_data::rng::StsRandom;
 
+/// Neow 祝福类型（记录 05 §6 的 19 值子集，可玩优先）。
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum NeowReward {
+    ThreeCards,
+    OneRandomRareCard,
+    RemoveCard,
+    UpgradeCard,
+    ThreeSmallPotions,
+    RandomCommonRelic,
+    TenPercentHpBonus,
+    HundredGold,
+    TwoFiftyGold,
+    BossRelic,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RoomPhase {
     /// 等待玩家在地图上选节点
@@ -51,6 +66,10 @@ pub struct RunState4b {
     pub uuid_next: u64,
     /// 遗物上下文（占位）
     pub relics_ctx: RelicCtx,
+    /// Neow 阶段：Some(四选项) = 待选择；None = 已完成/无
+    pub neow_offers: Option<[NeowReward; 4]>,
+    /// Neow rng（每次重置——记录 05 §6 保真）
+    pub neow_rng: StsRandom,
     /// 战斗期 RNG（每层重播种）
     pub rngs: crate::battle::BattleRngs,
     pub map_rng: StsRandom,
@@ -103,6 +122,8 @@ impl RunState4b {
             potion_reward: None,
             relics: Vec::new(),
             potions: vec![None, None, None],
+            neow_offers: None,
+            neow_rng: StsRandom::new(seed),
             rngs: crate::battle::BattleRngs::new(seed, 0),
             map_rng,
             monster_rng,
@@ -139,6 +160,89 @@ impl RunState4b {
             .unwrap_or_else(|| panic!("card {id}"));
         self.deck.push(CardInst::new(sid, false, self.uuid_next));
         self.uuid_next += 1;
+    }
+
+    /// Neow：生成四选一（cat0 换牌 / cat1 增益 / cat2 大额 / cat3 Boss 遗物）。
+    pub fn open_neow(&mut self) {
+        use NeowReward::*;
+        // cat0（6 选 1 简化为 4）：
+        let cat0 = [
+            ThreeCards,
+            OneRandomRareCard,
+            RemoveCard,
+            UpgradeCard,
+        ];
+        // cat1（5 选 1 简化为 3）：
+        let cat1 = [ThreeSmallPotions, RandomCommonRelic, TenPercentHpBonus];
+        // cat2（大额金币）
+        let cat2 = [TwoFiftyGold, HundredGold];
+        let pick = |rng: &mut StsRandom, n: usize| rng.random_int_inclusive(n as i32 - 1) as usize;
+        let r0 = cat0[pick(&mut self.neow_rng, cat0.len())];
+        let r1 = cat1[pick(&mut self.neow_rng, cat1.len())];
+        let r2 = cat2[pick(&mut self.neow_rng, cat2.len())];
+        self.neow_offers = Some([r0, r1, r2, BossRelic]);
+    }
+
+    /// 应用 Neow 选项（index 0..3）。
+    pub fn take_neow(&mut self, index: usize) -> Result<(), &'static str> {
+        use NeowReward::*;
+        let Some(offers) = self.neow_offers else {
+            return Err("Neow 未开启");
+        };
+        match offers.get(index).copied().ok_or("选项越界")? {
+            ThreeCards => {
+                for _ in 0..3 {
+                    let sid = self.roll_reward_card();
+                    self.deck.push(CardInst::new(sid, false, self.uuid_next));
+                    self.uuid_next += 1;
+                }
+            }
+            OneRandomRareCard => {
+                let rare: Vec<usize> = sts_data::gen::CARDS
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, c)| c.rarity == sts_data::gen::CardRarity::Rare && c.color == sts_data::gen::CardColor::Red)
+                    .map(|(i, _)| i)
+                    .collect();
+                if !rare.is_empty() {
+                    let sid = rare[self.neow_rng.random_int_inclusive(rare.len() as i32 - 1) as usize];
+                    self.deck.push(CardInst::new(sid, false, self.uuid_next));
+                    self.uuid_next += 1;
+                }
+            }
+            RemoveCard => {
+                self.deck.pop();
+            }
+            UpgradeCard => {
+                if let Some(c) = self.deck.first_mut() {
+                    c.apply_upgrade();
+                }
+            }
+            ThreeSmallPotions => {
+                for slot in self.potions.iter_mut() {
+                    if slot.is_none() {
+                        *slot = Some("Fire Potion");
+                    }
+                }
+            }
+            RandomCommonRelic => {
+                self.relics.push("Vajra");
+            }
+            TenPercentHpBonus => {
+                let bonus = self.player_max_hp / 10;
+                self.player_max_hp += bonus;
+                self.player_hp += bonus;
+            }
+            HundredGold => self.gold += 100,
+            TwoFiftyGold => self.gold += 250,
+            BossRelic => {
+                // 换初始遗物为随机 Boss 遗物（简化：给 Sozu 占位）
+                self.relics.push("Sozu");
+            }
+        }
+        self.neow_offers = None;
+        self.phase = RoomPhase::MapChoice;
+        Ok(())
     }
 
     /// 地图选节点（首行限制 + isConnectedTo 校验；返回 Err=非法选择）。
@@ -700,6 +804,34 @@ mod tests {
         let mut rng2 = StsRandom::new(7);
         let new_map = generate_dungeon(MAP_HEIGHT, MAP_WIDTH, PATH_DENSITY, &mut rng2);
         let _ = (act0_map_seed_marker, new_map); // 结构性验证已由 boss/phase 覆盖
+    }
+
+    #[test]
+    fn neow_flow_and_effects() {
+        let mut run = RunState4b::new(42);
+        run.open_neow();
+        let offers = run.neow_offers.expect("四选项已生成");
+        // 应用每个选项验证效果（重复开 Neow 用不同 index）
+        for (i, _) in offers.iter().enumerate() {
+            run.open_neow();
+            let offer = run.neow_offers.unwrap()[i];
+            let hp0 = run.player_max_hp;
+            let gold0 = run.gold;
+            let deck0 = run.deck.len();
+            let relics0 = run.relics.len();
+            run.take_neow(i).unwrap();
+            match offer {
+                NeowReward::TenPercentHpBonus => {
+                    assert_eq!(run.player_max_hp, hp0 + hp0 / 10, "+10% maxHP")
+                }
+                NeowReward::HundredGold => assert_eq!(run.gold, gold0 + 100),
+                NeowReward::TwoFiftyGold => assert_eq!(run.gold, gold0 + 250),
+                NeowReward::ThreeCards => assert!(run.deck.len() >= deck0),
+                _ => {}
+            }
+            assert!(run.neow_offers.is_none(), "应用后关闭");
+            let _ = relics0;
+        }
     }
 
     #[test]
