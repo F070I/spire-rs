@@ -3,6 +3,7 @@
 //! 本 crate 不含游戏行为；只含数据与纯函数。
 //! 数值常量的出处逐条标注原版文件（见 docs/source-inventory/）。
 
+pub mod encounters;
 pub mod rng;
 
 /// 机械抽取的静态数据表（tools/extract.py 生成，勿手改）。
