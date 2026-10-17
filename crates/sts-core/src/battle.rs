@@ -216,6 +216,10 @@ pub struct BattleState {
     pub uuid_next: u64,
     /// 手牌上限（masterHandSize，默认 5；MAX_HAND_SIZE=10 是抽牌钳制）。
     pub game_hand_size: i32,
+    /// GameActionManager.totalDiscardedThisTurn（手动弃牌计数，回合末弃牌不计）。
+    pub total_discarded_this_turn: i32,
+    /// 本回合打出的攻击牌数（Finisher 等）。
+    pub attacks_played_this_turn: i32,
     pub is_battle_over: bool,
     /// 充能球（空槽占位补齐；批次 3.8 完整化）。
     pub orbs: Vec<crate::orb::Orb>,
@@ -284,6 +288,8 @@ impl BattleState {
             mgr: ActionManager::new(),
             uuid_next: 1,
             game_hand_size,
+            total_discarded_this_turn: 0,
+            attacks_played_this_turn: 0,
             is_battle_over: false,
             orbs: Vec::new(),
             max_orbs: 0,
@@ -602,7 +608,7 @@ impl BattleState {
         }
     }
 
-    fn first_alive_monster(&self) -> Option<usize> {
+    pub fn first_alive_monster(&self) -> Option<usize> {
         self.monsters
             .iter()
             .position(|m| !m.creature.is_dying && !m.creature.is_dead)
@@ -725,6 +731,30 @@ impl BattleState {
         if metallicize > 0 {
             self.player.add_block(metallicize);
         }
+        // NoxiousFumesPower.atEndOfTurn：全体怪物 +amount 毒
+        if let Some(fumes) = self
+            .player
+            .powers
+            .iter()
+            .find(|p| p.kind == PowerKind::NoxiousFumes)
+            .map(|p| p.amount)
+        {
+            let alive: Vec<usize> = self
+                .monsters
+                .iter()
+                .enumerate()
+                .filter(|(_, m)| !m.creature.is_dying && !m.creature.is_dead)
+                .map(|(i, _)| i)
+                .collect();
+            for mi in alive {
+                deferred.push(GameAction::ApplyPower {
+                    target: TargetRef::Monster(mi),
+                    source: Some(TargetRef::Player),
+                    power: Power::new(PowerKind::Poison, fumes),
+                    from_monster: false,
+                });
+            }
+        }
         // CombustPower.atEndOfTurn：失去 1 HP（HP_LOSS）+ 对全体造成 magic 伤害
         if let Some(dmg) = combust {
             deferred.push(GameAction::LoseHp {
@@ -757,7 +787,9 @@ impl BattleState {
                 .powers
                 .retain(|p| p.kind != PowerKind::LoseStrength);
         }
-        // 2) 计数清零（cardsPlayedThisTurn 等 TODO 2.4）
+        // 2) 计数清零（记录 01 §3：cardsPlayedThisTurn/totalDiscardedThisTurn 等）
+        self.total_discarded_this_turn = 0;
+        self.attacks_played_this_turn = 0;
         // 3-5) 回合开始钩子（遗物/卡/能力 atStartOfTurn）—— TODO 3.5/3.6
         self.mgr.turn += 1;
         self.mgr.skip_monster_turn = false;
@@ -808,6 +840,27 @@ impl BattleState {
                 PowerKind::Energized => post_draw.push(GameAction::GainEnergy {
                     amount: p.amount,
                 }),
+                // InfiniteBladesPower.atStartOfTurnPostDraw：+1 Shiv 进手
+                PowerKind::InfiniteBlades => post_draw.push(GameAction::MakeTempCardInHand {
+                    sid: crate::cards::sid_of("Shiv"),
+                    upgraded: false,
+                    count: p.amount,
+                }),
+                // ToolsOfTheTradePower.atStartOfTurnPostDraw：抽 1（回合末弃 1 TODO 3.5）
+                PowerKind::ToolsOfTheTrade => post_draw.push(GameAction::DrawCard {
+                    amount: p.amount,
+                    end_turn_draw: false,
+                }),
+                // WraithFormPower.atStartOfTurnPostDraw：+amount 无实体，amount--
+                PowerKind::WraithForm => {
+                    post_draw.push(GameAction::ApplyPower {
+                        target: TargetRef::Player,
+                        source: Some(TargetRef::Player),
+                        power: Power::new(PowerKind::IntangiblePlayer, p.amount),
+                        from_monster: false,
+                    });
+                    p.amount -= 1;
+                }
                 _ => {}
             }
         }
@@ -1233,6 +1286,20 @@ impl BattleState {
         }
         // onPlayCard 钩子链（记录 09 §1-4）：玩家 powers → 怪物 powers → 遗物 → 架势 →
         // blights → 手/弃/抽牌堆卡——TODO 3.5/3.6 钩子接入（当前无钩子能力）
+        // ThousandCutsPower.onUseCard：每打出一张牌 → 全体 amount 伤
+        if let Some(cuts) = self
+            .player
+            .powers
+            .iter()
+            .find(|p| p.kind == PowerKind::ThousandCuts)
+            .map(|p| p.amount)
+        {
+            let matrix = self.combust_matrix(cuts);
+            self.mgr.add_bottom(GameAction::DamageAll {
+                matrix,
+                ty: DamageType::Thorns,
+            });
+        }
 
         // use() 效果：cards 模块分发（记录 09 §1 阶段 C-4）
         let target = item.target;
@@ -1250,6 +1317,9 @@ impl BattleState {
         }
         // 手牌移除（useCard 步骤 6-7）
         self.hand.remove_uuid(uuid);
+        if st.kind == CardType::Attack {
+            self.attacks_played_this_turn += 1;
+        }
         // 效果入队（use() 的 addToBot 语义）
         for a in effects {
             self.mgr.add_bottom(a);

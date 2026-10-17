@@ -46,6 +46,26 @@ const ROUTINES: &[(&str, RoutineFn)] = &[
     ("EscapePlanAction", escape_plan),
     // actions/unique/ExpertiseAction：抽牌直到手牌 = amount
     ("ExpertiseAction", expertise),
+    // actions/unique/CalculatedGambleAction：弃整手 → 抽同数
+    ("CalculatedGambleAction", calculated_gamble),
+    // actions/unique/SkewerAction：X 费——每点能量一段 amount 伤
+    ("SkewerAction", skewer),
+    // actions/unique/MalaiseAction：X 费——敌人 Weak +amount 与力量 -amount
+    ("MalaiseAction", malaise),
+    // actions/unique/HeelHookAction：伤害 + 本回合有弃牌 → 抽 1 回 1 能
+    ("HeelHookAction", heel_hook),
+    // actions/unique/FinisherAction：本回合每张攻击 → 一次 amount 伤
+    ("FinisherAction", finisher),
+    // actions/unique/FlechetteAction：手牌技能数 × amount 伤
+    ("FlechetteAction", flechettes),
+    // actions/unique/ApplyBulletTimeAction：手牌全部 0 费
+    ("ApplyBulletTimeAction", bullet_time),
+    // actions/unique/BladeFuryAction（Storm of Steel 复用）：弃整手 → 每张 +1 飞刀
+    ("BladeFuryAction", blade_fury),
+    // actions/unique/SetupAction：手牌选 1 置抽牌堆顶（选择屏 TODO 批次 6）
+    ("SetupAction", setup),
+    // actions/unique/CatalystAction：毒层数 ×amount（2/3）
+    ("CatalystAction", catalyst),
 ];
 
 pub fn run(b: &mut BattleState, call: &RoutineCall) {
@@ -258,6 +278,149 @@ fn expertise(b: &mut BattleState, call: &RoutineCall) {
             amount: deficit,
             end_turn_draw: false,
         });
+    }
+}
+
+/// CalculatedGambleAction：弃整手（每张计数）→ 抽同数。
+fn calculated_gamble(b: &mut BattleState, call: &RoutineCall) {
+    let _ = call;
+    let n = b.hand.group.len() as i32;
+    b.total_discarded_this_turn += n;
+    while let Some(c) = b.hand.group.pop() {
+        b.discard_pile.add_top(c);
+    }
+    if n > 0 {
+        b.mgr.add_bottom(GameAction::DrawCard { amount: n, end_turn_draw: false });
+    }
+}
+
+/// SkewerAction：X 费——energyOnUse 段，每段 amount 伤（amount2 = 能量）。
+fn skewer(b: &mut BattleState, call: &RoutineCall) {
+    for _ in 0..call.amount2.max(0) {
+        if let Some(mi) = call.target {
+            b.mgr.add_bottom(GameAction::Damage {
+                target: TargetRef::Monster(mi),
+                info: attack_info(b, mi, call.amount, DamageType::Normal),
+            });
+        }
+    }
+    b.energy = (b.energy - call.amount2).max(0);
+}
+
+/// MalaiseAction：X 费——目标 Weak +amount2？原版：施加 Weak 与力量损失各 X。amount2 = 能量。
+fn malaise(b: &mut BattleState, call: &RoutineCall) {
+    let x = call.amount2.max(0);
+    if let Some(mi) = call.target {
+        b.mgr.add_bottom(GameAction::ApplyPower {
+            target: TargetRef::Monster(mi),
+            source: Some(TargetRef::Player),
+            power: crate::power::Power::new(crate::power::PowerKind::Weak, x),
+            from_monster: false,
+        });
+        b.mgr.add_bottom(GameAction::ApplyPower {
+            target: TargetRef::Monster(mi),
+            source: Some(TargetRef::Player),
+            power: crate::power::Power::new(crate::power::PowerKind::Strength, -x),
+            from_monster: false,
+        });
+    }
+    b.energy = (b.energy - x).max(0);
+}
+
+/// HeelHookAction：伤害；本回合 totalDiscardedThisTurn > 0 → 抽 1 + 回 1 能。
+fn heel_hook(b: &mut BattleState, call: &RoutineCall) {
+    if let Some(mi) = call.target {
+        b.mgr.add_bottom(GameAction::Damage {
+            target: TargetRef::Monster(mi),
+            info: attack_info(b, mi, sts_data::gen::CARDS[call.sid].base_damage, DamageType::Normal),
+        });
+        if b.total_discarded_this_turn > 0 {
+            b.mgr.add_bottom(GameAction::DrawCard { amount: 1, end_turn_draw: false });
+            b.mgr.add_bottom(GameAction::GainEnergy { amount: 1 });
+        }
+    }
+}
+
+/// FinisherAction：本回合每张攻击 → 一次 amount 伤（多段）。
+fn finisher(b: &mut BattleState, call: &RoutineCall) {
+    let n = b.attacks_played_this_turn;
+    for _ in 0..n {
+        if let Some(mi) = call.target {
+            b.mgr.add_bottom(GameAction::Damage {
+                target: TargetRef::Monster(mi),
+                info: attack_info(b, mi, call.amount, DamageType::Normal),
+            });
+        }
+    }
+}
+
+/// FlechetteAction：手牌技能数 × amount 伤（一次 DamageInfo 多段动作？原版单段 count×dmg
+/// ——FlechetteAction: count = 技能数，damage 输出 = info × count 单次结算）。
+fn flechettes(b: &mut BattleState, call: &RoutineCall) {
+    let skills = b
+        .hand
+        .group
+        .iter()
+        .filter(|c| c.st().kind == sts_data::gen::CardType::Skill)
+        .count() as i32;
+    if let Some(mi) = call.target {
+        b.mgr.add_bottom(GameAction::Damage {
+            target: TargetRef::Monster(mi),
+            info: attack_info(b, mi, call.amount * skills, DamageType::Normal),
+        });
+    }
+}
+
+/// ApplyBulletTimeAction：手牌全部 setCostForTurn(0)（NoDraw 由卡牌 apply 段处理）。
+fn bullet_time(b: &mut BattleState, _call: &RoutineCall) {
+    for c in &mut b.hand.group {
+        c.cost_for_turn = 0;
+    }
+}
+
+/// BladeFuryAction（Storm of Steel）：弃整手 → 每张 +1 Shiv 进手。
+fn blade_fury(b: &mut BattleState, call: &RoutineCall) {
+    let _ = call;
+    let n = b.hand.group.len() as i32;
+    b.total_discarded_this_turn += n;
+    while let Some(c) = b.hand.group.pop() {
+        b.discard_pile.add_top(c);
+    }
+    for _ in 0..n {
+        b.mgr.add_bottom(GameAction::MakeTempCardInHand {
+            sid: crate::cards::sid_of("Shiv"),
+            upgraded: call.upgraded,
+            count: 1,
+        });
+    }
+}
+
+/// SetupAction：手牌选 1 置抽牌堆顶（选择屏 TODO 批次 6；占位移除手牌顶）。
+fn setup(b: &mut BattleState, _call: &RoutineCall) {
+    if let Some(c) = b.hand.group.pop() {
+        b.draw_pile.add_top(c);
+    }
+}
+
+/// CatalystAction：目标毒层数 ×amount（2/3）。
+fn catalyst(b: &mut BattleState, call: &RoutineCall) {
+    if let Some(mi) = call.target {
+        let cur = b.monsters[mi]
+            .creature
+            .powers
+            .iter()
+            .find(|p| p.kind == crate::power::PowerKind::Poison)
+            .map(|p| p.amount)
+            .unwrap_or(0);
+        if cur > 0 {
+            let add = cur * (call.amount - 1);
+            b.mgr.add_bottom(GameAction::ApplyPower {
+                target: TargetRef::Monster(mi),
+                source: Some(TargetRef::Player),
+                power: crate::power::Power::new(crate::power::PowerKind::Poison, add),
+                from_monster: false,
+            });
+        }
     }
 }
 

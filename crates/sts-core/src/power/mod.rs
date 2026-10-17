@@ -63,6 +63,19 @@ pub enum PowerKind {
     Energized,
     /// ThornsPower（Caltrops）：被攻击时反伤（onAttacked 钩子 TODO 3.5）。
     Thorns,
+    // ---- 批次 3.3 绿卡第 2 批 ----
+    ThousandCuts,
+    AfterImage,
+    Burst,
+    CorpseExplosion,
+    Envenom,
+    InfiniteBlades,
+    NoxiousFumes,
+    Phantasmal,
+    DrawCardNextTurn,
+    ToolsOfTheTrade,
+    RetainCard,
+    WraithForm,
     /// 兜底：尚未转译的能力（批次 3.5 逐个消灭；带原版 ID 以便审计）。
     Future,
 }
