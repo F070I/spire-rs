@@ -22,6 +22,7 @@ fn main() {
     run.open_neow();
     let stdin = std::io::stdin();
     let mut out = std::io::stdout();
+    let mut selection: usize = 0; // 键盘导航当前项
     println!("Slay the Spire — Text Edition v{}", env!("CARGO_PKG_VERSION"));
     render(&run, &mut out);
     loop {
@@ -134,6 +135,37 @@ fn main() {
                 }
                 render(&run, &mut out);
             }
+            // 键盘导航（列表选中态）
+            "j" | "down" => {
+                selection = selection.wrapping_add(1);
+                render(&run, &mut out);
+            }
+            "k" | "up" => {
+                selection = selection.wrapping_sub(1);
+                render(&run, &mut out);
+            }
+            "enter" | "confirm" => {
+                // 确认当前选中项（按阶段分派）
+                match run.phase {
+                    RoomPhase::Rewards => {
+                        if selection < run.card_reward.len() {
+                            run.take_card_reward(Some(selection));
+                        } else {
+                            run.take_card_reward(None);
+                        }
+                    }
+                    RoomPhase::CampfireChoice => {
+                        let _ = if selection == 0 { run.campfire_rest() } else { Ok(()) };
+                    }
+                    RoomPhase::TreasureChoice => run.open_treasure(),
+                    RoomPhase::EventChoice => {
+                        let _ = run.choose_event(selection);
+                    }
+                    _ => {}
+                }
+                selection = 0;
+                render(&run, &mut out);
+            }
             // 主题切换
             "t" => {
                 let cur = THEME.load(std::sync::atomic::Ordering::Relaxed);
@@ -171,6 +203,7 @@ fn main() {
 fn help() {
     println!("命令：n[开Neow] nn <0-3>[选祝福] m <x> <y>[选节点] p <手牌号> [目标]");
     println!("      e[结束回合] r <0-2>|skip[领奖] po <槽>[用药] s[存档] l[读档] q[退出]");
+    println!("      j/k[下/上选择] enter[确认] t[切主题]");
 }
 
 /// 当前主题（主题切换不改游戏状态——UI 规范 §三）。
