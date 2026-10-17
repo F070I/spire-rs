@@ -8,6 +8,7 @@
 //!
 //! 未编排（后续批）：Neow、幕间转换、事件文本、存档触发点。
 
+use crate::action::{GameAction, TargetRef};
 use crate::battle::{BattleState, CardInst, Monster, RelicCtx};
 use crate::map::{generate_dungeon, MapRoomNode, MAP_HEIGHT, MAP_WIDTH, PATH_DENSITY};
 use sts_data::encounters;
