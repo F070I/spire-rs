@@ -444,22 +444,27 @@ impl RunState4b {
         // 怪物 AI 表（批次 3.9 第一批）：HP 区间 + 招式脚本按遭遇名查表
         let ai = sts_data::monster_ai::get(encounter);
         let hp = sts_data::monster_ai::scaled_hp(ai, 0, &mut self.monster_rng);
-        let special = match encounter {
-            "Cultist" => Some(SpecialAi::Ritual(3)),
-            "The Guardian" => Some(SpecialAi::GuardianModeShift),
-            "Slime Boss" => Some(SpecialAi::SplitOnHalf),
-            "Time Eater" => Some(SpecialAi::TimeWarp),
-            "Transient" => Some(SpecialAi::Fading(5)),
-            "Lagavulin" => Some(SpecialAi::SleepyWakeup),
-            "Nemesis" => Some(SpecialAi::PhaseShift),
-            "Donu" | "Deca" => Some(SpecialAi::AlternateHalf),
-            "Hexaghost" => Some(SpecialAi::HexaCount),
-            "Gremlin Nob" => Some(SpecialAi::Anger),
-            _ => None,
+        // 真怪状态机（批次 4c）：五真怪完全转译（Hexaghost/Orb Walker/
+        // Donu & Deca/Awakened One）；其余遭遇走脚本表
+        let monsters = match crate::monsters::build_real(encounter, 0, hp) {
+            Some(v) => v,
+            None => {
+                let special = match encounter {
+                    "Cultist" => Some(SpecialAi::Ritual(3)),
+                    "The Guardian" => Some(SpecialAi::GuardianModeShift),
+                    "Slime Boss" => Some(SpecialAi::SplitOnHalf),
+                    "Time Eater" => Some(SpecialAi::TimeWarp),
+                    "Transient" => Some(SpecialAi::Fading(5)),
+                    "Lagavulin" => Some(SpecialAi::SleepyWakeup),
+                    "Nemesis" => Some(SpecialAi::PhaseShift),
+                    "Gremlin Nob" => Some(SpecialAi::Anger),
+                    _ => None,
+                };
+                let mut mon = Monster::scripted(encounter, hp, ai.moves.to_vec());
+                mon.special = special;
+                vec![mon]
+            }
         };
-        let mut mon = Monster::scripted(encounter, hp, ai.moves.to_vec());
-        mon.special = special;
-        let monsters = vec![mon];
         let mut b = BattleState::new(
             self.player_hp,
             3,
@@ -474,6 +479,8 @@ impl RunState4b {
         b.relics_ctx = self.relics_ctx;
         b.set_rng_seed(self.seed, self.floor);
         b.start_battle();
+        // 真怪初始化：开局能力（usePreBattleAction）+ 首招 roll（aiRng）
+        b.setup_real_monsters();
         // 战初遗物钩子（原版 atBattleStart 时点）
         if b.relics_ctx.vajra_strength > 0 {
             b.mgr.add_bottom(GameAction::ApplyPower {
@@ -1040,7 +1047,7 @@ mod tests {
             "至少推进了楼层"
         );
         assert!(
-            !matches!(run.phase, RoomPhase::Dead | RoomPhase::Victory) || run.alive() == false || true,
+            !matches!(run.phase, RoomPhase::Dead | RoomPhase::Victory) || !run.alive() || true,
             "状态机合法（新阶段均为合法状态）"
         );
     }

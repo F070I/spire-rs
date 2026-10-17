@@ -187,39 +187,136 @@ pub enum SpecialAi {
     SleepyWakeup,
     /// Nemesis：每 2 回合获得 1 无实体
     PhaseShift,
-    /// Donu&Deca：交替攻击/强化（奇数回合攻击，偶数回合 buff）
-    AlternateHalf,
-    /// Hexaghost：6 火计数（每 3 回合引动一轮——简化为回合计数伤害递增）
-    HexaCount,
     /// Gremlin Nob：玩家打技能牌时 +1 力（Anger 语义）
     Anger,
-    /// Awakened One：死亡时复活一次（回满血）
-    Rebirth,
     /// Darkling：三只同体——单只死亡后其余两只在 2 回合后复活它（简化：死亡不掉离队列）
     HiveDeath,
     /// Gremlin Leader：每 3 回合召唤一只小怪（占位：+1 力给自己）
     Summoner,
+    // ---- 批次 4c 真怪状态机（monsters::build_real 构造；exec_real_move 驱动）----
+    /// Hexaghost 六火完整：ACTIVATE→DIVIDER(6×玩家HP/12+1)→按 orb_count 轮转
+    /// SEAR/TACKLE/INFLAME/INFERNO；Inferno 后灼伤升级。数值按升阶定格（A4/A19）。
+    HexaghostFull { fire_tackle: i32, inferno: i32, str_amt: i32, sear_burn: i32 },
+    /// Orb Walker：Laser（伤+灼伤×2）/Claw 轮转 + 回合末 +N 力（GenericStrengthUpPower）。
+    OrbWalkerAi { laser: i32, claw: i32, str_up: i32 },
+    /// Donu：Beam（2 段）/Circle of Power（全体 +3 力）严格交替；开局 Artifact。
+    DonuAi { beam: i32, artifact: i32 },
+    /// Deca：Beam（2 段 + 2 张 Dazed 进弃牌堆）/Square of Protection（全体 +16 格挡，
+    /// A19+ 再 +N 反甲）严格交替——与 Donu 反相（Deca 开局攻击）；开局 Artifact。
+    DecaAi { beam: i32, plated: i32, artifact: i32 },
+    /// Awakened One 双形态：一形态 Pounce/Sweep；HP 归零 → 去减益 → REBIRTH 回满血 →
+    /// 二形态 Dark Echo/Sludge(+Void)/Triple；回合末 Regenerate；开局力量（A4+）。
+    AwakenedOneAi { regen: i32, curiosity: i32, str_pre: i32 },
+}
+
+/// 真怪状态机私有状态（批次 4c；仅 HexaghostFull/OrbWalkerAi/DonuAi/DecaAi/
+/// AwakenedOneAi 五个变体使用，其余怪保持 Default）。
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Brain {
+    /// Hexaghost：已点燃火数（0-6；0=全灭）。
+    pub orb_count: u8,
+    /// Hexaghost：DIVIDER 每段伤害（ACTIVATE 执行时按玩家当前 HP 定格）。
+    pub divider_base: i32,
+    /// Hexaghost：Inferno 已发动（此后灼伤为升级版）。
+    pub burn_up: bool,
+    /// Donu/Deca 相位：true=下一招攻击（Beam），false=下一招辅助。
+    pub attacking: bool,
+    /// AwakenedOne：首招未出（form1→Pounce，form2→Dark Echo）。
+    pub first_done: bool,
+    /// AwakenedOne：已进入二形态。
+    pub form2: bool,
 }
 
 #[derive(Clone, Debug)]
 pub struct Monster {
     pub creature: Creature,
     /// 脚本化招式（每次攻击的基础伤害；None = 防御回合）。
+    /// 真怪状态机怪此表为空，走 next_byte/brain 路径。
     pub script: Vec<Option<i32>>,
     pub move_idx: usize,
     /// 特殊机制（无则纯脚本怪）
     pub special: Option<SpecialAi>,
     /// AI 计数器（回合数/触发计数等）
     pub ai_turn: u32,
+    /// 真怪当前招式字节（DIVIDER=1 等原版常量）。
+    pub next_byte: u8,
+    /// 真怪当前招式段数（多段攻击）。
+    pub hits: i32,
+    /// 真怪招式历史（lastMove/lastTwoMoves 判定；执行后 push）。
+    pub move_history: Vec<u8>,
+    /// 真怪私有状态。
+    pub brain: Brain,
 }
 
 impl Monster {
     /// 脚本怪意图：当前招式为攻击（Some）即攻击意图（真怪 Intent 在批次 3.9）。
     pub fn is_attacking_intent(&self) -> bool {
-        self.script
-            .get(self.move_idx.min(self.script.len().saturating_sub(1)))
-            .map(|m| m.is_some())
-            .unwrap_or(false)
+        if !self.script.is_empty() {
+            return self
+                .script
+                .get(self.move_idx.min(self.script.len().saturating_sub(1)))
+                .map(|m| m.is_some())
+                .unwrap_or(false);
+        }
+        self.real_is_attack()
+    }
+
+    /// 真怪当前招式是否攻击意图（UI 着色用）。
+    pub fn real_is_attack(&self) -> bool {
+        match self.special {
+            Some(SpecialAi::HexaghostFull { .. }) => matches!(self.next_byte, 1 | 2 | 4 | 6),
+            Some(SpecialAi::OrbWalkerAi { .. }) => true,
+            Some(SpecialAi::DonuAi { .. }) => self.next_byte == 0,
+            Some(SpecialAi::DecaAi { .. }) => self.next_byte == 0,
+            Some(SpecialAi::AwakenedOneAi { .. }) => matches!(self.next_byte, 1 | 2 | 5 | 6 | 8),
+            _ => false,
+        }
+    }
+
+    /// 意图标签（UI 直接显示；核心不猜测——数值全部来自招式表/定格值）。
+    pub fn intent_label(&self) -> String {
+        if !self.script.is_empty() {
+            return match self.script.get(self.move_idx.min(self.script.len() - 1)) {
+                Some(Some(d)) => format!("⚔ {d}"),
+                _ => "🛡 防御".to_string(),
+            };
+        }
+        match self.special {
+            Some(SpecialAi::HexaghostFull { fire_tackle, inferno, .. }) => match self.next_byte {
+                1 => format!("⚔ 分裂 ×6 {}", self.brain.divider_base),
+                2 => format!("⚔ 火焰冲撞 ×2 {fire_tackle}"),
+                3 => "🛡 强化 (+12格挡 +力量)".to_string(),
+                4 => "⚔ 灼烧 6 (+灼伤)".to_string(),
+                5 => "❓ 未知".to_string(),
+                6 => format!("⚔ 地狱火 ×6 {inferno} (+灼伤)"),
+                _ => "❓ 未知".to_string(),
+            },
+            Some(SpecialAi::OrbWalkerAi { laser, claw, .. }) => match self.next_byte {
+                1 => format!("⚔ 激光 {laser} (+灼伤)"),
+                2 => format!("⚔ 爪击 {claw}"),
+                _ => "❓ 未知".to_string(),
+            },
+            Some(SpecialAi::DonuAi { beam, .. }) => match self.next_byte {
+                0 => format!("⚔ 光束 ×2 {beam}"),
+                2 => "✦ 力量光环（全体 +3 力）".to_string(),
+                _ => "❓ 未知".to_string(),
+            },
+            Some(SpecialAi::DecaAi { beam, .. }) => match self.next_byte {
+                0 => format!("⚔ 光束 ×2 {beam} (+2 晕眩)"),
+                2 => "🛡 庇护方阵（全体 +16 格挡）".to_string(),
+                _ => "❓ 未知".to_string(),
+            },
+            Some(SpecialAi::AwakenedOneAi { .. }) => match self.next_byte {
+                1 => "⚔ 扑击 20".to_string(),
+                2 => "⚔ 横扫 ×4 6".to_string(),
+                3 => "❓ 重生".to_string(),
+                5 => "⚔ 黑暗回响 40".to_string(),
+                6 => "⚔ 泥浆 18 (+虚空)".to_string(),
+                8 => "⚔ 三连击 ×3 10".to_string(),
+                _ => "❓ 未知".to_string(),
+            },
+            _ => "❓ 未知".to_string(),
+        }
     }
 
     pub fn scripted(name: &str, hp: i32, script: Vec<Option<i32>>) -> Self {
@@ -229,7 +326,18 @@ impl Monster {
             move_idx: 0,
             special: None,
             ai_turn: 0,
+            next_byte: 0,
+            hits: 1,
+            move_history: Vec::new(),
+            brain: Brain::default(),
         }
+    }
+
+    /// 真怪状态机怪构造（空脚本；首招由 roll_initial_moves 决定）。
+    pub fn real(name: &str, hp: i32, special: SpecialAi) -> Self {
+        let mut m = Self::scripted(name, hp, Vec::new());
+        m.special = Some(special);
+        m
     }
 
     /// 带特殊机制的构造。
@@ -476,6 +584,23 @@ impl BattleState {
         for a in eot {
             self.mgr.add_bottom(a);
         }
+        // Burn.triggerOnEndOfTurnForPlayingCard：手牌灼伤自动打出——THORNS 伤
+        // （无视格挡）= magic（升级 +2）；升级灼伤在批次 4c Hexaghost 引入
+        let burn_sid = crate::cards::sid_of("Burn");
+        for c in &self.hand.group {
+            if c.sid == burn_sid {
+                self.mgr.add_bottom(GameAction::Damage {
+                    target: TargetRef::Player,
+                    info: DamageInfo {
+                        owner_is_player: true,
+                        base: c.eff_magic(),
+                        output: c.eff_magic(),
+                        ty: DamageType::Thorns,
+                        modified: false,
+                    },
+                });
+            }
+        }
         self.mgr.add_bottom(GameAction::ClearCardQueue);
         self.mgr.add_bottom(GameAction::DiscardAtEndOfTurn);
         // 全牌 resetAttributes（记录 01 §8）
@@ -595,21 +720,23 @@ impl BattleState {
         if let Some(mi) = self.mgr.monster_queue.pop_front() {
             let m = &mut self.monsters[mi];
             m.ai_turn += 1;
+            // 真怪状态机（批次 4c）：完全接管本回合（多段伤/状态牌/转换），不走脚本
+            if matches!(
+                m.special,
+                Some(SpecialAi::HexaghostFull { .. })
+                    | Some(SpecialAi::OrbWalkerAi { .. })
+                    | Some(SpecialAi::DonuAi { .. })
+                    | Some(SpecialAi::DecaAi { .. })
+                    | Some(SpecialAi::AwakenedOneAi { .. })
+            ) {
+                self.exec_real_move(mi);
+                return true;
+            }
             // 特殊机制（回合开始时点）
             match m.special {
                 // Cultist 仪式：每回合 +N 力量
                 Some(SpecialAi::Ritual(n)) => {
                     m.creature.powers.push(Power::new(PowerKind::Strength, n));
-                }
-                // Donu&Deca 交替：偶数回合（0 起）强化 +2 力，奇数回合攻击
-                Some(SpecialAi::AlternateHalf) => {
-                    if m.ai_turn % 2 == 1 {
-                        m.creature.powers.push(Power::new(PowerKind::Strength, 2));
-                    }
-                }
-                // Hexaghost 计数：每回合伤害基数 +1（火焰点燃递增）
-                Some(SpecialAi::HexaCount) => {
-                    // 伤害递增在 script 取值时由 dmg+ai_turn 计算过——此处仅推进计数
                 }
                 // Gremlin Nob 怒气：被动钩子在玩家出技能时（出牌段处理）——此处无操作
                 Some(SpecialAi::Anger)
@@ -911,6 +1038,365 @@ impl BattleState {
         self.monsters.iter().all(|m| m.creature.is_dying || m.creature.is_dead)
     }
 
+    // ------------------------------------------------------------------
+    // 批次 4c：真怪状态机（Hexaghost / Orb Walker / Donu / Deca / Awakened One）
+    // 转译自 monsters/{exordium,beyond}/*.java 的 takeTurn/getMove/changeState。
+    // 即时模型等价：takeTurn 内 addToBottom 序列原序入队；getMove 在招式执行后
+    // 即刻结算（aiRng = self.rngs.ai）。
+
+    /// 怪物 N 段攻击（原版多段 = 同一 DamageInfo 的 N 次 DamageAction；
+    /// 本批真怪各段之间力量不变，单次求值即可）。
+    fn queue_monster_hits(&mut self, mi: usize, base: i32, hits: i32) {
+        let info = {
+            let m = &self.monsters[mi];
+            DamageInfo {
+                owner_is_player: false,
+                base,
+                output: damage::monster_calculate_damage(
+                    &m.creature.powers,
+                    &self.player.powers,
+                    self.player_stance,
+                    base,
+                    false,
+                ),
+                ty: DamageType::Normal,
+                modified: true,
+            }
+        };
+        for _ in 0..hits {
+            self.mgr
+                .add_bottom(GameAction::Damage { target: TargetRef::Player, info: info.clone() });
+        }
+    }
+
+    /// BurnIncreaseAction（Hexaghost INFERNO）：抽/弃牌堆全部灼伤升级 +
+    /// 弃牌堆追加 3 张升级灼伤。
+    fn exec_burn_increase(&mut self) {
+        let burn_sid = crate::cards::sid_of("Burn");
+        for c in self
+            .draw_pile
+            .group
+            .iter_mut()
+            .chain(self.discard_pile.group.iter_mut())
+        {
+            if c.sid == burn_sid {
+                c.upgraded = true;
+            }
+        }
+        self.mgr.add_bottom(GameAction::MakeTempCardInDiscard {
+            sid: burn_sid,
+            upgraded: true,
+            count: 3,
+        });
+    }
+
+    fn exec_real_move(&mut self, mi: usize) {
+        let b = self.monsters[mi].next_byte;
+        match self.monsters[mi].special {
+            Some(SpecialAi::HexaghostFull { .. }) => self.exec_hexaghost(mi, b),
+            Some(SpecialAi::OrbWalkerAi { .. }) => self.exec_orb_walker(mi, b),
+            Some(SpecialAi::DonuAi { .. }) => self.exec_donu(mi, b),
+            Some(SpecialAi::DecaAi { .. }) => self.exec_deca(mi, b),
+            Some(SpecialAi::AwakenedOneAi { .. }) => self.exec_awakened(mi, b),
+            _ => {}
+        }
+        self.monsters[mi].move_history.push(b);
+        self.roll_real_move(mi);
+    }
+
+    /// Hexaghost（exordium/Hexaghost.java）：六火状态机。
+    fn exec_hexaghost(&mut self, mi: usize, b: u8) {
+        let SpecialAi::HexaghostFull { fire_tackle, inferno, str_amt, sear_burn } =
+            self.monsters[mi].special.unwrap()
+        else {
+            return;
+        };
+        match b {
+            // ACTIVATE（首招）：六火全燃；DIVIDER 每段伤按玩家当前 HP 定格（/12+1）
+            5 => {
+                self.monsters[mi].brain.orb_count = 6;
+                self.monsters[mi].brain.divider_base = self.player.current_health / 12 + 1;
+            }
+            // DIVIDER：6 段定格伤 → 六火全灭
+            1 => {
+                let base = self.monsters[mi].brain.divider_base;
+                self.queue_monster_hits(mi, base, 6);
+                self.monsters[mi].brain.orb_count = 0;
+            }
+            // TACKLE：2 段 → 点燃 1 火
+            2 => {
+                self.queue_monster_hits(mi, fire_tackle, 2);
+                self.monsters[mi].brain.orb_count += 1;
+            }
+            // INFLAME：+12 格挡 +N 力 → 点燃 1 火
+            3 => {
+                self.mgr.add_bottom(GameAction::GainBlock {
+                    target: TargetRef::Monster(mi),
+                    amount: 12,
+                });
+                self.mgr.add_bottom(GameAction::ApplyPower {
+                    target: TargetRef::Monster(mi),
+                    source: Some(TargetRef::Monster(mi)),
+                    power: Power::new(PowerKind::Strength, str_amt),
+                    from_monster: true,
+                });
+                self.monsters[mi].brain.orb_count += 1;
+            }
+            // SEAR：6 伤 + 灼伤×N 进弃牌堆（Inferno 后为升级版）→ 点燃 1 火
+            4 => {
+                self.queue_monster_hits(mi, 6, 1);
+                let up = self.monsters[mi].brain.burn_up;
+                self.mgr.add_bottom(GameAction::MakeTempCardInDiscard {
+                    sid: crate::cards::sid_of("Burn"),
+                    upgraded: up,
+                    count: sear_burn,
+                });
+                self.monsters[mi].brain.orb_count += 1;
+            }
+            // INFERNO：6 段 + BurnIncrease（全堆升级 + 3 张升级灼伤）→ 六火全灭
+            6 => {
+                self.queue_monster_hits(mi, inferno, 6);
+                self.exec_burn_increase();
+                self.monsters[mi].brain.burn_up = true;
+                self.monsters[mi].brain.orb_count = 0;
+            }
+            _ => {}
+        }
+    }
+
+    /// Orb Walker（beyond/OrbWalker.java）：Laser/Claw；回合末力量成长在
+    /// begin_player_turn 结算（GenericStrengthUpPower atEndOfRound）。
+    fn exec_orb_walker(&mut self, mi: usize, b: u8) {
+        let SpecialAi::OrbWalkerAi { laser, claw, .. } = self.monsters[mi].special.unwrap() else {
+            return;
+        };
+        match b {
+            // LASER：伤害 + 灼伤×2（弃牌堆/抽牌堆各 1——MakeTempCardInDiscardAndDeck）
+            1 => {
+                self.queue_monster_hits(mi, laser, 1);
+                self.mgr.add_bottom(GameAction::MakeTempCardInDiscard {
+                    sid: crate::cards::sid_of("Burn"),
+                    upgraded: false,
+                    count: 1,
+                });
+                self.mgr.add_bottom(GameAction::MakeTempCardInDrawPile {
+                    sid: crate::cards::sid_of("Burn"),
+                    upgraded: false,
+                    count: 1,
+                    random_spot: true,
+                });
+            }
+            // CLAW：重击
+            2 => self.queue_monster_hits(mi, claw, 1),
+            _ => {}
+        }
+    }
+
+    /// Donu（beyond/Donu.java）：Beam/Circle of Power 严格交替。
+    fn exec_donu(&mut self, mi: usize, b: u8) {
+        let SpecialAi::DonuAi { beam, .. } = self.monsters[mi].special.unwrap() else { return };
+        match b {
+            // BEAM：2 段
+            0 => {
+                self.queue_monster_hits(mi, beam, 2);
+                self.monsters[mi].brain.attacking = false;
+            }
+            // CIRCLE OF POWER：全体存活怪（含自身）+3 力
+            2 => {
+                let n = self.monsters.len();
+                for i in 0..n {
+                    if self.monsters[i].creature.is_dying || self.monsters[i].creature.is_dead {
+                        continue;
+                    }
+                    self.mgr.add_bottom(GameAction::ApplyPower {
+                        target: TargetRef::Monster(i),
+                        source: Some(TargetRef::Monster(mi)),
+                        power: Power::new(PowerKind::Strength, 3),
+                        from_monster: true,
+                    });
+                }
+                self.monsters[mi].brain.attacking = true;
+            }
+            _ => {}
+        }
+    }
+
+    /// Deca（beyond/Deca.java）：Beam(+Dazed)/Square of Protection 严格交替，
+    /// 与 Donu 反相（Deca 开局攻击）。
+    fn exec_deca(&mut self, mi: usize, b: u8) {
+        let SpecialAi::DecaAi { beam, plated, .. } = self.monsters[mi].special.unwrap() else { return };
+        match b {
+            // BEAM：2 段 + 2 张晕眩进弃牌堆
+            0 => {
+                self.queue_monster_hits(mi, beam, 2);
+                self.mgr.add_bottom(GameAction::MakeTempCardInDiscard {
+                    sid: crate::cards::sid_of("Dazed"),
+                    upgraded: false,
+                    count: 2,
+                });
+                self.monsters[mi].brain.attacking = false;
+            }
+            // SQUARE OF PROTECTION：全体 +16 格挡（A19+ 再 +N 反甲）
+            2 => {
+                let n = self.monsters.len();
+                for i in 0..n {
+                    if self.monsters[i].creature.is_dying || self.monsters[i].creature.is_dead {
+                        continue;
+                    }
+                    self.mgr.add_bottom(GameAction::GainBlock {
+                        target: TargetRef::Monster(i),
+                        amount: 16,
+                    });
+                    if plated > 0 {
+                        self.mgr.add_bottom(GameAction::ApplyPower {
+                            target: TargetRef::Monster(i),
+                            source: Some(TargetRef::Monster(mi)),
+                            power: Power::new(PowerKind::PlatedArmor, plated),
+                            from_monster: true,
+                        });
+                    }
+                }
+                self.monsters[mi].brain.attacking = true;
+            }
+            _ => {}
+        }
+    }
+
+    /// Awakened One（beyond/AwakenedOne.java）：双形态 + REBIRTH。
+    fn exec_awakened(&mut self, mi: usize, b: u8) {
+        match b {
+            1 => self.queue_monster_hits(mi, 20, 1), // POUNCE
+            2 => self.queue_monster_hits(mi, 6, 4),  // SLASH SWEEP
+            // REBIRTH：回满血 + 半死解除（cannotLose 由即时模型吸收：半死不判胜）
+            3 => {
+                let m = &mut self.monsters[mi];
+                m.creature.current_health = m.creature.max_health;
+                m.creature.half_dead = false;
+            }
+            5 => self.queue_monster_hits(mi, 40, 1), // DARK ECHO
+            // SLUDGE：18 伤 + 1 张虚空洗入抽牌堆
+            6 => {
+                self.queue_monster_hits(mi, 18, 1);
+                self.mgr.add_bottom(GameAction::MakeTempCardInDrawPile {
+                    sid: crate::cards::sid_of("Void"),
+                    upgraded: false,
+                    count: 1,
+                    random_spot: true,
+                });
+            }
+            8 => self.queue_monster_hits(mi, 10, 3), // TRIPLE ATTACK
+            _ => {}
+        }
+    }
+
+    /// 真怪 getMove 转译（rollMove：aiRng.random(99) 每次先抽——原版
+    /// AbstractMonster.rollMove 无论 getMove 是否用到都抽一次）。
+    fn roll_real_move(&mut self, mi: usize) {
+        let num = self.rngs.ai.random_int_inclusive(99);
+        let last = |h: &[u8]| h.last().copied().unwrap_or(0);
+        let last_two = |h: &[u8], byte: u8| h.len() >= 2 && h[h.len() - 2..] == [byte, byte];
+        match self.monsters[mi].special {
+            // Hexaghost：首招 ACTIVATE → DIVIDER；其后按火数查表（getMove case 0-6）
+            Some(SpecialAi::HexaghostFull { .. }) => {
+                let m = &mut self.monsters[mi];
+                if !m.brain.first_done {
+                    m.brain.first_done = true;
+                    m.next_byte = 5;
+                } else if last(&m.move_history) == 5 {
+                    m.next_byte = 1;
+                } else {
+                    m.next_byte = match m.brain.orb_count {
+                        1 | 4 => 2, // TACKLE
+                        3 => 3,     // INFLAME
+                        6 => 6,     // INFERNO
+                        _ => 4,     // 0/2/5 → SEAR
+                    };
+                }
+            }
+            // Orb Walker：roll<40 → Claw（连击钳制→Laser）；否则 Laser（两连→Claw）
+            Some(SpecialAi::OrbWalkerAi { .. }) => {
+                let m = &mut self.monsters[mi];
+                if num < 40 {
+                    m.next_byte = if last(&m.move_history) == 2 { 1 } else { 2 };
+                } else {
+                    m.next_byte = if last_two(&m.move_history, 1) { 2 } else { 1 };
+                }
+            }
+            // Donu/Deca：相位交替（无随机）
+            Some(SpecialAi::DonuAi { .. }) | Some(SpecialAi::DecaAi { .. }) => {
+                let m = &mut self.monsters[mi];
+                m.next_byte = if m.brain.attacking { 0 } else { 2 };
+            }
+            // Awakened One：首招（form1→Pounce / form2→Dark Echo）；其后加权轮转
+            Some(SpecialAi::AwakenedOneAi { .. }) => {
+                let m = &mut self.monsters[mi];
+                if !m.brain.first_done {
+                    m.brain.first_done = true;
+                    m.next_byte = if m.brain.form2 { 5 } else { 1 };
+                } else if !m.brain.form2 {
+                    if num < 25 {
+                        m.next_byte = if last(&m.move_history) == 2 { 1 } else { 2 };
+                    } else {
+                        m.next_byte = if last_two(&m.move_history, 1) { 2 } else { 1 };
+                    }
+                } else if num < 50 {
+                    m.next_byte = if last_two(&m.move_history, 6) { 8 } else { 6 };
+                } else {
+                    m.next_byte = if last_two(&m.move_history, 8) { 6 } else { 8 };
+                }
+            }
+            _ => {}
+        }
+    }
+
+    /// 战斗开始真怪初始化：开局能力（usePreBattleAction）+ 首招 roll。
+    pub fn setup_real_monsters(&mut self) {
+        for i in 0..self.monsters.len() {
+            match self.monsters[i].special {
+                // Donu/Deca：Artifact（A19+: 3，否则 2——数值定格于构造）
+                Some(SpecialAi::DonuAi { artifact, .. }) | Some(SpecialAi::DecaAi { artifact, .. }) => {
+                    if artifact > 0 {
+                        self.monsters[i]
+                            .creature
+                            .powers
+                            .push(Power::new(PowerKind::Artifact, artifact));
+                    }
+                }
+                // Awakened One：Regenerate + Curiosity +（A4+）力量 2
+                Some(SpecialAi::AwakenedOneAi { regen, curiosity, str_pre }) => {
+                    self.monsters[i]
+                        .creature
+                        .powers
+                        .push(Power::new(PowerKind::Regenerate, regen));
+                    self.monsters[i]
+                        .creature
+                        .powers
+                        .push(Power::new(PowerKind::Curiosity, curiosity));
+                    if str_pre > 0 {
+                        self.monsters[i]
+                            .creature
+                            .powers
+                            .push(Power::new(PowerKind::Strength, str_pre));
+                    }
+                }
+                _ => {}
+            }
+        }
+        // 首招 roll（战斗开始每怪一次；Orb Walker/Awakened One 消耗 aiRng）
+        for i in 0..self.monsters.len() {
+            if matches!(
+                self.monsters[i].special,
+                Some(SpecialAi::HexaghostFull { .. })
+                    | Some(SpecialAi::OrbWalkerAi { .. })
+                    | Some(SpecialAi::DonuAi { .. })
+                    | Some(SpecialAi::DecaAi { .. })
+                    | Some(SpecialAi::AwakenedOneAi { .. })
+            ) {
+                self.roll_real_move(i);
+            }
+        }
+    }
+
     /// 新回合序列（记录 01 §3-6 / 09 §9 的即时等价）。
     fn begin_player_turn(&mut self) {
         // 1) atEndOfRound（记录 03 §10：先玩家全体 powers，后每只存活怪物的 powers）
@@ -961,6 +1447,45 @@ impl BattleState {
                         amount: p.amount,
                     });
                     p.amount -= 1;
+                }
+            }
+            // RegenerateMonsterPower.atEndOfTurn(false)：回血（半死不触发——原版
+            // halfDead/isDying/isDead 判定，此处以 HP>0 等价）
+            if let Some(r) = m
+                .creature
+                .powers
+                .iter()
+                .find(|p| p.kind == PowerKind::Regenerate)
+                .map(|p| p.amount)
+            {
+                if r > 0 && m.creature.current_health > 0 {
+                    deferred.push(GameAction::Heal { target: TargetRef::Monster(mi), amount: r });
+                }
+            }
+            // PlatedArmorPower.atEndOfTurnPreEndTurnCards：+amount 格挡
+            if let Some(pa) = m
+                .creature
+                .powers
+                .iter()
+                .find(|p| p.kind == PowerKind::PlatedArmor)
+                .map(|p| p.amount)
+            {
+                if pa > 0 {
+                    deferred.push(GameAction::GainBlock {
+                        target: TargetRef::Monster(mi),
+                        amount: pa,
+                    });
+                }
+            }
+            // GenericStrengthUpPower（Orb Walker，atEndOfRound）：+amount 力
+            if let Some(SpecialAi::OrbWalkerAi { str_up, .. }) = m.special {
+                if str_up > 0 {
+                    deferred.push(GameAction::ApplyPower {
+                        target: TargetRef::Monster(mi),
+                        source: Some(TargetRef::Monster(mi)),
+                        power: Power::new(PowerKind::Strength, str_up),
+                        from_monster: true,
+                    });
                 }
             }
         }
@@ -1297,10 +1822,10 @@ impl BattleState {
                 self.rngs.shuffle = r;
             }
             GameAction::GainEnergy { amount } => {
-                self.energy = (self.energy + amount).min(999);
+                self.energy = (self.energy + amount).clamp(0, 999);
             }
             GameAction::GainEnergyAndEnableControls { amount } => {
-                self.energy = (self.energy + amount).min(999);
+                self.energy = (self.energy + amount).clamp(0, 999);
             }
             GameAction::Wait | GameAction::EnableEndTurnButton => {}
             GameAction::EndTurn => {
@@ -1323,9 +1848,11 @@ impl BattleState {
                 }
             }
             GameAction::RollMove { monster } => {
-                // 脚本怪：推进招式指针（真实怪在批次 3.9 用 aiRng）
+                // 脚本怪：推进招式指针（真怪状态机在 exec_real_move 末尾自 roll）
                 let m = &mut self.monsters[monster];
-                m.move_idx = m.move_idx.min(m.script.len() - 1);
+                if !m.script.is_empty() {
+                    m.move_idx = m.move_idx.min(m.script.len() - 1);
+                }
             }
             GameAction::ClearCardQueue => {
                 self.mgr.card_queue.clear();
@@ -1502,7 +2029,7 @@ impl BattleState {
         match target {
             TargetRef::Monster(i) => {
                 // 快照钩子数据
-                let (has_intangible, envenom, has_rebirth) = {
+                let (has_intangible, envenom, awak_form1) = {
                     let p = &self.player;
                     let mon = &self.monsters[i];
                     (
@@ -1512,7 +2039,10 @@ impl BattleState {
                             .find(|p| p.kind == PowerKind::Envenom)
                             .map(|p| p.amount)
                             .unwrap_or(0),
-                        matches!(mon.special, Some(SpecialAi::Rebirth)) && mon.ai_turn < 99,
+                        // AwakenedOne 一形态归零（未半死、未转换）
+                        matches!(mon.special, Some(SpecialAi::AwakenedOneAi { .. }))
+                            && !mon.brain.form2
+                            && !mon.creature.half_dead,
                     )
                 };
                 let c = &mut self.monsters[i].creature;
@@ -1525,10 +2055,9 @@ impl BattleState {
                 c.last_damage_taken = remain.min(c.current_health);
                 c.current_health = (c.current_health - remain).max(0);
                 let mut dying = c.current_health == 0 && !c.is_dying;
-                let mut rebirth = false;
-                if dying && has_rebirth {
-                    // AwakenedOne：首次死亡复活一次（记录 04 §4：Rebirth 回满血）
-                    rebirth = true;
+                if dying && awak_form1 {
+                    // AwakenedOne 一形态归零：不判死，转二形态（damage() 末尾
+                    // setMove(3, UNKNOWN) + form1=false + firstTurn=true）
                     dying = false;
                 }
                 if dying {
@@ -1543,11 +2072,43 @@ impl BattleState {
                         from_monster: false,
                     });
                 }
-                // AwakenedOne 复活：回满血 + 标记已用
-                if rebirth {
-                    self.monsters[i].special = Some(SpecialAi::Ritual(0));
-                    self.monsters[i].creature.current_health = self.monsters[i].creature.max_health;
-                    self.monsters[i].creature.is_dying = false;
+                // PlatedArmorPower.wasHPLost：被攻击掉血 → -1 层（HP_LOSS/THORNS 除外）
+                if remain > 0 && info.ty == DamageType::Normal {
+                    if let Some(pa) = self.monsters[i]
+                        .creature
+                        .powers
+                        .iter_mut()
+                        .find(|p| p.kind == PowerKind::PlatedArmor)
+                    {
+                        pa.amount -= 1;
+                        if pa.amount <= 0 {
+                            self.mgr.add_bottom(GameAction::RemovePower {
+                                target: TargetRef::Monster(i),
+                                kind: PowerKind::PlatedArmor,
+                            });
+                        }
+                    }
+                }
+                // AwakenedOne 转换：半死 + 去减益/Curiosity（原版删除 DEBUFF 型 +
+                // Curiosity/Unawakened/Shackled）+ 二形态首招 REBIRTH
+                if awak_form1 {
+                    let mon = &mut self.monsters[i];
+                    mon.creature.half_dead = true;
+                    mon.brain.form2 = true;
+                    mon.brain.first_done = false;
+                    mon.next_byte = 3;
+                    mon.creature.powers.retain(|p| {
+                        !matches!(
+                            p.kind,
+                            PowerKind::Curiosity
+                                | PowerKind::Vulnerable
+                                | PowerKind::Weak
+                                | PowerKind::Frail
+                                | PowerKind::Poison
+                                | PowerKind::Choke
+                                | PowerKind::Slow
+                        )
+                    });
                 }
             }
             TargetRef::Player => {
@@ -1656,6 +2217,7 @@ impl BattleState {
             let is_status = kind == CardType::Status;
             let is_status_or_curse = is_status || kind == CardType::Curse;
             let drawn_endless_agony = card.st().id == "Endless Agony";
+            let drawn_void = card.st().id == "Void";
             self.hand.add_top(card);
             let mut hooks: Vec<GameAction> = Vec::new();
             // 卡牌 triggerWhenDrawn（第一批）：Endless Agony 抽到时再抽 1
@@ -1664,6 +2226,10 @@ impl BattleState {
                     amount: 1,
                     end_turn_draw: false,
                 });
+            }
+            // VoidCard.triggerWhenDrawn：抽到时失去 1 能量（LoseEnergyAction）
+            if drawn_void {
+                hooks.push(GameAction::GainEnergy { amount: -1 });
             }
             for p in &self.player.powers {
                 match p.kind {
@@ -1776,6 +2342,16 @@ impl BattleState {
             for m in &mut self.monsters {
                 if matches!(m.special, Some(SpecialAi::Anger)) {
                     m.creature.powers.push(Power::new(PowerKind::Strength, 1));
+                }
+            }
+        }
+        // CuriosityPower.onUseCard：玩家打出能力牌 → 持有怪 +amount 力（Awakened One）
+        if st.kind == CardType::Power {
+            for m in &mut self.monsters {
+                if let Some(SpecialAi::AwakenedOneAi { curiosity, .. }) = m.special {
+                    if curiosity > 0 {
+                        m.creature.powers.push(Power::new(PowerKind::Strength, curiosity));
+                    }
                 }
             }
         }

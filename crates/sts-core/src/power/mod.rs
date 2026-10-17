@@ -117,6 +117,13 @@ pub enum PowerKind {
     ToolsOfTheTrade,
     RetainCard,
     WraithForm,
+    // ---- 批次 4c 真怪能力 ----
+    /// RegenerateMonsterPower（ID "Regenerate"）：回合末回 amount 血（Awakened One 10/15）。
+    Regenerate,
+    /// CuriosityPower：玩家打出能力牌 → 持有者 +amount 力（Awakened One 1/2）。
+    Curiosity,
+    /// PlatedArmorPower：回合末 +amount 格挡；未格挡受击掉 1 层（Deca A19+）。
+    PlatedArmor,
     /// 兜底：尚未转译的能力（批次 3.5 逐个消灭；带原版 ID 以便审计）。
     Future,
 }

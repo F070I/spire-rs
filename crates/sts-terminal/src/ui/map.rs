@@ -270,7 +270,7 @@ pub fn collect_rendered_edges(map: &[Vec<MapRoomNode>]) -> Vec<((i32, i32), (i32
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::theme::{theme, ColorTheme, MonoTheme, ThemeKind};
+    use crate::theme::{theme, ThemeKind};
     use sts_core::map::{generate_dungeon, PATH_DENSITY};
     use sts_data::rng::StsRandom;
 

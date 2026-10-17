@@ -189,7 +189,7 @@ mod tests {
     #[test]
     fn populate_no_aba_triples_for_normal() {
         let mut rng = StsRandom::new(42);
-        let list = populate_list(&EXORDIUM.strong, 50, false, &mut rng);
+        let list = populate_list(EXORDIUM.strong, 50, false, &mut rng);
         for i in 2..list.len() {
             assert!(
                 !(list[i] == list[i - 1] && list[i - 1] == list[i - 2]),
@@ -201,7 +201,7 @@ mod tests {
     #[test]
     fn populate_elite_no_adjacent_dups() {
         let mut rng = StsRandom::new(42);
-        let list = populate_list(&EXORDIUM.elites, 20, true, &mut rng);
+        let list = populate_list(EXORDIUM.elites, 20, true, &mut rng);
         for i in 1..list.len() {
             assert!(list[i] != list[i - 1], "精英相邻重复 at index {i}");
         }

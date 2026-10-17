@@ -64,7 +64,7 @@ fn rng_streams_exist_and_diverge() {
 #[test]
 fn second_wind_exhausts_non_attacks_only() {
     let mut b = fixture2(&[("Second Wind", false), ("Strike_R", false), ("Defend_R", false)]);
-    let n_non_attack = b
+    let _n_non_attack = b
         .hand
         .group
         .iter()

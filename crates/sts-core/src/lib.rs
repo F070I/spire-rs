@@ -22,6 +22,7 @@ pub mod flow4b;
 pub mod metrics;
 pub mod save;
 pub mod map;
+pub mod monsters;
 pub mod battle;
 
 pub use state::Game;

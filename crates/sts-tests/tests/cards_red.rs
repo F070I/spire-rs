@@ -9,10 +9,6 @@ fn sid(id: &str) -> usize {
     gen::CARDS.iter().position(|c| c.id == id).expect(id)
 }
 
-fn rng(seed: i64) -> sts_data::rng::StsRandom {
-    sts_data::rng::StsRandom::new(seed)
-}
-
 fn fixture(hand: &[&str]) -> BattleState {
     let deck: Vec<(usize, bool)> = hand.iter().map(|id| (sid(id), false)).collect();
     let mut b = BattleState::new(

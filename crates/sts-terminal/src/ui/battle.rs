@@ -13,13 +13,9 @@ use crate::theme::Theme;
 use sts_core::battle::BattleState;
 use sts_data::gen::{CardType, CardTarget};
 
-/// 意图显示符号 + 数值（来自核心 move 数据，不猜测）。
+/// 意图显示符号 + 数值（来自核心 move 数据/真怪状态机，不猜测）。
 pub fn intent_text(m: &sts_core::battle::Monster) -> String {
-    let move_val = m.script[m.move_idx.min(m.script.len() - 1)];
-    match move_val {
-        Some(d) => format!("⚔ {}", d), // 攻击意图 + 伤害
-        None => "🛡 防御".to_string(),
-    }
+    m.intent_label()
 }
 
 /// 战斗主视图（多行输出）。

@@ -340,6 +340,6 @@ mod tests {
             .flat_map(|r| r.iter())
             .map(|n| n.edges.len())
             .sum();
-        assert!(total_edges >= MAP_HEIGHT as usize, "边数过少: {total_edges}");
+        assert!(total_edges >= MAP_HEIGHT, "边数过少: {total_edges}");
     }
 }

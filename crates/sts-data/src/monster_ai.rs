@@ -59,7 +59,8 @@ pub static AI: &[MonsterAi] = &[
     MonsterAi { id: "Champ", hp_min: 266, hp_max: 266, moves: &[Some(16), Some(12)], kind: 'B' },
     // ============ 第三幕（The Beyond）============
     MonsterAi { id: "3 Darklings", hp_min: 50, hp_max: 54, moves: &[Some(7), Some(8)], kind: 'N' },
-    MonsterAi { id: "Orb Walker", hp_min: 60, hp_max: 64, moves: &[Some(9), Some(11)], kind: 'N' },
+    // Orb Walker：90-96（A7+: 92-102——monsters::build_real 按升阶覆盖）
+    MonsterAi { id: "Orb Walker", hp_min: 90, hp_max: 96, moves: &[Some(9), Some(11)], kind: 'N' },
     MonsterAi { id: "Spiker", hp_min: 30, hp_max: 34, moves: &[Some(5), Some(6)], kind: 'N' },
     MonsterAi { id: "Repulsor", hp_min: 30, hp_max: 34, moves: &[Some(6), None], kind: 'N' },
     MonsterAi { id: "Exploder", hp_min: 30, hp_max: 34, moves: &[Some(9)], kind: 'N' },
@@ -70,11 +71,11 @@ pub static AI: &[MonsterAi] = &[
     MonsterAi { id: "Giant Head", hp_min: 320, hp_max: 320, moves: &[Some(13), Some(26)], kind: 'E' },
     MonsterAi { id: "Nemesis", hp_min: 90, hp_max: 94, moves: &[Some(6), Some(45)], kind: 'E' },
     MonsterAi { id: "Reptomancer", hp_min: 180, hp_max: 190, moves: &[None, Some(13)], kind: 'E' },
-    // Boss
-    MonsterAi { id: "Awakened One", hp_min: 300, hp_max: 320, moves: &[Some(16), None], kind: 'B' },
+    // Boss（真怪状态机见 monsters.rs；此表为 fallback 脚本数据）
+    MonsterAi { id: "Awakened One", hp_min: 300, hp_max: 300, moves: &[Some(16), None], kind: 'B' },
     MonsterAi { id: "Time Eater", hp_min: 454, hp_max: 454, moves: &[Some(7), Some(20)], kind: 'B' },
-    MonsterAi { id: "Donu", hp_min: 255, hp_max: 255, moves: &[Some(10), None], kind: 'B' },
-    MonsterAi { id: "Deca", hp_min: 255, hp_max: 255, moves: &[Some(10), None], kind: 'B' },
+    // Donu & Deca：遭遇键为单体（encounters.rs 池），各 250（A9+: 265）
+    MonsterAi { id: "Donu & Deca", hp_min: 250, hp_max: 250, moves: &[Some(10), None], kind: 'B' },
     // ============ 第四幕（The Ending）============
     MonsterAi { id: "Spire Shield", hp_min: 140, hp_max: 140, moves: &[None, Some(18)], kind: 'N' },
     MonsterAi { id: "Spire Spear", hp_min: 140, hp_max: 140, moves: &[Some(9), None], kind: 'N' },

@@ -11,10 +11,6 @@ fn sid(id: &str) -> usize {
     gen::CARDS.iter().position(|c| c.id == id).expect(id)
 }
 
-fn rng(seed: i64) -> sts_data::rng::StsRandom {
-    sts_data::rng::StsRandom::new(seed)
-}
-
 /// 手动装配的确定性战斗（不走洗牌）。
 fn fixture(hand: &[(&str, bool)]) -> BattleState {
     let deck: Vec<(usize, bool)> = hand.iter().map(|(id, up)| (sid(id), *up)).collect();
@@ -112,7 +108,7 @@ fn turn_loop_two_rounds_and_discard_flow() {
     b.game_hand_size = 3;
     b.hand.group.truncate(3);
     let hp0 = b.monsters[0].creature.current_health;
-    for t in 0..2 {
+    for _t in 0..2 {
         let i = find_hand(&b, "Strike_R").unwrap();
         b.play_card(i, Some(0)).unwrap();
         b.run_until_idle();

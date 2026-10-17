@@ -1,15 +1,11 @@
 //! 批次 2.4 卡牌机制层测试：升级数值（机械抽取）、canUse 链（状态/诅咒/能量）、
 //! X 费快照、虚无回合末消耗、自保留回手。
 
-use sts_core::battle::{BattleState, CardInst, Monster, RelicCtx};
+use sts_core::battle::{BattleState, CardInst, Monster};
 use sts_data::gen;
 
 fn sid(id: &str) -> usize {
     gen::CARDS.iter().position(|c| c.id == id).expect(id)
-}
-
-fn rng(seed: i64) -> sts_data::rng::StsRandom {
-    sts_data::rng::StsRandom::new(seed)
 }
 
 fn fixture(hand: &[(&str, bool)]) -> BattleState {
@@ -96,7 +92,7 @@ fn upgraded_strike_and_bash_in_battle() {
             .creature
             .powers
             .iter()
-            .find(|p| p.kind == PowerKind_v2())
+            .find(|p| p.kind == vulnerable_kind())
             .map(|p| p.amount),
         Some(3)
     );
@@ -107,7 +103,7 @@ fn upgraded_strike_and_bash_in_battle() {
     assert_eq!(b.monsters[0].creature.current_health, hp0 - 10 - 13);
 }
 
-fn PowerKind_v2() -> sts_core::power::PowerKind {
+fn vulnerable_kind() -> sts_core::power::PowerKind {
     sts_core::power::PowerKind::Vulnerable
 }
 

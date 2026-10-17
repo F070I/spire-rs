@@ -47,7 +47,7 @@ mod tests {
         // addToBot(A); addToTop(B); addToBot(C); addToTop(D)
         // Java 队列：D, B, A, C
         let mut eb = EffectBuilder::new();
-        let mk = |n: i32| GameAction::Wait; // 用 Wait 代表具名动作
+        let mk = |_n: i32| GameAction::Wait; // 用 Wait 代表具名动作
         let _ = mk;
         eb.bot(GameAction::GainEnergy { amount: 1 }); // A
         eb.top(GameAction::GainEnergy { amount: 2 }); // B
