@@ -383,9 +383,23 @@ impl RunState4b {
     }
 
     /// 进房：按符号分派（记录 05 §5）。
+    /// 测试辅助：公开进房入口（MawBank 等钩子验证用）。
+    pub fn enter_room_public(&mut self) {
+        self.enter_room();
+    }
+
     fn enter_room(&mut self) {
+        // MawBank.onEnterRoom：+12 金（进商店作废——symbol 在 choose_node 分派）
         let (x, y) = self.current.unwrap();
         let symbol = self.map[y as usize][x as usize].symbol.unwrap_or('M');
+        // MawBank.onEnterRoom：+12 金；进商店作废
+        if self.relics_ctx.maw_bank {
+            if symbol == '$' {
+                self.relics_ctx.maw_bank = false;
+            } else {
+                self.gold += 12;
+            }
+        }
         // floorNum++ + 每层重播种
         self.floor += 1;
         self.rngs = crate::battle::BattleRngs::new(self.seed, self.floor);
@@ -780,6 +794,110 @@ impl RunState4b {
                     }
                 }
             }
+            // —— 批次 4g 遗物第三批 ——
+            "Kunai" => self.relics_ctx.kunai = true,
+            "Shuriken" => self.relics_ctx.shuriken = true,
+            "Ornamental Fan" => self.relics_ctx.ornamental_fan = true,
+            "Letter Opener" => self.relics_ctx.letter_opener = true,
+            "Champion Belt" => self.relics_ctx.champion_belt = true,
+            "Damaru" => self.relics_ctx.damaru = true,
+            "Mummified Hand" => self.relics_ctx.mummified_hand = true,
+            "Art of War" => self.relics_ctx.art_of_war = true,
+            "Bird Faced Urn" => self.relics_ctx.bird_faced_urn = true,
+            "Pocketwatch" => self.relics_ctx.pocketwatch = true,
+            "Bronze Scales" => self.relics_ctx.bronze_scales = true,
+            "Clockwork Souvenir" => self.relics_ctx.clockwork_souvenir = true,
+            "TwistedFunnel" => self.relics_ctx.twisted_funnel = true,
+            "Mark of Pain" => self.relics_ctx.mark_of_pain = true,
+            "Du-Vu Doll" => self.relics_ctx.du_vu_doll = true,
+            "Runic Capacitor" => self.relics_ctx.runic_capacitor = true,
+            "Enchiridion" => self.relics_ctx.enchiridion = true,
+            "CultistMask" => self.relics_ctx.cultist_mask = true,
+            "SlaversCollar" => self.relics_ctx.slavers_collar = true,
+            "Inserter" => self.relics_ctx.inserter = true,
+            "Ring of the Serpent" => self.relics_ctx.ring_of_serpent = true,
+            "FrozenCore" => self.relics_ctx.frozen_core = true,
+            "RunicCube" => self.relics_ctx.runic_cube = true,
+            "Boot" => self.relics_ctx.boot = true,
+            "Torii" => self.relics_ctx.torii = true,
+            "Lizard Tail" => self.relics_ctx.lizard_tail = true,
+            "Self Forming Clay" => self.relics_ctx.self_forming_clay = true,
+            "Emotion Chip" => self.relics_ctx.emotion_chip = true,
+            "Ice Cream" => self.relics_ctx.ice_cream = true,
+            "Regal Pillow" => self.relics_ctx.regal_pillow = true,
+            "MawBank" => self.relics_ctx.maw_bank = true,
+            "CeramicFish" => self.relics_ctx.ceramic_fish = true,
+            "Toy Ornithopter" => self.relics_ctx.toy_ornithopter = true,
+            "Ancient Tea Set" => self.relics_ctx.ancient_tea_set = true,
+            "Molten Egg 2" => self.relics_ctx.has_molten_egg = true,
+            "Toxic Egg 2" => self.relics_ctx.has_toxic_egg = true,
+            "Frozen Egg 2" => self.relics_ctx.has_frozen_egg = true,
+            "Cursed Key" => {
+                self.relics_ctx.energy_per_turn += 1;
+                // 宝箱→诅咒 TODO（onChestOpen——遭遇流未接）
+            }
+            "Omamori" => self.relics_ctx.omamori = 2,
+            "Black Blood" => self.relics_ctx.burning_blood_heal = 12,
+            "Girya" => self.relics_ctx.vajra_strength += 1,
+            "Necronomicon" => {
+                self.relics_ctx.necronomicon = true;
+                let sid = sts_data::gen::CARDS
+                    .iter()
+                    .position(|c| c.id == "Necronomicurse")
+                    .unwrap_or(0);
+                self.deck.push(CardInst::new(sid, false, self.uuid_next));
+                self.uuid_next += 1;
+            }
+            "Empty Cage" => {
+                self.deck.pop();
+                self.deck.pop();
+            }
+            "PandorasBox" => {
+                let n0 = self.deck.len();
+                self.deck.retain(|c| {
+                    !(c.st().id.starts_with("Strike_") || c.st().id.starts_with("Defend_"))
+                });
+                let replaced = n0 - self.deck.len();
+                for _ in 0..replaced {
+                    let sid = self.random_obtainable_card_sid();
+                    self.deck.push(CardInst::new(sid, false, self.uuid_next));
+                    self.uuid_next += 1;
+                }
+            }
+            "Astrolabe" => {
+                for _ in 0..3 {
+                    if self.deck.pop().is_some() {
+                        let sid = self.random_obtainable_card_sid();
+                        self.deck.push(CardInst::new(sid, false, self.uuid_next));
+                        self.uuid_next += 1;
+                    }
+                }
+            }
+            "Tiny House" => {
+                self.gold += 50;
+                self.player_max_hp += 5;
+                self.player_hp = (self.player_hp + 5).min(self.player_max_hp);
+                if let Some(c) = self.deck.iter_mut().find(|c| c.can_upgrade()) {
+                    c.apply_upgrade();
+                }
+                if let Some(slot) = self.potions.iter_mut().find(|s| s.is_none()) {
+                    *slot = Some("Fire Potion");
+                }
+                self.apply_relic_effect("Vajra");
+                self.relics.push("Vajra");
+            }
+            "Calling Bell" => {
+                self.apply_relic_effect("Girya");
+                self.relics.push("Girya");
+                for id in ["CurseOfTheBell", "Regret"] {
+                    let sid = sts_data::gen::CARDS
+                        .iter()
+                        .position(|c| c.id == id)
+                        .unwrap_or(0);
+                    self.deck.push(CardInst::new(sid, false, self.uuid_next));
+                    self.uuid_next += 1;
+                }
+            }
             _ => {}
         }
     }
@@ -790,6 +908,21 @@ impl RunState4b {
             return Err("空药水槽");
         };
         let mut consumed = true;
+        // ToyOrnithopter.onUsePotion：回 5
+        if self.relics_ctx.toy_ornithopter {
+            self.player_hp = (self.player_hp + 5).min(self.player_max_hp);
+            if self.phase == RoomPhase::InBattle {
+                self.battle.as_mut().unwrap().player.current_health = self.player_hp;
+            }
+        }
+        // AncientTeaSet：战斗内首瓶药 +2 能量
+        if self.relics_ctx.ancient_tea_set && self.phase == RoomPhase::InBattle {
+            let b = self.battle.as_mut().unwrap();
+            if !b.relic_tea_used {
+                b.relic_tea_used = true;
+                b.energy = (b.energy + 2).min(999);
+            }
+        }
         match potion_id {
             // Blood Potion：回 20% maxHP（战斗内外同义）
             "Blood Potion" => {
@@ -1280,7 +1413,11 @@ impl RunState4b {
             return Err("咖啡滴壶：无法休息");
         }
         let missing = self.player_max_hp - self.player_hp;
-        self.player_hp += missing * 3 / 10;
+        let mut heal = missing * 3 / 10;
+        if self.relics_ctx.regal_pillow {
+            heal += 15; // RegalPillow
+        }
+        self.player_hp += heal;
         self.phase = RoomPhase::RoomDone;
         Ok(())
     }
@@ -1483,20 +1620,29 @@ impl RunState4b {
                 }
             }
             crate::event::Effect::AddCurse => {
-                let sid = sts_data::gen::CARDS
-                    .iter()
-                    .position(|c| c.id == "Regret")
-                    .unwrap_or(0);
-                self.deck.push(CardInst::new(sid, false, self.uuid_next));
-                self.uuid_next += 1;
+                // Omamori：抵消前 N 张诅咒
+                if self.relics_ctx.omamori > 0 {
+                    self.relics_ctx.omamori -= 1;
+                } else {
+                    let sid = sts_data::gen::CARDS
+                        .iter()
+                        .position(|c| c.id == "Regret")
+                        .unwrap_or(0);
+                    self.deck.push(CardInst::new(sid, false, self.uuid_next));
+                    self.uuid_next += 1;
+                }
             }
             crate::event::Effect::AddCurseCard(id) => {
-                let sid = sts_data::gen::CARDS
-                    .iter()
-                    .position(|c| c.id == id)
-                    .unwrap_or(0);
-                self.deck.push(CardInst::new(sid, false, self.uuid_next));
-                self.uuid_next += 1;
+                if self.relics_ctx.omamori > 0 {
+                    self.relics_ctx.omamori -= 1;
+                } else {
+                    let sid = sts_data::gen::CARDS
+                        .iter()
+                        .position(|c| c.id == id)
+                        .unwrap_or(0);
+                    self.deck.push(CardInst::new(sid, false, self.uuid_next));
+                    self.uuid_next += 1;
+                }
             }
             crate::event::Effect::And(_) => {} // 复合只在顶层展开（无嵌套使用场景）
             crate::event::Effect::Nothing => {}
@@ -1582,6 +1728,21 @@ impl RunState4b {
         }
         if let Some(i) = index {
             if let Some((sid, up)) = self.card_reward.get(i).copied() {
+                let st = &sts_data::gen::CARDS[sid];
+                let mut up = up;
+                if !up
+                    && ((self.relics_ctx.has_molten_egg
+                        && st.kind == sts_data::gen::CardType::Attack)
+                        || (self.relics_ctx.has_toxic_egg
+                            && st.kind == sts_data::gen::CardType::Skill)
+                        || (self.relics_ctx.has_frozen_egg
+                            && st.kind == sts_data::gen::CardType::Power))
+                    {
+                        up = true;
+                    }
+                if self.relics_ctx.ceramic_fish {
+                    self.gold += 9;
+                }
                 self.deck.push(CardInst::new(sid, up, self.uuid_next));
                 self.uuid_next += 1;
             }
