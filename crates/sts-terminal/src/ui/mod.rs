@@ -10,4 +10,4 @@ pub mod battle;
 pub mod map;
 pub mod panels;
 
-// 具体函数由各子模块 pub 导出（main 直接 ui::map::render_map 调用）
+pub use super::ui_core::panel_title;

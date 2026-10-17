@@ -99,6 +99,34 @@ fn main() {
                 }
                 render(&run, &mut out);
             }
+            // 篝火
+            "cf" => match args.get(1).copied() {
+                Some("rest") => {
+                    if let Err(e) = run.campfire_rest() {
+                        println!("✗ {}", e);
+                    }
+                    render(&run, &mut out);
+                }
+                Some("smith") => {
+                    if let Some(i) = args.get(2).and_then(|s| s.parse().ok()) {
+                        if let Err(e) = run.campfire_smith(i) {
+                            println!("✗ {}", e);
+                        }
+                    }
+                    render(&run, &mut out);
+                }
+                _ => println!("cf rest | cf smith <牌库序号>"),
+            },
+            // 宝箱
+            "tr" => {
+                let _ = run.open_treasure();
+                render(&run, &mut out);
+            }
+            // 事件跳过
+            "ev" => {
+                run.finish_event();
+                render(&run, &mut out);
+            }
             // 主题切换
             "t" => {
                 let cur = THEME.load(std::sync::atomic::Ordering::Relaxed);
@@ -216,6 +244,27 @@ fn render(run: &RunState4b, out: &mut std::io::Stdout) {
             ) {
                 let _ = writeln!(out, "{}", line);
             }
+        }
+        RoomPhase::CampfireChoice => {
+            for line in ui::panels::render_campfire(t, true, 78) {
+                let _ = writeln!(out, "{}", line);
+            }
+        }
+        RoomPhase::TreasureChoice => {
+            let _ = writeln!(out, "{}", ui_core::panel_title(t, "宝箱", 78));
+            if let Some(tier) = &run.relic_reward {
+                let _ = writeln!(out, "  [遗物] {}（稀有度 {}）", theme::Style::new(None).paint("待领取"), tier);
+            }
+            let _ = writeln!(out, "  金币 +{}", run.gold_reward);
+            let _ = writeln!(out, "  tr 领取");
+        }
+        RoomPhase::ShopChoice => {
+            let _ = writeln!(out, "{}", ui_core::panel_title(t, "商店（批次后续：商品生成）", 78));
+            let _ = writeln!(out, "  金币 {}", run.gold);
+        }
+        RoomPhase::EventChoice => {
+            let _ = writeln!(out, "{}", ui_core::panel_title(t, "事件", 78));
+            let _ = writeln!(out, "  （事件系统批次后续）ev 跳过");
         }
         RoomPhase::RoomDone => {
             // 篝火房完成时展示篝火面板（其他房同样走列表风格）

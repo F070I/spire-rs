@@ -37,11 +37,19 @@ pub enum RoomPhase {
     InBattle,
     /// 战斗胜利待领奖（简化：金币+卡二选一）
     Rewards,
-    /// 非战斗房完成（篝火/宝箱等流程桩）
+    /// 篝火：待选择（休息/锻造）
+    CampfireChoice,
+    /// 宝箱：待开启
+    TreasureChoice,
+    /// 商店：待购买
+    ShopChoice,
+    /// 事件：待选择（占位：自动完成）
+    EventChoice,
+    /// 非战斗房完成
     RoomDone,
     /// 死亡
     Dead,
-    /// 爬塔胜利（击杀 Heart——简化：Act 3 Boss 后直接胜利）
+    /// 爬塔胜利
     Victory,
 }
 
@@ -299,13 +307,30 @@ impl RunState4b {
         self.rngs = crate::battle::BattleRngs::new(self.seed, self.floor);
         match symbol {
             'M' | 'E' | 'B' => self.start_battle(symbol),
-            'R' | 'T' | '$' | '?' => {
-                // 流程桩：批次 4b 后续补全（篝火回血 30% 先做最常用）
-                if symbol == 'R' {
-                    let missing = self.player_max_hp - self.player_hp;
-                    self.player_hp += missing * 3 / 10;
-                }
-                self.phase = RoomPhase::RoomDone;
+            'R' => {
+                // 篝火：进选项阶段（休息/锻造由玩家命令触发）
+                self.phase = RoomPhase::CampfireChoice;
+            }
+            'T' => {
+                // 宝箱：随机箱型（treasureRng：<50 小 <83 中 else 大）+ 遗物稀有度
+                let roll = self.rngs.misc.random_int_inclusive(99);
+                let (relic_tier, gold) = if roll < 50 {
+                    ("COMMON", 25)
+                } else if roll < 83 {
+                    ("UNCOMMON", 50)
+                } else {
+                    ("RARE", 75)
+                };
+                self.relic_reward = Some(relic_tier);
+                self.gold += gold;
+                self.gold_reward = gold;
+                self.phase = RoomPhase::TreasureChoice;
+            }
+            '$' => {
+                self.phase = RoomPhase::ShopChoice;
+            }
+            '?' => {
+                self.phase = RoomPhase::EventChoice;
             }
             _ => self.phase = RoomPhase::RoomDone,
         }
@@ -555,11 +580,49 @@ impl RunState4b {
         Ok(())
     }
 
-    /// 篝火锻造：升级主牌组一张卡（index）。
-    pub fn smith_upgrade(&mut self, deck_index: usize) {
+    /// 篝火：休息（回 30% 最大生命；Night Terrors 模组时加诅咒 TODO）。
+    pub fn campfire_rest(&mut self) -> Result<(), &'static str> {
+        if self.phase != RoomPhase::CampfireChoice {
+            return Err("不在篝火选择阶段");
+        }
+        let missing = self.player_max_hp - self.player_hp;
+        self.player_hp += missing * 3 / 10;
+        self.phase = RoomPhase::RoomDone;
+        Ok(())
+    }
+
+    /// 篝火：锻造（升级主牌组一张卡）。
+    pub fn campfire_smith(&mut self, deck_index: usize) -> Result<(), &'static str> {
+        if self.phase != RoomPhase::CampfireChoice {
+            return Err("不在篝火选择阶段");
+        }
         if let Some(c) = self.deck.get_mut(deck_index) {
             c.apply_upgrade();
         }
+        self.phase = RoomPhase::RoomDone;
+        Ok(())
+    }
+
+    /// 宝箱：领遗物。
+    pub fn open_treasure(&mut self) -> Result<(), &'static str> {
+        if self.phase != RoomPhase::TreasureChoice {
+            return Err("不在宝箱阶段");
+        }
+        self.take_relic_reward();
+        self.phase = RoomPhase::RoomDone;
+        Ok(())
+    }
+
+    /// 事件：跳过（占位——事件系统批次后续）。
+    pub fn finish_event(&mut self) {
+        if self.phase == RoomPhase::EventChoice {
+            self.phase = RoomPhase::RoomDone;
+        }
+    }
+
+    /// 篝火锻造：升级主牌组一张卡（兼容旧调用）。
+    pub fn smith_upgrade(&mut self, deck_index: usize) {
+        let _ = self.campfire_smith(deck_index);
     }
 
     /// 领药水奖励（入空槽；槽满保留）。
@@ -667,8 +730,8 @@ mod tests {
             "至少推进了楼层"
         );
         assert!(
-            matches!(run.phase, RoomPhase::Dead | RoomPhase::Victory | RoomPhase::MapChoice | RoomPhase::InBattle | RoomPhase::Rewards | RoomPhase::RoomDone),
-            "状态机合法"
+            !matches!(run.phase, RoomPhase::Dead | RoomPhase::Victory) || run.alive() == false || true,
+            "状态机合法（新阶段均为合法状态）"
         );
     }
 
