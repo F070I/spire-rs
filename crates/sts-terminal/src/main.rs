@@ -159,7 +159,7 @@ fn main() {
                             let _ = run.campfire_rest();
                         }
                     }
-                    RoomPhase::TreasureChoice => run.open_treasure(),
+                    RoomPhase::TreasureChoice => { let _ = run.open_treasure(); }
                     RoomPhase::EventChoice => {
                         let _ = run.choose_event(selection);
                     }
