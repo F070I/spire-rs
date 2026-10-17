@@ -10,6 +10,7 @@
 
 use crate::action::{GameAction, TargetRef};
 use crate::battle::{BattleState, CardInst, Monster, RelicCtx};
+use crate::power::{Power, PowerKind};
 use crate::map::{generate_dungeon, MapRoomNode, MAP_HEIGHT, MAP_WIDTH, PATH_DENSITY};
 use sts_data::encounters;
 use sts_data::rng::StsRandom;
@@ -372,6 +373,24 @@ impl RunState4b {
         b.relics_ctx = self.relics_ctx;
         b.set_rng_seed(self.seed, self.floor);
         b.start_battle();
+        // 战初遗物钩子（原版 atBattleStart 时点）
+        if b.relics_ctx.vajra_strength > 0 {
+            b.mgr.add_bottom(GameAction::ApplyPower {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                power: Power::new(PowerKind::Strength, b.relics_ctx.vajra_strength),
+                from_monster: false,
+            });
+        }
+        if b.relics_ctx.anchor_block > 0 {
+            b.player.add_block(b.relics_ctx.anchor_block);
+        }
+        if b.relics_ctx.blood_vial_heal > 0 {
+            b.player.heal(b.relics_ctx.blood_vial_heal);
+        }
+        if b.relics_ctx.lantern_energy > 0 {
+            b.energy += b.relics_ctx.lantern_energy;
+        }
         self.battle = Some(b);
         self.phase = RoomPhase::InBattle;
     }
@@ -409,6 +428,10 @@ impl RunState4b {
             // 战斗结束牌堆就地保留到下一场？——原版 preBattlePrep 每场重 initializeDeck(master)，
             // 战斗内的变化（升级/消耗）不影响 master。所以 master 直接回写 = deck 不变。）
             self.player_hp = b.player.current_health.max(1);
+            // BurningBlood.onVictory：战斗结束回 N
+            if self.relics_ctx.burning_blood_heal > 0 {
+                self.player_hp = (self.player_hp + self.relics_ctx.burning_blood_heal).min(self.player_max_hp);
+            }
             // 奖励：金币（普通 10-20/精英 25-35/Boss 100±5）+ 卡牌二选一（3 选 1 简化为 2）
             let (lo, hi) = match self
                 .current
@@ -532,7 +555,7 @@ impl RunState4b {
             .unwrap_or(false)
     }
 
-    /// 领遗物奖励（按 tier 从池抽——简化：直接按 tier 命名占位）。
+    /// 领遗物奖励（按 tier 从池抽）+ 效果写入 RelicCtx。
     pub fn take_relic_reward(&mut self) {
         if let Some(tier) = self.relic_reward.take() {
             let pick = match tier {
@@ -540,7 +563,28 @@ impl RunState4b {
                 "UNCOMMON" => "Anchor",
                 _ => "Girya",
             };
+            self.apply_relic_effect(pick);
             self.relics.push(pick);
+        }
+    }
+
+    /// 遗物效果接入 RelicCtx（第一批：战初/回合遗物）。
+    pub fn apply_relic_effect(&mut self, id: &str) {
+        match id {
+            "Vajra" => self.relics_ctx.vajra_strength += 1,
+            "Anchor" => self.relics_ctx.anchor_block += 10,
+            "Blood Vial" => self.relics_ctx.blood_vial_heal += 2,
+            "Lantern" => self.relics_ctx.lantern_energy += 1,
+            "Mercury Hourglass" => self.relics_ctx.mercury_damage += 3,
+            "Orichalcum" => self.relics_ctx.orichalcum_block += 6,
+            "Burning Blood" => self.relics_ctx.burning_blood_heal += 6,
+            "Ginger" => self.relics_ctx.has_ginger = true,
+            "Turnip" => self.relics_ctx.has_turnip = true,
+            "Calipers" => self.relics_ctx.has_calipers = true,
+            "Medical Kit" => self.relics_ctx.has_medical_kit = true,
+            "Blue Candle" => self.relics_ctx.has_blue_candle = true,
+            "Runic Pyramid" => self.relics_ctx.has_runic_pyramid = true,
+            _ => {}
         }
     }
 

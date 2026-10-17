@@ -258,7 +258,7 @@ impl BattleRngs {
 }
 
 /// 遗物侧事实（批次 3.6 前手工测试构造）。
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug)]
 pub struct RelicCtx {
     pub has_ginger: bool,
     pub has_turnip: bool,
@@ -267,6 +267,35 @@ pub struct RelicCtx {
     pub has_medical_kit: bool,     // 状态牌可打出
     pub has_blue_candle: bool,     // 诅咒可打出
     pub has_runic_pyramid: bool,   // 回合末不弃牌
+    // —— 战初/回合遗物（玩家遗物效果第一批）——
+    pub vajra_strength: i32,     // 金刚杵：战斗开始 +N 力量
+    pub anchor_block: i32,       // 锚：战斗开始 +N 格挡
+    pub blood_vial_heal: i32,    // 血瓶：战斗开始回 N
+    pub lantern_energy: i32,     // 灯笼：首回合额外 +N 能量
+    pub mercury_damage: i32,     // 水漏：每回合开始全体 N 伤
+    pub orichalcum_block: i32,   // 山铜：无格挡时 +N
+    pub burning_blood_heal: i32, // 燃烧之血：战斗结束回 N
+}
+
+impl Default for RelicCtx {
+    fn default() -> Self {
+        Self {
+            has_ginger: false,
+            has_turnip: false,
+            has_calipers: false,
+            has_barricade_power: false,
+            has_medical_kit: false,
+            has_blue_candle: false,
+            has_runic_pyramid: false,
+            vajra_strength: 0,
+            anchor_block: 0,
+            blood_vial_heal: 0,
+            lantern_energy: 0,
+            mercury_damage: 0,
+            orichalcum_block: 0,
+            burning_blood_heal: 0,
+        }
+    }
 }
 
 impl BattleState {
