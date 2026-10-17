@@ -29,7 +29,14 @@
 ### 4.1 RNG 接线
 - BattleRngs：shuffle/card_random/ai/misc（seed+floorNum 重播种），随机占位全回填
 
-## 剩余工作（按优先级）
+## ## 本轮追加（UI 后续推进，2026-10-17）
+
+- 房间交互深化：篝火休息/锻造、宝箱开箱（50/33/17 箱型+金币）、商店/事件阶段（7693dc3）
+- 钩子清账第二批：Establishment 降费/Equilibrium 保留整手/Loop 引动首球/WaveOfTheHand onScry（265a627）
+- 玩家遗物效果第一批：RelicCtx 7 字段（Vajra/Anchor/BloodVial/Lantern/Mercury/Orichalcum/BurningBlood）+ 13 遗物 ID 映射（1b02275）
+- 批次 3.9 第一批：怪物 AI 表 55+ 条目（HP 区间/招式脚本/ascension 修正）接入 start_battle（18f250c）
+
+剩余工作（按优先级）
 
 ### 统一 UI 设计系统 ✅（2026-10-17 全 6 阶段完成）
 - theme.rs：集中主题（低饱和彩色 + 纯黑白反显选中），t 键切换不改游戏状态
