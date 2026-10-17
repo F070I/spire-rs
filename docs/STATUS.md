@@ -1,0 +1,59 @@
+# sts-rs 项目状态快照（2026-10-17）
+
+> 本文档为 token 预算接近尾声时的交接快照。下个会话/接手者按此继续。
+
+## 已完成（git 最新 commit：4d10017）
+
+### 批次 1：地基
+- sts-data::rng：RandomXS128 + JDK LCG + STS Random 包装（基线交叉验证）
+- sts-data::gen：375 张卡静态表 + 181 遗物 + 42 药水 + 149 能力 + 68 怪 + 52 事件 + 关键词（eng+zhs 双语）
+- tools/extract.py：机械抽取流水线（升级 delta/ID 对账）
+
+### 批次 2：战斗引擎
+- creature/damage 数值管线（三条伤害链/格挡/承伤/heal，f32 精度）
+- 能力机制层（ApplyPower 分支序/priority 稳定排序/叠层哨兵/Artifact 拦截/justApplied）
+- 动作调度器（四队列六分支/打卡全链/回合循环/洗牌分解）
+- 卡牌机制层（升级数值机械抽取 292+83 custom/canUse 链/X 费/retain/ethereal）
+
+### 批次 3：内容灌注 100%
+- **红 75/75 + 绿 75/75 + 蓝 76/76 + 紫 77/77 + 无色 39 + 诅咒 14 + 状态 5 + 临时 9 + 选项 5 = 375/375 全对账 0 缺口**
+- 例程 20+ 个（攻击例程/消耗/升级/抽牌/弃牌/引动/毒系/X 费等）
+- 能力钩子面第一批：回合末（Metallicize/Combust/NoxiousFumes/LikeWater/WreathOfFlame）、抽牌后（DemonForm/Berserk 等 7 个）、消耗（DarkEmbrace/FeelNoPain/Sentinel）、出牌（ThousandCuts）、抽牌（Evolve/FireBreathing/EndlessAgony）、获格挡（Juggernaut）、Corruption 全套、Mantra→Divinity 信号
+- PowerKind 40+ 个（含正式化 Poison/Thorns/Mantra 等）
+
+### 批次 4a：地图生成 + 房间分配 + 遭遇池
+- map.rs：MapGenerator 全算法（6 路径/祖先检查/同行防交叉/Boss 边/首行去重/怪癖保真）
+- map/assign.rs：RoomTypeAssigner 三规则精确语义（parent 只适用 R/T/$/E、y==0 豁免）
+- encounters.rs：四幕遭遇池权重表（弱敌/强敌/精英/Boss + A-B-A 禁忌）
+
+### 4.1 RNG 接线
+- BattleRngs：shuffle/card_random/ai/misc（seed+floorNum 重播种），随机占位全回填
+
+## 剩余工作（按优先级）
+
+### 批次 4b：爬塔流程编排（核心路径）
+1. RunState↔BattleState 接线：楼层推进（MapRoomNode 选择→房间→下一层）
+2. 房间流程：战斗触发/奖励/篝火/商店/事件/宝箱
+3. Neow 开局（四类祝福）
+4. 幕间转换（TreasureRoomBoss/三钥匙/Act 4）
+
+### 批次 3.5 钩子清账（~20 个能力行为钩子）
+- 出牌系：DoubleTap/Burst/Envenom/AfterImage/Necronomicon/HeelHook/WaveOfTheHand
+- 受击系：Caltrops(Thorns)/FlameBarrier/StaticDischarge/Choke/TalkToTheHand/WrathNextTurn
+- 其他：Rage/Rupture/Establishment/Panache/InfiniteBlades(HOOK已接)/Magnetism/HelloWorld/Mayhem/Phantasmal/RetainCard/Equilibrium/Buffer/Repair/Bias/Echo/Loop/Electro/LockOn/DrawCardNextTurn/Regret/Burn/Pain/Decay/Doubt/Shame/Void/Normality/Necronomicurse/CurseOfTheBell 等诅咒/状态触发
+- Mark/PressurePoints/Judgement 机制
+
+### 批次 5：存档/解锁/metrics
+### 批次 6：终端 UI + 三平台发行
+
+## 关键架构决策（冻结）
+
+1. GameAction 枚举 + 四队列调度（每逻辑帧一 action，时长即时）
+2. CardKind 静态表 + CardInst 实例（eff_cost/damage/block/magic + misc 通用成长）
+3. PowerKind 枚举 + ops 层（ApplyOutcome/stack/reduce/remove + pending_removals 延迟移除）
+4. BattleRngs 四流（seed+floorNum）+ RunState 十二流（未接完）
+5. ID 硬契约：23+ 例 ID↔类名错位以 extracted.json 为准
+
+## 消耗
+
+约 9500 万 / 3.5 亿 token（27%）。剩余约 2.4 亿足够完成全部批次。
