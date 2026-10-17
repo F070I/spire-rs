@@ -10,4 +10,4 @@ pub mod battle;
 pub mod map;
 pub mod panels;
 
-pub use super::ui_core::panel_title;
+
