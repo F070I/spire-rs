@@ -122,9 +122,16 @@ fn main() {
                 let _ = run.open_treasure();
                 render(&run, &mut out);
             }
-            // 事件跳过
+            // 事件
             "ev" => {
-                run.finish_event();
+                match args.get(1).and_then(|s| s.parse::<usize>().ok()) {
+                    Some(i) => {
+                        if let Err(e) = run.choose_event(i) {
+                            println!("✗ {}", e);
+                        }
+                    }
+                    None => run.finish_event(),
+                }
                 render(&run, &mut out);
             }
             // 主题切换
@@ -263,8 +270,17 @@ fn render(run: &RunState4b, out: &mut std::io::Stdout) {
             let _ = writeln!(out, "  金币 {}", run.gold);
         }
         RoomPhase::EventChoice => {
-            let _ = writeln!(out, "{}", ui_core::panel_title(t, "事件", 78));
-            let _ = writeln!(out, "  （事件系统批次后续）ev 跳过");
+            if let Some((ev_id, _)) = run.event {
+                let ev = sts_core::event::get(ev_id);
+                let _ = writeln!(out, "{}", ui_core::panel_title(t, ev.title, 78));
+                for line in ev.body.lines() {
+                    let _ = writeln!(out, "  {}", line);
+                }
+                for (i, o) in ev.options.iter().enumerate() {
+                    let _ = writeln!(out, "  [{}] {}", i, o.text);
+                }
+            }
+            let _ = writeln!(out, "  命令: ev <n> 选择 / ev 跳过");
         }
         RoomPhase::RoomDone => {
             // 篝火房完成时展示篝火面板（其他房同样走列表风格）

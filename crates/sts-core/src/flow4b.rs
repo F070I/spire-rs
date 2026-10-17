@@ -174,6 +174,8 @@ pub struct RunState4b {
     pub potion_reward: Option<&'static str>,
     /// 商店（进商店房时生成；离开时清空）
     pub shop: Option<ShopState>,
+    /// 当前事件（进事件房时 roll）
+    pub event: Option<(&'static str, i32)>, // (event_id, selected_option)
     /// 遗物持有（ID 列表；效果接 RelicCtx TODO 3.6）
     pub relics: Vec<&'static str>,
     /// 药水槽（默认 3；ID 列表，None=空槽）
@@ -213,6 +215,7 @@ impl RunState4b {
             relic_reward: None,
             potion_reward: None,
             shop: None,
+            event: None,
             relics: Vec::new(),
             potions: vec![None, None, None],
             neow_offers: None,
@@ -412,6 +415,8 @@ impl RunState4b {
                 self.phase = RoomPhase::ShopChoice;
             }
             '?' => {
+                let ev = crate::event::roll(&mut self.rngs.misc);
+                self.event = Some((ev.id, -1));
                 self.phase = RoomPhase::EventChoice;
             }
             _ => self.phase = RoomPhase::RoomDone,
@@ -850,9 +855,62 @@ impl RunState4b {
         Ok(())
     }
 
-    /// 事件：跳过（占位——事件系统批次后续）。
+    /// 事件：选择选项（应用效果）。
+    pub fn choose_event(&mut self, index: usize) -> Result<(), &'static str> {
+        if self.phase != RoomPhase::EventChoice {
+            return Err("不在事件阶段");
+        }
+        let Some((ev_id, _)) = self.event else {
+            return Err("无事件");
+        };
+        let ev = crate::event::get(ev_id);
+        let Some(opt) = ev.options.get(index) else {
+            return Err("选项越界");
+        };
+        match opt.effect {
+            crate::event::Effect::GainGold(g) => self.gold += g,
+            crate::event::Effect::LoseGold(g) => self.gold = (self.gold - g).max(0),
+            crate::event::Effect::LoseHp(h) => {
+                self.player_hp = (self.player_hp - h).max(1); // 事件伤害不致死（原版语义）
+            }
+            crate::event::Effect::GainHp(h) => {
+                self.player_hp = (self.player_hp + h).min(self.player_max_hp);
+            }
+            crate::event::Effect::UpgradeRandom => {
+                if let Some(c) = self.deck.iter_mut().find(|c| c.can_upgrade()) {
+                    c.apply_upgrade();
+                }
+            }
+            crate::event::Effect::RemoveCard => {
+                self.deck.pop();
+            }
+            crate::event::Effect::GainCommonRelic => {
+                self.apply_relic_effect("Vajra");
+                self.relics.push("Vajra");
+            }
+            crate::event::Effect::GainRareRelic => {
+                self.apply_relic_effect("Girya");
+                self.relics.push("Girya");
+            }
+            crate::event::Effect::AddCurse => {
+                let sid = sts_data::gen::CARDS
+                    .iter()
+                    .position(|c| c.id == "Regret")
+                    .unwrap_or(0);
+                self.deck.push(CardInst::new(sid, false, self.uuid_next));
+                self.uuid_next += 1;
+            }
+            crate::event::Effect::Nothing => {}
+        }
+        self.event = None;
+        self.phase = RoomPhase::RoomDone;
+        Ok(())
+    }
+
+    /// 事件：跳过。
     pub fn finish_event(&mut self) {
         if self.phase == RoomPhase::EventChoice {
+            self.event = None;
             self.phase = RoomPhase::RoomDone;
         }
     }
