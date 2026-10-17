@@ -8,6 +8,8 @@
 
 pub mod builder;
 pub mod blue;
+pub mod colorless;
+pub mod simple;
 pub mod purple;
 pub mod green;
 pub mod red;
@@ -27,6 +29,11 @@ pub fn handled_ids() -> Vec<&'static str> {
     v.extend_from_slice(green::HANDLED);
     v.extend_from_slice(blue::HANDLED);
     v.extend_from_slice(purple::HANDLED);
+    v.extend_from_slice(colorless::HANDLED);
+    v.extend_from_slice(simple::HANDLED_CURSES);
+    v.extend_from_slice(simple::HANDLED_STATUS);
+    v.extend_from_slice(simple::HANDLED_TEMP);
+    v.extend_from_slice(simple::HANDLED_OPTIONS);
     v
 }
 
@@ -39,6 +46,10 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>) -> V
         "green" => green::HANDLED.contains(&id),
         "blue" => blue::HANDLED.contains(&id),
         "purple" => purple::HANDLED.contains(&id),
+        "colorless" => colorless::HANDLED.contains(&id),
+        "curses" => simple::HANDLED_CURSES.contains(&id),
+        "status" => simple::HANDLED_STATUS.contains(&id),
+        "tempCards" => simple::HANDLED_TEMP.contains(&id),
         // 批次 3.3-3.4 逐色接入
         _ => false,
     };
@@ -48,6 +59,11 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>) -> V
             "green" => green::effects(b, card, target, &mut eb),
             "blue" => blue::effects(b, card, target, &mut eb),
             "purple" => purple::effects(b, card, target, &mut eb),
+            "colorless" => colorless::effects(b, card, target, &mut eb),
+            "curses" => simple::effects_curses(b, card, target, &mut eb),
+            "status" => simple::effects_status(b, card, target, &mut eb),
+            "tempCards" => simple::effects_temp(b, card, target, &mut eb),
+            "optionCards" => simple::effects_option(b, card, target, &mut eb),
             _ => unreachable!("handled 表与分发分支不同步"),
         }
     } else {

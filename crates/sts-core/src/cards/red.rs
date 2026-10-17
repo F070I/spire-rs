@@ -629,7 +629,7 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
             });
         }
         // Ghostly Armor：GainBlock 11（虚无：静态标志）
-        "Ghostly Armor" => {
+        "Fire Breathing" => {
             eb.bot(GameAction::GainBlock { target: TargetRef::Player, amount: card.eff_block() });
         }
         // Hemokinesis：LoseHP(magic 2) + Damage 15
@@ -902,6 +902,25 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
                     card_uuid: card.uuid,
                     sid: card.sid,
                     upgraded: card.upgraded,
+                },
+            });
+        }
+        // Brutality：BrutalityPower（回合末掉血抽牌：钩子 TODO 3.5）
+        "Brutality" => {
+            eb.bot(GameAction::ApplyPower {
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                power: Power::new(PowerKind::Future, 0),
+                from_monster: false,
+            });
+        }
+        // Dual Wield：DualWieldAction——手牌攻击/能力复制（例程占位）
+        "Dual Wield" => {
+            eb.bot(GameAction::CardRoutine {
+                call: RoutineCall {
+                    id: "DualWieldAction", target: None,
+                    amount: card.eff_magic(), amount2: 0,
+                    card_uuid: card.uuid, sid: card.sid, upgraded: card.upgraded,
                 },
             });
         }

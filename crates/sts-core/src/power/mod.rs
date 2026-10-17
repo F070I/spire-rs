@@ -90,6 +90,8 @@ pub enum PowerKind {
     Echo,
     /// SteamBarrierPower：每回合格挡递减（回合钩子 TODO 3.5）。
     SteamBarrier,
+    /// GainStrengthPower（Dark Shackles 配对）：回合末力量 +amount（收回临时力量）。
+    GainStrength,
     // ---- 批次 3.5 紫卡（观者）----
     Mantra,
     BattleHymn,

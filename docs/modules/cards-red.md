@@ -1,5 +1,8 @@
 # 模块记录：批次 3.2 铁甲战士卡牌灌注
 
+> 批次 3.6 杂色进度（2026-10-17）：**全部 72 张完成**（colorless.rs 39 + simple.rs 诅咒14/状态5/临时9/选项5）。
+> 无色 ID 珍品：Apparition→"Ghostly"、HandOfGreed/PanicButton/RitualDagger（无空格类名）。
+> 诅咒/状态/选项：打出效果空（触发语义在 3.5 钩子清账），选项卡 TODO 6。
 > 批次 3.4 蓝卡进度（2026-10-17）：**76/76 全部转译完成**（cards/blue.rs，10 专项测试 + 全量 118）。
 > ID 珍品（蓝）：Claw→"Gash"、Equilibrium→"Undo"、Recursion→"Redo"、Overclock→"Steam Power"、SteamBarrier→"Steam"、LockOn→"Lockon"、Defend_Blue→"Defend_B"、Strike_Blue→"Strike_B"、ConserveBattery→"Conserve Battery"（第 9-17 例）。
 > 机制：BattleRngs 外新增 IncreaseOrbSlots（含负值）、EvokeWithoutRemove（双施法）、Focus 对通道球的 applyFocus（Dark 只修被动）、雷/霜引动计数器（雷击/暴风雪）、MachineLearning 手牌上限配对钩子、Chaos 随机球（misc 流近似 TODO 4.1）。
