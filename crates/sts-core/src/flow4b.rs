@@ -30,6 +30,83 @@ pub enum NeowReward {
     BossRelic,
 }
 
+/// 商店状态（shop/ShopScreen 语义简化：5 卡+2 遗物+3 药水+移除服务）。
+pub struct ShopState {
+    /// (卡 sid, 升级, 价格, 已售)
+    pub cards: Vec<(usize, bool, i32, bool)>,
+    /// (遗物 ID, 价格, 已售)
+    pub relics: Vec<(&'static str, i32, bool)>,
+    /// (药水 ID, 价格, 已售)
+    pub potions: Vec<(&'static str, i32, bool)>,
+    /// 移除服务价格（75 起 +25 递增）
+    pub purge_cost: i32,
+}
+
+impl ShopState {
+    /// 生成商品（merchantRng 语义：cardRng 抽卡、价格 ±10% 抖动）。
+    pub fn generate(rng: &mut StsRandom, card_rng: &mut StsRandom) -> Self {
+        fn price_of(rng: &mut StsRandom, base: i32) -> i32 {
+            let j = rng.random_f32_range(0.9, 1.1);
+            ((base as f32 * j).round() as i32).max(1)
+        }
+        // 5 张职业卡（红池简化：全色池按稀有度 roll）
+        let mut cards = Vec::new();
+        let mut used = std::collections::HashSet::new();
+        let mut guard = 0;
+        while cards.len() < 5 && guard < 100 {
+            guard += 1;
+            let r = card_rng.random_int_inclusive(99);
+            let rarity = if r < 45 {
+                sts_data::gen::CardRarity::Common
+            } else if r < 85 {
+                sts_data::gen::CardRarity::Uncommon
+            } else {
+                sts_data::gen::CardRarity::Rare
+            };
+            let cands: Vec<usize> = sts_data::gen::CARDS
+                .iter()
+                .enumerate()
+                .filter(|(i, c)| {
+                    c.rarity == rarity
+                        && !matches!(c.kind, sts_data::gen::CardType::Status | sts_data::gen::CardType::Curse)
+                        && c.color != sts_data::gen::CardColor::Colorless
+                        && used.insert(c.id)
+                        && *i < usize::MAX
+                })
+                .map(|(i, _)| i)
+                .collect();
+            if let Some(&sid) = cands.first() {
+                let base = match rarity {
+                    sts_data::gen::CardRarity::Common => 50,
+                    sts_data::gen::CardRarity::Uncommon => 75,
+                    _ => 150,
+                };
+                cards.push((sid, false, price_of(rng, base), false));
+            }
+        }
+        // 2 遗物（通用池占位：Vajra/Anchor/...）
+        let relic_pool = ["Vajra", "Anchor", "Blood Vial", "Lantern", "Orichalcum"];
+        let mut relics = Vec::new();
+        for _ in 0..2 {
+            let id = relic_pool[rng.random_int_inclusive(relic_pool.len() as i32 - 1) as usize];
+            relics.push((id, price_of(rng, 150), false));
+        }
+        // 3 药水
+        let potion_pool = ["Fire Potion", "Blood Potion", "Block Potion", "Swift Potion"];
+        let mut potions = Vec::new();
+        for _ in 0..3 {
+            let id = potion_pool[rng.random_int_inclusive(potion_pool.len() as i32 - 1) as usize];
+            potions.push((id, price_of(rng, 50), false));
+        }
+        Self {
+            cards,
+            relics,
+            potions,
+            purge_cost: 75,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RoomPhase {
     /// 等待玩家在地图上选节点
@@ -95,6 +172,8 @@ pub struct RunState4b {
     pub relic_reward: Option<&'static str>,
     /// 药水奖励（未领取）
     pub potion_reward: Option<&'static str>,
+    /// 商店（进商店房时生成；离开时清空）
+    pub shop: Option<ShopState>,
     /// 遗物持有（ID 列表；效果接 RelicCtx TODO 3.6）
     pub relics: Vec<&'static str>,
     /// 药水槽（默认 3；ID 列表，None=空槽）
@@ -133,6 +212,7 @@ impl RunState4b {
             relics_ctx: RelicCtx::default(),
             relic_reward: None,
             potion_reward: None,
+            shop: None,
             relics: Vec::new(),
             potions: vec![None, None, None],
             neow_offers: None,
@@ -328,6 +408,7 @@ impl RunState4b {
                 self.phase = RoomPhase::TreasureChoice;
             }
             '$' => {
+                self.shop = Some(ShopState::generate(&mut self.rngs.misc, &mut self.card_rng));
                 self.phase = RoomPhase::ShopChoice;
             }
             '?' => {
@@ -622,6 +703,118 @@ impl RunState4b {
         }
         self.potions[slot] = None;
         Ok(())
+    }
+
+    /// 商店：买卡（index 对应 cards 列表）。
+    pub fn shop_buy_card(&mut self, index: usize) -> Result<(), &'static str> {
+        if self.phase != RoomPhase::ShopChoice {
+            return Err("不在商店");
+        }
+        let Some(shop) = self.shop.as_mut() else {
+            return Err("商店未生成");
+        };
+        let Some((sid, up, price, sold)) = shop.cards.get_mut(index) else {
+            return Err("商品不存在");
+        };
+        if *sold {
+            return Err("已售出");
+        }
+        if self.gold < *price {
+            return Err("金币不足");
+        }
+        self.gold -= *price;
+        *sold = true;
+        self.deck.push(CardInst::new(*sid, *up, self.uuid_next));
+        self.uuid_next += 1;
+        Ok(())
+    }
+
+    /// 商店：买遗物。
+    pub fn shop_buy_relic(&mut self, index: usize) -> Result<(), &'static str> {
+        if self.phase != RoomPhase::ShopChoice {
+            return Err("不在商店");
+        }
+        let Some(shop) = self.shop.as_mut() else {
+            return Err("商店未生成");
+        };
+        let (id, price) = {
+            let Some((id, price, sold)) = shop.relics.get_mut(index) else {
+                return Err("商品不存在");
+            };
+            if *sold {
+                return Err("已售出");
+            }
+            if self.gold < *price {
+                return Err("金币不足");
+            }
+            *sold = true;
+            (*id, *price)
+        };
+        self.gold -= price;
+        self.apply_relic_effect(id);
+        self.relics.push(id);
+        Ok(())
+    }
+
+    /// 商店：买药水（入空槽）。
+    pub fn shop_buy_potion(&mut self, index: usize) -> Result<(), &'static str> {
+        if self.phase != RoomPhase::ShopChoice {
+            return Err("不在商店");
+        }
+        let Some(shop) = self.shop.as_mut() else {
+            return Err("商店未生成");
+        };
+        let Some((id, price, sold)) = shop.potions.get_mut(index) else {
+            return Err("商品不存在");
+        };
+        if *sold {
+            return Err("已售出");
+        }
+        if self.gold < *price {
+            return Err("金币不足");
+        }
+        let Some(slot) = self.potions.iter().position(|p| p.is_none()) else {
+            return Err("药水槽已满");
+        };
+        self.gold -= *price;
+        *sold = true;
+        self.potions[slot] = Some(id);
+        Ok(())
+    }
+
+    /// 商店：移除服务（移除牌库第一张可选卡；Hoarder TODO）。
+    pub fn shop_purge(&mut self, deck_index: usize) -> Result<(), &'static str> {
+        if self.phase != RoomPhase::ShopChoice {
+            return Err("不在商店");
+        }
+        let cost = self.shop.as_ref().map(|s| s.purge_cost).unwrap_or(75);
+        if self.gold < cost {
+            return Err("金币不足");
+        }
+        if self.deck.is_empty() {
+            return Err("牌库为空");
+        }
+        // AscendersBane/诅咒不可移除（getPurgeableCards 语义子集）
+        let idx = deck_index.min(self.deck.len() - 1);
+        if matches!(
+            self.deck[idx].st().kind,
+            sts_data::gen::CardType::Curse
+        ) && self.deck[idx].st().id == "AscendersBane"
+        {
+            return Err("该牌不可移除");
+        }
+        self.gold -= cost;
+        self.deck.remove(idx);
+        if let Some(shop) = self.shop.as_mut() {
+            shop.purge_cost += 25;
+        }
+        Ok(())
+    }
+
+    /// 商店：离开（清空商店状态）。
+    pub fn leave_shop(&mut self) {
+        self.shop = None;
+        self.phase = RoomPhase::RoomDone;
     }
 
     /// 篝火：休息（回 30% 最大生命；Night Terrors 模组时加诅咒 TODO）。
