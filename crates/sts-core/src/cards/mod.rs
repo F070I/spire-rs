@@ -8,6 +8,7 @@
 
 pub mod builder;
 pub mod blue;
+pub mod purple;
 pub mod green;
 pub mod red;
 pub mod routines;
@@ -25,6 +26,7 @@ pub fn handled_ids() -> Vec<&'static str> {
     v.extend_from_slice(red::HANDLED);
     v.extend_from_slice(green::HANDLED);
     v.extend_from_slice(blue::HANDLED);
+    v.extend_from_slice(purple::HANDLED);
     v
 }
 
@@ -36,6 +38,7 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>) -> V
         "red" => red::HANDLED.contains(&id),
         "green" => green::HANDLED.contains(&id),
         "blue" => blue::HANDLED.contains(&id),
+        "purple" => purple::HANDLED.contains(&id),
         // 批次 3.3-3.4 逐色接入
         _ => false,
     };
@@ -44,6 +47,7 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>) -> V
             "red" => red::effects(b, card, target, &mut eb),
             "green" => green::effects(b, card, target, &mut eb),
             "blue" => blue::effects(b, card, target, &mut eb),
+            "purple" => purple::effects(b, card, target, &mut eb),
             _ => unreachable!("handled 表与分发分支不同步"),
         }
     } else {

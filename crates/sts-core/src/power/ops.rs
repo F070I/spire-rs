@@ -17,6 +17,8 @@ pub enum ApplyOutcome {
     BlockedByRelic,
     /// NoDrawPower 特判：目标已有同 ID → 放弃（不叠加，记录 09 §8-2a）
     NoDrawExists,
+    /// Mantra 满 10 → 进 Divinity（stackPower 信号）
+    MantraDivinity,
 }
 
 /// 施加上下文：来自状态树的遗物/阵营事实（批次 2.3 由 BattleState 填充）。
@@ -69,7 +71,13 @@ pub fn apply_power(
             return (ApplyOutcome::NoDrawExists, pending_removals);
         }
         if let Some(existing) = powers.iter_mut().find(|p| p.kind == to_apply.kind) {
-            stack_power(existing, to_apply.amount, &mut pending_removals);
+            if stack_power(existing, to_apply.amount, &mut pending_removals) {
+                // Mantra 满 10 信号：通过 pending 之外的通道——直接在此返回 special outcome
+                return (
+                    ApplyOutcome::MantraDivinity,
+                    pending_removals,
+                );
+            }
         }
         return (ApplyOutcome::Applied { stacked: true }, pending_removals);
     }
@@ -82,12 +90,27 @@ pub fn apply_power(
 
 /// `AbstractPower.stackPower`（记录 03 §1E + 各能力覆写）。
 /// `pending_removals` 可能收到本能力（amount 归 0 的 Strength/Dexterity/Focus）。
-pub fn stack_power(p: &mut Power, stack_amount: i32, pending_removals: &mut Vec<PowerKind>) {
+pub fn stack_power(
+    p: &mut Power,
+    stack_amount: i32,
+    pending_removals: &mut Vec<PowerKind>,
+) -> bool {
+    // 返回 true = Mantra 满 10（调用方应进 Divinity）
+    let mut divinity = false;
+
     // amount == -1 哨兵：不叠加，直接 return
     if p.amount == -1 {
-        return;
+        return false;
     }
     p.amount += stack_amount;
+    // MantraPower.stackPower：达到 10 → 进 Divinity 并 -10（记录 03 §2）
+    if p.kind == crate::power::PowerKind::Mantra && p.amount >= 10 {
+        p.amount -= 10;
+        if p.amount <= 0 {
+            pending_removals.push(crate::power::PowerKind::Mantra);
+        }
+        divinity = true;
+    }
     match p.kind {
         // Strength/Dexterity/Focus：钳 ±999；归 0 → 延迟移除（addToTop）
         PowerKind::Strength | PowerKind::Dexterity | PowerKind::Focus => {
@@ -98,6 +121,7 @@ pub fn stack_power(p: &mut Power, stack_amount: i32, pending_removals: &mut Vec<
         }
         _ => {}
     }
+    divinity
 }
 
 /// `ReducePowerAction`（记录 03 §1E）：
@@ -112,6 +136,12 @@ pub fn reduce_power(p: &mut Power, reduce_amount: i32) -> ReduceResult {
     } else {
         ReduceResult::Remove
     }
+}
+
+/// stackPower 的架势转换信号（Mantra → Divinity）。
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum StanceSignal {
+    Divinity,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -359,7 +359,30 @@ impl BattleState {
 
     /// 玩家结束回合（`AbstractRoom.endTurn`，记录 01 §8 / 09 §9）。
     pub fn end_turn(&mut self) {
-        // player.applyEndOfTurnTriggers（powers atEndOfTurn(true)）—— TODO 3.5 钩子
+        // player.applyEndOfTurnTriggers（powers atEndOfTurn(true)）——LikeWater/WreathOfFlame 首批
+        let mut eot: Vec<GameAction> = Vec::new();
+        let in_calm = self.player_stance == crate::stance::StanceKind::Calm;
+        for p in &self.player.powers {
+            match p.kind {
+                // LikeWaterPower.atEndOfTurn：Calm 下 +magic 格挡
+                PowerKind::LikeWater if in_calm => eot.push(GameAction::GainBlock {
+                    target: TargetRef::Player,
+                    amount: p.amount,
+                }),
+                // WreathOfFlamePower.atEndOfTurn：Calm 下全体 magic 伤（THORNS）
+                PowerKind::WreathOfFlame if in_calm => {
+                    let matrix = self.combust_matrix(p.amount);
+                    eot.push(GameAction::DamageAll {
+                        matrix,
+                        ty: DamageType::Thorns,
+                    });
+                }
+                _ => {}
+            }
+        }
+        for a in eot {
+            self.mgr.add_bottom(a);
+        }
         self.mgr.add_bottom(GameAction::ClearCardQueue);
         self.mgr.add_bottom(GameAction::DiscardAtEndOfTurn);
         // 全牌 resetAttributes（记录 01 §8）
@@ -1000,10 +1023,16 @@ impl BattleState {
                 } else {
                     power
                 };
-                let (_, pending) = power::ops::apply_power(powers, to_apply, ctx);
+                let (outcome, pending) = power::ops::apply_power(powers, to_apply, ctx);
                 for kind in pending {
                     self.mgr
                         .add_top(GameAction::RemovePower { target, kind });
+                }
+                // Mantra 满 10 → 进 Divinity（MantraPower.stackPower 信号）
+                if let power::ops::ApplyOutcome::MantraDivinity = outcome {
+                    self.mgr.add_top(GameAction::ChangeStance {
+                        stance: crate::stance::StanceKind::Divinity,
+                    });
                 }
             }
             GameAction::RemovePower { target, kind } => {

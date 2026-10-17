@@ -90,6 +90,18 @@ pub enum PowerKind {
     Echo,
     /// SteamBarrierPower：每回合格挡递减（回合钩子 TODO 3.5）。
     SteamBarrier,
+    // ---- 批次 3.5 紫卡（观者）----
+    Mantra,
+    BattleHymn,
+    DevaForm,
+    Foresight,
+    LikeWater,
+    MentalFortress,
+    Nirvana,
+    Rushdown,
+    WaveOfTheHand,
+    WreathOfFlame,
+    Establishment,
     // ---- 批次 3.3 绿卡第 2 批 ----
     ThousandCuts,
     AfterImage,
