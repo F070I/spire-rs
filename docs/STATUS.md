@@ -2,7 +2,7 @@
 
 > 本文档为 token 预算接近尾声时的交接快照。下个会话/接手者按此继续。
 
-## 已完成（git 最新 commit：dd115f7，266 测试全过，clippy 0）
+## 已完成（git 最新 commit：e1b4290，276 测试全过，clippy 0）
 
 ### 批次 1：地基
 - sts-data::rng：RandomXS128 + JDK LCG + STS Random 包装（基线交叉验证）
@@ -48,6 +48,17 @@
   之后入队（Happy Flower/Art of War 同坑两次）。
 - **源码路径迁移**：`C:\Users\17366\Desktop\MySlayTheSpire-master`（原
   OneDrive\Desktop 已迁空）。
+
+## 本轮追加（批次 5e 遗物第四批，2026-10-18）
+
+- **遗物 5e（e1b4290）**：+40 件全钩子。战斗开始（Akabeko Vigor——新
+  PowerKind::Vigor/备用袋/忍者卷轴/共生病毒/泪坠盒/核能电池/工具箱/破冠/穹顶）；
+  回合（Brimstone/船栓/舵轮/香炉/弯曲钳）；出牌（Pen Nib ×2——attack_info
+  出口整段翻倍+PenNibConsume 动作、OrangePellets、VioletLotus、Unceasing Top）；
+  弃牌/消耗/死亡（Tingsha/韧带绷带/风筝/枯枝/灰烬/哥布林角/标本）；
+  治疗（魔花 ×1.5/马可之花归零——relic_adjusted_heal）；商店（Membership Card
+  半价统一入口、餐券、永恒之羽、Old Coin、Potion Belt、Darkstone）。
+  映射累计 ~129/181。测试 +10。
 
 ## 本轮追加（批次 5d 二三幕加权表，2026-10-18）
 
