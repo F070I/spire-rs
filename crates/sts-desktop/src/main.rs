@@ -14,6 +14,40 @@ use sts_interface::{dispatch, CampfireOption, GameView, PlayerCommand, Screen, S
 
 // ---------------------------------------------------------------- 主题
 
+// ===============================================================
+// UiMetrics（SOP §3.4/§4：固定线宽、间距、尺寸——禁止散落硬编码）
+// ===============================================================
+pub(crate) mod metrics {
+    pub const LINE_W: f32 = 1.0;
+    pub const FOCUS_W: f32 = 2.0;
+    pub const MAP_LINE: f32 = 1.0;
+    pub const MAP_REACH: f32 = 1.5;
+    pub const MAP_CUR: f32 = 2.0;
+    pub const NODE_D: f32 = 22.0;
+    pub const NODE_FOCUS_D: f32 = 28.0;
+    pub const NODE_BOSS_D: f32 = 32.0;
+    pub const MARGIN: f32 = 14.0;
+    #[allow(dead_code)]
+    pub const PANEL_PAD: f32 = 12.0;
+    #[allow(dead_code)]
+    pub const GAP: f32 = 8.0;
+    pub const TOP_H: f32 = 40.0;
+    pub const LOG_H: f32 = 92.0;
+    pub const SIDE_W: f32 = 320.0;
+    pub const POTION_SZ: f32 = 28.0;
+    #[allow(dead_code)]
+    pub const ENERGY_D: f32 = 58.0;
+    #[allow(dead_code)]
+    pub const CARD_H: f32 = 142.0;
+    #[allow(dead_code)]
+    pub const CARD_W: f32 = 150.0;
+    pub const WIN_W: f32 = 1440.0;
+    pub const WIN_H: f32 = 840.0;
+    pub const MIN_W: f32 = 1000.0;
+    pub const MIN_H: f32 = 680.0;
+}
+use metrics as M;
+
 #[derive(Clone, Copy, PartialEq)]
 enum ThemeMode {
     /// 单色绿磷终端
@@ -25,48 +59,53 @@ enum ThemeMode {
 struct Palette {
     bg: Color32,
     panel: Color32,
-    panel2: Color32,
-    separator: Color32,
-    text: Color32,
-    text_dim: Color32,
-    text_faint: Color32,
+    panel_alt: Color32,
+    text_primary: Color32,
+    text_normal: Color32,
+    text_muted: Color32,
+    line: Color32,
+    line_dim: Color32,
+    focus: Color32,
+    disabled: Color32,
     accent: Color32,
     warn: Color32,
     danger: Color32,
-    #[allow(dead_code)]
-    ok: Color32,
     hp_bar: Color32,
     block_bar: Color32,
 }
 
 const GREEN: Palette = Palette {
-    bg: Color32::from_rgb(0x05, 0x0A, 0x06),
-    panel: Color32::from_rgb(0x08, 0x12, 0x0A),
-    panel2: Color32::from_rgb(0x0C, 0x1A, 0x0F),
-    separator: Color32::from_rgb(0x1E, 0x4A, 0x28),
-    text: Color32::from_rgb(0x63, 0xD4, 0x77),
-    text_dim: Color32::from_rgb(0x3F, 0x94, 0x4F),
-    text_faint: Color32::from_rgb(0x2A, 0x66, 0x36),
-    accent: Color32::from_rgb(0x9B, 0xF0, 0xA8),
+    bg: Color32::from_rgb(0x03, 0x06, 0x03),
+    panel: Color32::from_rgb(0x07, 0x10, 0x08),
+    panel_alt: Color32::from_rgb(0x0A, 0x16, 0x0C),
+    text_primary: Color32::from_rgb(0xA4, 0xFF, 0xAE),
+    text_normal: Color32::from_rgb(0x68, 0xD7, 0x7A),
+    text_muted: Color32::from_rgb(0x4C, 0x98, 0x59),
+    line: Color32::from_rgb(0x41, 0x6C, 0x48),
+    line_dim: Color32::from_rgb(0x24, 0x4A, 0x2C),
+    focus: Color32::from_rgb(0xB6, 0xFF, 0xC0),
+    disabled: Color32::from_rgb(0x3B, 0x62, 0x41),
+    accent: Color32::from_rgb(0xA4, 0xFF, 0xAE),
     warn: Color32::from_rgb(0xC9, 0xD9, 0x6B),
     danger: Color32::from_rgb(0xE8, 0x7C, 0x6E),
-    ok: Color32::from_rgb(0x63, 0xD4, 0x77),
     hp_bar: Color32::from_rgb(0x2F, 0x8A, 0x40),
     block_bar: Color32::from_rgb(0x4C, 0xB8, 0x63),
 };
 
 const GRAY: Palette = Palette {
-    bg: Color32::from_rgb(0x0A, 0x0A, 0x0A),
-    panel: Color32::from_rgb(0x10, 0x10, 0x10),
-    panel2: Color32::from_rgb(0x16, 0x16, 0x16),
-    separator: Color32::from_rgb(0x33, 0x33, 0x33),
-    text: Color32::from_rgb(0xD6, 0xD6, 0xD6),
-    text_dim: Color32::from_rgb(0x96, 0x96, 0x96),
-    text_faint: Color32::from_rgb(0x60, 0x60, 0x60),
-    accent: Color32::from_rgb(0xEE, 0xEE, 0xEE),
+    bg: Color32::from_rgb(0x00, 0x00, 0x00),
+    panel: Color32::from_rgb(0x08, 0x08, 0x08),
+    panel_alt: Color32::from_rgb(0x14, 0x14, 0x14),
+    text_primary: Color32::from_rgb(0xFF, 0xFF, 0xFF),
+    text_normal: Color32::from_rgb(0xD0, 0xD0, 0xD0),
+    text_muted: Color32::from_rgb(0x99, 0x99, 0x99),
+    line: Color32::from_rgb(0x77, 0x77, 0x77),
+    line_dim: Color32::from_rgb(0x41, 0x41, 0x41),
+    focus: Color32::from_rgb(0xFF, 0xFF, 0xFF),
+    disabled: Color32::from_rgb(0x69, 0x69, 0x69),
+    accent: Color32::from_rgb(0xFF, 0xFF, 0xFF),
     warn: Color32::from_rgb(0xAA, 0xAA, 0xAA),
     danger: Color32::from_rgb(0x88, 0x88, 0x88),
-    ok: Color32::from_rgb(0xC0, 0xC0, 0xC0),
     hp_bar: Color32::from_rgb(0x80, 0x80, 0x80),
     block_bar: Color32::from_rgb(0xB0, 0xB0, 0xB0),
 };
@@ -89,6 +128,7 @@ enum AppScreen {
 }
 
 #[derive(Clone, Copy, PartialEq)]
+#[allow(dead_code)]
 enum Character {
     Ironclad,
     Silent,
@@ -105,6 +145,7 @@ impl Character {
             Character::Watcher => "Watcher",
         }
     }
+    #[allow(dead_code)]
     fn all() -> [Character; 4] {
         [
             Character::Ironclad,
@@ -135,6 +176,7 @@ struct SpireApp {
     campfire_sel: usize,
     /// 战斗内显示的堆
     show_pile: Option<sts_interface::PileKind>,
+    menu_focus: usize,
 }
 
 impl SpireApp {
@@ -157,6 +199,7 @@ impl SpireApp {
             deck_mode: DeckMode::Closed,
             campfire_sel: 0,
             show_pile: None,
+            menu_focus: 0,
         }
     }
 
@@ -307,10 +350,11 @@ impl eframe::App for SpireApp {
 
         // 顶栏
         egui::TopBottomPanel::top("top")
+            .exact_height(M::TOP_H)
             .frame(
                 egui::Frame::none()
-                    .fill(self.pal().panel)
-                    .inner_margin(egui::Margin::symmetric(10.0_f32, 6.0_f32)),
+                    .fill(self.pal().bg)
+                    .inner_margin(egui::Margin::symmetric(M::MARGIN, 0.0_f32)),
             )
             .show(ctx, |ui| {
                 draw_top_bar(ui, self);
@@ -318,10 +362,11 @@ impl eframe::App for SpireApp {
 
         // 底栏：日志 + 快捷键
         egui::TopBottomPanel::bottom("log")
+            .exact_height(M::LOG_H)
             .frame(
                 egui::Frame::none()
                     .fill(self.pal().panel)
-                    .inner_margin(egui::Margin::symmetric(10.0_f32, 5.0_f32)),
+                    .inner_margin(egui::Margin::symmetric(M::MARGIN, 8.0_f32)),
             )
             .show(ctx, |ui| {
                 draw_log_bar(ui, self);
@@ -329,11 +374,10 @@ impl eframe::App for SpireApp {
 
         // 右侧详情面板
         egui::SidePanel::right("side")
-            .min_width(250.0_f32)
-            .max_width(320.0_f32)
+            .exact_width(M::SIDE_W)
             .frame(
                 egui::Frame::none()
-                    .fill(self.pal().panel2)
+                    .fill(self.pal().panel_alt)
                     .inner_margin(egui::Margin::same(10.0_f32)),
             )
             .show(ctx, |ui| {
@@ -377,85 +421,42 @@ fn crate_name_zhs(id: &str) -> &'static str {
 
 fn draw_menu(ui: &mut egui::Ui, app: &mut SpireApp) {
     let p = app.pal();
-    ui.add_space(ui.available_height() * 0.12);
-    ui.vertical_centered(|ui| {
-        ui.heading(
-            egui::RichText::new("SPIRE-RS")
-                .color(p.accent)
-                .size(36.0_f32)
-                .strong(),
-        );
-        ui.label(egui::RichText::new("文字版杀戮尖塔").color(p.text_dim));
-        ui.add_space(20.0);
-        ui.set_min_width(400.0);
-        ui.label(egui::RichText::new("选择角色").color(p.text_dim).small());
-        for c in Character::all() {
-            let name = crate_name_zhs(c.id());
-            let selected = app.character == c;
-            let available = c == Character::Ironclad;
-            let text = if selected {
-                format!("▸ {name}")
-            } else {
-                format!("  {name}")
-            };
-            let hint = if available {
-                egui::RichText::new(text).color(if selected { p.accent } else { p.text })
-            } else {
-                egui::RichText::new(format!("{text}（未实装）")).color(p.text_faint)
-            };
-            if ui
-                .add_enabled(
-                    available,
-                    egui::Button::new(hint)
-                        .min_size(Vec2::new(300.0_f32, 30.0_f32))
-                        .stroke(Stroke::new(
-                            if selected { 1.2_f32 } else { 0.0_f32 },
-                            p.accent,
-                        )),
-                )
-                .clicked()
-            {
-                app.character = c;
-            }
-        }
-        ui.add_space(14.0);
-        if ui
-            .add(
-                egui::Button::new(egui::RichText::new("开始新游戏").color(p.accent))
-                    .min_size(Vec2::new(300.0_f32, 34.0_f32)),
-            )
-            .clicked()
-        {
-            app.start_game();
-        }
-        if ui
-            .add(
-                egui::Button::new(egui::RichText::new("继续游戏").color(p.text))
-                    .min_size(Vec2::new(300.0_f32, 34.0_f32)),
-            )
-            .clicked()
-        {
-            app.continue_game();
-        }
-        if ui
-            .add(
-                egui::Button::new(egui::RichText::new("退出").color(p.text_dim))
-                    .min_size(Vec2::new(300.0_f32, 30.0_f32)),
-            )
-            .clicked()
-        {
-            std::process::exit(0);
-        }
-        ui.add_space(16.0);
-        ui.label(
-            egui::RichText::new("单色矢量终端 · 游戏逻辑忠于原版反编译实现")
-                .small()
-                .color(p.text_faint),
-        );
-    });
+    ui.add_space(ui.available_height() * 0.18);
+    let col_w = 520.0_f32;
+    let x0 = (ui.available_width() - col_w) / 2.0_f32;
+    ui.allocate_ui_at_rect(
+        Rect::from_min_size(
+            Pos2::new(ui.min_rect().left() + x0, ui.min_rect().top()),
+            Vec2::new(col_w, 460.0_f32),
+        ),
+        |ui| {
+            ui.vertical(|ui| {
+                ui.label(
+                    egui::RichText::new("SPIRE-RS / TERMINAL")
+                        .monospace()
+                        .size(22.0_f32)
+                        .color(p.text_primary),
+                );
+                ui.add_space(18.0_f32);
+                terminal_separator(ui, p);
+                ui.add_space(12.0_f32);
+                let items = ["新游戏", "继续游戏", "读取存档", "设置", "退出"];
+                for (i, label) in items.iter().enumerate() {
+                    let focused = app.menu_focus == i;
+                    ui.add_space(4.0_f32);
+                    if terminal_choice_row(ui, p, i, label, None, focused, true) {
+                        match i {
+                            0 => app.start_game(),
+                            1 | 2 => app.continue_game(),
+                            4 => std::process::exit(0),
+                            _ => {}
+                        }
+                    }
+                }
+            });
+        },
+    );
 }
-
-// ---------------------------------------------------------------- 顶栏 / 底栏 / 侧栏
 
 fn draw_top_bar(ui: &mut egui::Ui, app: &mut SpireApp) {
     let p = app.pal();
@@ -463,15 +464,15 @@ fn draw_top_bar(ui: &mut egui::Ui, app: &mut SpireApp) {
     ui.horizontal(|ui| {
         ui.label(egui::RichText::new(&t.phase_label).strong().color(p.accent));
         ui.separator();
-        ui.label(egui::RichText::new(format!("Act {}", t.act)).color(p.text_dim));
-        ui.label(egui::RichText::new(format!("层 {}", t.floor)).color(p.text_dim));
+        ui.label(egui::RichText::new(format!("Act {}", t.act)).color(p.text_muted));
+        ui.label(egui::RichText::new(format!("层 {}", t.floor)).color(p.text_muted));
         ui.separator();
         ui.label(
             egui::RichText::new(format!("HP {}/{}", t.hp, t.max_hp)).color(
                 if t.hp * 4 <= t.max_hp {
                     p.danger
                 } else {
-                    p.text
+                    p.text_normal
                 },
             ),
         );
@@ -487,6 +488,50 @@ fn draw_top_bar(ui: &mut egui::Ui, app: &mut SpireApp) {
         ui.separator();
         ui.label(egui::RichText::new(format!("金币 {}", t.gold)).color(p.warn));
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            // 药水槽位（SOP §8.2：28×28，顶栏固定位置——不许移到能量球旁或手牌下方）
+            if let Some(b) = &app.view.battle {
+                let pots: Vec<(usize, bool, String)> = b
+                    .potions
+                    .iter()
+                    .map(|p| (p.slot, p.id.is_some(), p.name.clone()))
+                    .collect();
+                for (slot, has, name) in &pots {
+                    let (prect, presp) =
+                        ui.allocate_exact_size(Vec2::splat(M::POTION_SZ), Sense::click());
+                    ui.painter().rect_stroke(
+                        prect,
+                        0.0_f32,
+                        Stroke::new(M::LINE_W, if *has { p.line } else { p.line_dim }),
+                    );
+                    if *has {
+                        ui.painter().text(
+                            prect.center(),
+                            Align2::CENTER_CENTER,
+                            "药",
+                            FontId::monospace(12.0_f32),
+                            p.text_normal,
+                        );
+                    } else {
+                        ui.painter().text(
+                            prect.center(),
+                            Align2::CENTER_CENTER,
+                            "·",
+                            FontId::monospace(12.0_f32),
+                            p.text_muted,
+                        );
+                    }
+                    if presp.clicked() && *has {
+                        app.do_cmd(PlayerCommand::UsePotion {
+                            slot: *slot,
+                            target: Some(0),
+                        });
+                    }
+                    if presp.hovered() && *has {
+                        let _ = presp.on_hover_text(name);
+                    }
+                }
+                ui.separator();
+            }
             if ui
                 .small_button(match app.theme {
                     ThemeMode::Green => "灰度",
@@ -540,7 +585,7 @@ fn draw_log_bar(ui: &mut egui::Ui, app: &SpireApp) {
             Screen::Map => "点击发光节点前进 · 底部日志显示最近事件",
             _ => "点击按钮操作 · Esc 关闭浮窗",
         };
-        ui.label(egui::RichText::new(hint).small().color(p.text_faint));
+        ui.label(egui::RichText::new(hint).small().color(p.text_muted));
         egui::ScrollArea::vertical()
             .max_height(44.0_f32)
             .stick_to_bottom(true)
@@ -549,9 +594,9 @@ fn draw_log_bar(ui: &mut egui::Ui, app: &SpireApp) {
                     let color = if line.starts_with('✗') {
                         p.danger
                     } else if line.starts_with('✓') {
-                        p.text_dim
+                        p.text_muted
                     } else {
-                        p.text
+                        p.text_normal
                     };
                     ui.label(egui::RichText::new(line).color(color).small());
                 }
@@ -561,7 +606,7 @@ fn draw_log_bar(ui: &mut egui::Ui, app: &SpireApp) {
 
 fn draw_side(ui: &mut egui::Ui, app: &SpireApp) {
     let p = app.pal();
-    ui.heading(egui::RichText::new("详情").color(p.text_dim).small());
+    ui.heading(egui::RichText::new("详情").color(p.text_muted).small());
     ui.separator();
     egui::ScrollArea::vertical().show(ui, |ui| {
         // 战斗：选中卡 / 选中敌
@@ -597,16 +642,16 @@ fn draw_side(ui: &mut egui::Ui, app: &SpireApp) {
             let _ = c;
         }
         ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-            ui.label(egui::RichText::new(format!("牌组 {} 张", app.view.deck.cards.len())).small().color(p.text_faint));
+            ui.label(egui::RichText::new(format!("牌组 {} 张", app.view.deck.cards.len())).small().color(p.text_muted));
         });
     });
 }
 
 fn section(ui: &mut egui::Ui, p: &Palette, title: &str, body: &str) {
-    ui.label(egui::RichText::new(title).strong().color(p.text));
+    ui.label(egui::RichText::new(title).strong().color(p.text_normal));
     for line in body.split('\n') {
         if !line.is_empty() {
-            ui.label(egui::RichText::new(line).color(p.text_dim));
+            ui.label(egui::RichText::new(line).color(p.text_muted));
         }
     }
     ui.add_space(6.0);
@@ -616,25 +661,33 @@ fn section(ui: &mut egui::Ui, p: &Palette, title: &str, body: &str) {
 
 fn draw_neow(ui: &mut egui::Ui, app: &mut SpireApp) {
     let p = app.pal();
-    ui.heading(egui::RichText::new("Neow 的祝福").color(p.accent));
-    ui.label(egui::RichText::new("选择一份开局馈赠：").color(p.text_dim));
-    ui.add_space(8.0);
+    ui.add_space(30.0_f32);
     let neow_opts = app
         .view
         .neow
         .as_ref()
         .map(|n| n.options.clone())
         .unwrap_or_default();
+    ui.label(
+        egui::RichText::new("NEOW 的祝福")
+            .monospace()
+            .size(22.0_f32)
+            .color(p.text_primary),
+    );
+    ui.label(
+        egui::RichText::new("选择一项开局馈赠")
+            .monospace()
+            .size(14.0_f32)
+            .color(p.text_muted),
+    );
+    ui.add_space(6.0_f32);
+    terminal_separator(ui, p);
+    ui.add_space(10.0_f32);
     for (i, opt) in neow_opts.iter().enumerate() {
-        if ui
-            .add(
-                egui::Button::new(egui::RichText::new(opt).color(p.text))
-                    .min_size(Vec2::new(360.0_f32, 34.0_f32)),
-            )
-            .clicked()
-        {
+        if terminal_choice_row(ui, p, i, opt, None, false, true) {
             app.do_cmd(PlayerCommand::OpenNeowPick { index: i });
         }
+        ui.add_space(6.0_f32);
     }
 }
 
@@ -642,109 +695,120 @@ fn draw_end(ui: &mut egui::Ui, app: &mut SpireApp, victory: bool) {
     let p = app.pal();
     ui.add_space(ui.available_height() / 3.0_f32);
     ui.vertical_centered(|ui| {
-        ui.heading(
+        ui.label(
             egui::RichText::new(if victory { "胜 利" } else { "你 死 了" })
-                .color(if victory { p.accent } else { p.danger })
-                .size(40.0_f32),
+                .monospace()
+                .size(36.0_f32)
+                .color(if victory { p.text_primary } else { p.danger }),
         );
         ui.label(
             egui::RichText::new(format!(
-                "到达 Act {} · 层 {} · 金币 {}",
+                "Act {} · 层 {} · 金币 {}",
                 app.view.top.act, app.view.top.floor, app.view.top.gold
             ))
-            .color(p.text_dim),
+            .monospace()
+            .color(p.text_muted),
         );
-        if ui.button("重新开始").clicked() {
-            let mut run = sts_core::flow4b::RunState4b::new(chrono_seed());
-            run.open_neow();
-            app.run = run;
-            app.view = GameView::capture(&app.run);
-            app.log = Default::default();
-            app.log("新的攀塔开始了。");
+        ui.add_space(14.0_f32);
+        if terminal_button(
+            ui,
+            p,
+            "返回主菜单",
+            true,
+            true,
+            Vec2::new(220.0_f32, 34.0_f32),
+        ) {
+            app.screen = AppScreen::Menu;
         }
     });
 }
 
 fn draw_rewards(ui: &mut egui::Ui, app: &mut SpireApp) {
     let p = app.pal();
-    ui.heading(egui::RichText::new("战斗奖励").color(p.accent));
     let Some(r) = app.view.reward.clone() else {
         return;
     };
-    ui.add_space(6.0);
-    ui.label(egui::RichText::new(format!("金币 +{}", r.gold)).color(p.warn));
+    ui.add_space(30.0_f32);
+    ui.label(
+        egui::RichText::new("战斗奖励")
+            .monospace()
+            .size(22.0_f32)
+            .color(p.text_primary),
+    );
+    ui.label(
+        egui::RichText::new(format!("金币 +{}", r.gold))
+            .monospace()
+            .color(p.text_normal),
+    );
+    ui.add_space(6.0_f32);
+    terminal_separator(ui, p);
+    ui.add_space(10.0_f32);
     if !r.cards.is_empty() {
-        ui.add_space(6.0);
-        ui.label(egui::RichText::new("选一张卡（或跳过）：").color(p.text_dim));
+        ui.label(
+            egui::RichText::new("选择一张卡（或跳过）：")
+                .monospace()
+                .color(p.text_muted),
+        );
         for c in &r.cards {
-            let text = format!("{}  ·  {}", c.name, c.kind_label);
-            if ui
-                .add(
-                    egui::Button::new(egui::RichText::new(text).color(p.text))
-                        .min_size(Vec2::new(360.0_f32, 30.0_f32)),
-                )
-                .clicked()
-            {
+            if terminal_choice_row(
+                ui,
+                p,
+                c.hand_index,
+                &c.name,
+                Some(&c.kind_label),
+                false,
+                true,
+            ) {
                 app.do_cmd(PlayerCommand::CardRewardPick {
                     index: c.hand_index,
                 });
             }
+            ui.add_space(6.0_f32);
         }
-        if ui.button("跳过卡牌").clicked() {
+        if terminal_choice_row(ui, p, 99, "跳过卡牌", None, false, true) {
             app.do_cmd(PlayerCommand::CardRewardSkip);
         }
     }
-    if let Some(relic) = &r.relic {
-        ui.add_space(6.0);
-        if ui.button(format!("领取遗物：{relic}")).clicked() {
-            app.do_cmd(PlayerCommand::ClaimReward { index: 0 });
-        }
-    }
-    if let Some(pot) = &r.potion {
-        ui.label(egui::RichText::new(format!("药水：{pot}")).color(p.text_dim));
+    if r.relic.is_some() && terminal_choice_row(ui, p, 98, "领取遗物", None, false, true) {
+        app.do_cmd(PlayerCommand::ClaimReward { index: 0 });
     }
 }
 
 fn draw_treasure(ui: &mut egui::Ui, app: &mut SpireApp) {
     let p = app.pal();
-    ui.heading(egui::RichText::new("宝箱").color(p.accent));
-    ui.label(egui::RichText::new("打开宝箱获取其中的遗物。").color(p.text_dim));
-    ui.add_space(8.0);
-    if ui.button("打开宝箱").clicked() {
+    ui.add_space(30.0_f32);
+    ui.label(
+        egui::RichText::new("宝箱")
+            .monospace()
+            .size(22.0_f32)
+            .color(p.text_primary),
+    );
+    ui.add_space(6.0_f32);
+    terminal_separator(ui, p);
+    ui.add_space(10.0_f32);
+    if terminal_choice_row(ui, p, 0, "打开宝箱", None, true, true) {
         app.do_cmd(PlayerCommand::OpenTreasure);
     }
 }
 
 fn draw_campfire(ui: &mut egui::Ui, app: &mut SpireApp) {
     let p = app.pal();
-    ui.heading(egui::RichText::new("篝火").color(p.accent));
-    ui.label(egui::RichText::new("恢复与准备的片刻。").color(p.text_dim));
-    ui.add_space(8.0);
     let Some(cf) = app.view.campfire.clone() else {
         return;
     };
+    ui.add_space(30.0_f32);
+    ui.label(
+        egui::RichText::new("篝火")
+            .monospace()
+            .size(22.0_f32)
+            .color(p.text_primary),
+    );
+    ui.add_space(6.0_f32);
+    terminal_separator(ui, p);
+    ui.add_space(10.0_f32);
     for (i, (action, label)) in cf.actions.iter().enumerate() {
-        let selected = app.campfire_sel == i;
-        let text = if selected {
-            format!("▸ {label}")
-        } else {
-            format!("  {label}")
-        };
-        if ui
-            .add(
-                egui::Button::new(egui::RichText::new(text).color(if selected {
-                    p.accent
-                } else {
-                    p.text
-                }))
-                .min_size(Vec2::new(340.0_f32, 30.0_f32))
-                .stroke(Stroke::new(
-                    if selected { 1.2_f32 } else { 0.0_f32 },
-                    p.accent,
-                )),
-            )
-            .clicked()
-        {
+        let focused = app.campfire_sel == i;
+        if terminal_choice_row(ui, p, i, label, None, focused, true) {
             app.campfire_sel = i;
             match action {
                 sts_interface::CampfireAction::Rest => {
@@ -763,6 +827,7 @@ fn draw_campfire(ui: &mut egui::Ui, app: &mut SpireApp) {
                 }
             }
         }
+        ui.add_space(6.0_f32);
     }
 }
 
@@ -771,114 +836,99 @@ fn draw_event(ui: &mut egui::Ui, app: &mut SpireApp) {
     let Some(ev) = app.view.event.clone() else {
         return;
     };
-    ui.heading(egui::RichText::new(&ev.title).color(p.accent));
-    ui.add_space(4.0);
+    ui.add_space(30.0_f32);
+    ui.label(
+        egui::RichText::new(&ev.title)
+            .monospace()
+            .size(22.0_f32)
+            .color(p.text_primary),
+    );
+    ui.add_space(6.0_f32);
+    terminal_separator(ui, p);
+    ui.add_space(10.0_f32);
     egui::ScrollArea::vertical()
-        .id_source("ev_body")
-        .max_height(ui.available_height() * 0.45)
+        .max_height(300.0_f32)
         .show(ui, |ui| {
-            ui.label(egui::RichText::new(&ev.body).color(p.text_dim));
+            for line in ev.body.split(
+                "
+",
+            ) {
+                ui.label(egui::RichText::new(line).monospace().color(p.text_normal));
+            }
         });
-    ui.add_space(8.0);
+    ui.add_space(10.0_f32);
     for (i, opt) in ev.options.iter().enumerate() {
-        if ui
-            .add(
-                egui::Button::new(egui::RichText::new(opt).color(p.text))
-                    .min_size(Vec2::new(420.0_f32, 30.0_f32)),
-            )
-            .clicked()
-        {
+        if terminal_choice_row(ui, p, i, opt, None, false, true) {
             app.do_cmd(PlayerCommand::EventChoose { index: i });
         }
+        ui.add_space(6.0_f32);
     }
 }
 
 fn draw_shop(ui: &mut egui::Ui, app: &mut SpireApp) {
     let p = app.pal();
-    ui.heading(egui::RichText::new("商店").color(p.accent));
     let Some(shop) = app.view.shop.clone() else {
         return;
     };
-    ui.label(egui::RichText::new(format!("金币 {}", app.view.top.gold)).color(p.warn));
-    ui.add_space(6.0);
-
+    ui.add_space(20.0_f32);
+    ui.label(
+        egui::RichText::new("商店")
+            .monospace()
+            .size(22.0_f32)
+            .color(p.text_primary),
+    );
+    ui.label(
+        egui::RichText::new(format!("金币 {}", app.view.top.gold))
+            .monospace()
+            .color(p.text_normal),
+    );
+    ui.add_space(6.0_f32);
+    terminal_separator(ui, p);
+    ui.add_space(10.0_f32);
     egui::ScrollArea::vertical().show(ui, |ui| {
-        draw_shop_group(ui, app, p, "卡牌", &shop.cards, |app, idx| {
-            app.do_cmd(PlayerCommand::ShopBuy {
-                item: ShopItemKind::Card,
-                index: idx,
-            })
-        });
-        draw_shop_group(ui, app, p, "遗物", &shop.relics, |app, idx| {
-            app.do_cmd(PlayerCommand::ShopBuy {
-                item: ShopItemKind::Relic,
-                index: idx,
-            })
-        });
-        draw_shop_group(ui, app, p, "药水", &shop.potions, |app, idx| {
-            app.do_cmd(PlayerCommand::ShopBuy {
-                item: ShopItemKind::Potion,
-                index: idx,
-            })
-        });
+        for (gt, kind, items) in [
+            ("卡牌", ShopItemKind::Card, &shop.cards),
+            ("遗物", ShopItemKind::Relic, &shop.relics),
+            ("药水", ShopItemKind::Potion, &shop.potions),
+        ] {
+            if items.is_empty() {
+                continue;
+            }
+            ui.label(egui::RichText::new(gt).monospace().color(p.text_muted));
+            for e in items {
+                let label = format!(
+                    "{} —— {} 金{}",
+                    e.name,
+                    e.price,
+                    if e.sold { "（已售出）" } else { "" }
+                );
+                let afford = app.view.top.gold >= e.price && !e.sold;
+                if terminal_choice_row(ui, p, e.index, &label, Some(&e.desc), false, afford) {
+                    app.do_cmd(PlayerCommand::ShopBuy {
+                        item: kind,
+                        index: e.index,
+                    });
+                }
+                ui.add_space(4.0_f32);
+            }
+        }
         ui.separator();
-        if ui
-            .button(format!("移除一张牌（{} 金）", shop.purge_cost))
-            .clicked()
-        {
+        if terminal_choice_row(
+            ui,
+            p,
+            0,
+            &format!("移除一张牌（{} 金）", shop.purge_cost),
+            None,
+            false,
+            true,
+        ) {
             app.deck_mode = DeckMode::PickPurge;
         }
-        if ui.button("离开商店").clicked() {
+        if terminal_choice_row(ui, p, 1, "离开商店", None, false, true) {
             app.do_cmd(PlayerCommand::LeaveShop);
         }
     });
 }
-
-fn draw_shop_group(
-    ui: &mut egui::Ui,
-    app: &mut SpireApp,
-    p: &Palette,
-    title: &str,
-    items: &[sts_interface::ShopEntry],
-    buy: fn(&mut SpireApp, usize),
-) {
-    if items.is_empty() {
-        return;
-    }
-    let clicks: Vec<usize> = {
-        let mut out = Vec::new();
-        ui.label(egui::RichText::new(title).color(p.text_dim));
-        for e in items {
-            ui.horizontal(|ui| {
-                let color = if e.sold { p.text_faint } else { p.text };
-                let name = if e.sold {
-                    format!("（已售出）{}", e.name)
-                } else {
-                    e.name.clone()
-                };
-                if ui
-                    .add_enabled(
-                        !e.sold,
-                        egui::Button::new(
-                            egui::RichText::new(format!("{name} —— {} 金", e.price)).color(color),
-                        ),
-                    )
-                    .on_hover_text(&e.desc)
-                    .clicked()
-                {
-                    out.push(e.index);
-                }
-            });
-        }
-        out
-    };
-    for idx in clicks {
-        buy(app, idx);
-    }
-    ui.add_space(6.0);
-}
-
-// ---------------------------------------------------------------- 战斗
 
 fn draw_battle(ui: &mut egui::Ui, app: &mut SpireApp) {
     let p = app.pal();
@@ -890,7 +940,7 @@ fn draw_battle(ui: &mut egui::Ui, app: &mut SpireApp) {
     ui.label(
         egui::RichText::new("── 敌人 ──")
             .small()
-            .color(p.text_faint),
+            .color(p.text_muted),
     );
     for e in &b.enemies {
         let targeting = app.targeting.is_some();
@@ -901,7 +951,7 @@ fn draw_battle(ui: &mut egui::Ui, app: &mut SpireApp) {
         }
         let hover = ui.rect_contains_pointer(rect);
         ui.painter()
-            .rect_filled(rect, 2.0_f32, if hover { p.panel2 } else { p.panel });
+            .rect_filled(rect, 2.0_f32, if hover { p.panel_alt } else { p.panel });
         if targeting {
             ui.painter()
                 .rect_stroke(rect, 2.0_f32, Stroke::new(1.2_f32, p.accent));
@@ -911,7 +961,7 @@ fn draw_battle(ui: &mut egui::Ui, app: &mut SpireApp) {
             Pos2::new(rect.right() - 210.0_f32, rect.top() + 12.0_f32),
             Vec2::new(200.0_f32, 8.0_f32),
         );
-        ui.painter().rect_filled(bar, 2.0_f32, p.separator);
+        ui.painter().rect_filled(bar, 2.0_f32, p.line);
         let frac = if e.max_hp > 0 {
             (e.hp as f32 / e.max_hp as f32).clamp(0.0_f32, 1.0_f32)
         } else {
@@ -925,13 +975,13 @@ fn draw_battle(ui: &mut egui::Ui, app: &mut SpireApp) {
             );
         }
         ui.painter()
-            .rect_stroke(bar, 2.0_f32, Stroke::new(0.8_f32, p.separator));
+            .rect_stroke(bar, 2.0_f32, Stroke::new(0.8_f32, p.line));
         ui.painter().text(
             Pos2::new(bar.center().x, bar.bottom() + 11.0_f32),
             Align2::CENTER_CENTER,
             format!("{}/{}", e.hp, e.max_hp),
             FontId::monospace(11.0_f32),
-            p.text_dim,
+            p.text_muted,
         );
 
         ui.painter().text(
@@ -939,7 +989,7 @@ fn draw_battle(ui: &mut egui::Ui, app: &mut SpireApp) {
             Align2::LEFT_CENTER,
             &e.name,
             FontId::monospace(15.0_f32),
-            p.text,
+            p.text_normal,
         );
         ui.painter().text(
             Pos2::new(rect.left() + 12.0_f32, rect.top() + 40.0_f32),
@@ -961,7 +1011,7 @@ fn draw_battle(ui: &mut egui::Ui, app: &mut SpireApp) {
                 Align2::LEFT_CENTER,
                 pw_text.trim_end(),
                 FontId::monospace(11.0_f32),
-                p.text_dim,
+                p.text_muted,
             );
         }
         let resp = if targeting {
@@ -988,13 +1038,13 @@ fn draw_battle(ui: &mut egui::Ui, app: &mut SpireApp) {
         ui.label(
             egui::RichText::new(format!("你的状态：{}", b.stance))
                 .small()
-                .color(p.text_dim),
+                .color(p.text_muted),
         );
         for pw in &b.player_powers {
             ui.label(
                 egui::RichText::new(format!("{} {}+", pw.label, pw.amount))
                     .small()
-                    .color(p.text_dim),
+                    .color(p.text_muted),
             );
         }
     });
@@ -1005,7 +1055,7 @@ fn draw_battle(ui: &mut egui::Ui, app: &mut SpireApp) {
         // 能量球（紧邻手牌，出牌时直接可见）
         let (er, _) = ui.allocate_exact_size(Vec2::new(64.0_f32, 64.0_f32), Sense::hover());
         let ec = er.center();
-        ui.painter().circle_filled(ec, 28.0_f32, p.panel2);
+        ui.painter().circle_filled(ec, 28.0_f32, p.panel_alt);
         ui.painter()
             .circle_stroke(ec, 28.0_f32, Stroke::new(2.0_f32, p.accent));
         if let (Some(e), Some(em)) = (app.view.top.energy, app.view.top.energy_max) {
@@ -1028,7 +1078,11 @@ fn draw_battle(ui: &mut egui::Ui, app: &mut SpireApp) {
                 };
                 let btn = egui::Button::new(egui::RichText::new(label).small())
                     .min_size(Vec2::new(88.0_f32, 18.0_f32))
-                    .fill(if pot.id.is_some() { p.panel2 } else { p.panel });
+                    .fill(if pot.id.is_some() {
+                        p.panel_alt
+                    } else {
+                        p.panel
+                    });
                 if ui
                     .add_enabled(pot.id.is_some(), btn)
                     .on_hover_text(if pot.id.is_some() {
@@ -1054,7 +1108,7 @@ fn draw_battle(ui: &mut egui::Ui, app: &mut SpireApp) {
                     b.draw_count, b.discard_count, b.exhaust_count
                 ))
                 .small()
-                .color(p.text_faint),
+                .color(p.text_muted),
             );
             ui.horizontal_wrapped(|ui| {
                 for c in &b.hand {
@@ -1069,9 +1123,9 @@ fn draw_battle(ui: &mut egui::Ui, app: &mut SpireApp) {
                         text.push_str(" +");
                     }
                     let btn = egui::Button::new(egui::RichText::new(text).color(if c.affordable {
-                        p.text
+                        p.text_normal
                     } else {
-                        p.text_faint
+                        p.text_muted
                     }))
                     .min_size(Vec2::new(150.0_f32, 52.0_f32))
                     .stroke(Stroke::new(
@@ -1084,7 +1138,7 @@ fn draw_battle(ui: &mut egui::Ui, app: &mut SpireApp) {
                         },
                         p.accent,
                     ))
-                    .fill(if c.affordable { p.panel2 } else { p.panel });
+                    .fill(if c.affordable { p.panel_alt } else { p.panel });
                     let resp = ui.add(btn).on_hover_text(&c.desc);
                     if resp.clicked() {
                         app.sel_card = Some(c.hand_index);
@@ -1105,24 +1159,11 @@ fn intent_color(p: &Palette, intent: &str) -> Color32 {
     } else if intent.contains('🛡') {
         p.block_bar
     } else {
-        p.text_dim
+        p.text_muted
     }
 }
 
 // ---------------------------------------------------------------- 地图
-
-fn node_symbol(sym: char) -> &'static str {
-    match sym {
-        'M' => "[M]",
-        'E' => "[E]",
-        '?' => "[?]",
-        'R' => "[R]",
-        '$' => "[$]",
-        'T' => "[T]",
-        'B' => "[B]",
-        _ => "[?]",
-    }
-}
 
 fn draw_map(ui: &mut egui::Ui, app: &mut SpireApp) {
     let p = app.pal();
@@ -1130,132 +1171,133 @@ fn draw_map(ui: &mut egui::Ui, app: &mut SpireApp) {
         return;
     };
     ui.horizontal(|ui| {
-        ui.heading(egui::RichText::new("地图").color(p.accent));
         ui.label(
-            egui::RichText::new("点击发光节点前进")
+            egui::RichText::new("地图")
+                .monospace()
+                .size(22.0_f32)
+                .color(p.text_primary),
+        );
+        ui.label(
+            egui::RichText::new("楼层从下向上推进")
                 .small()
-                .color(p.text_faint),
+                .color(p.text_muted),
         );
     });
-    let avail = ui.available_size();
+    ui.add_space(4.0_f32);
+
     egui::ScrollArea::both()
         .auto_shrink([false, false])
         .show(ui, |ui| {
-            let cols = 7.0f32;
-            let rows = (map.nodes.iter().map(|n| n.y).max().unwrap_or(14) + 2) as f32;
-            let col_w = (avail.x - 80.0).max(560.0) / cols;
-            let row_h = (avail.y - 60.0).max(420.0) / rows;
-            let w = col_w * cols + 60.0;
-            let h = row_h * rows + 30.0;
-            let (rect, _) = ui.allocate_exact_size(Vec2::new(w, h), Sense::hover());
-            let painter = ui.painter_at(rect);
+            let avail = ui.available_size();
+            let margin = 28.0_f32;
+            let node_margin = 34.0_f32;
+            let plot_w = (avail.x - margin * 2.0_f32).max(400.0_f32);
+            let plot_h = (avail.y - margin * 2.0_f32).max(300.0_f32);
+            let (plot_rect, _) = ui.allocate_exact_size(
+                Vec2::new(plot_w + margin * 2.0_f32, plot_h + margin * 2.0_f32),
+                Sense::hover(),
+            );
+            let plot_left = plot_rect.left() + margin;
+            let plot_top = plot_rect.top() + margin;
+            let plot_bottom = plot_rect.bottom() - margin;
+            let plot_width = plot_w - node_margin * 2.0_f32;
+            let plot_height = plot_bottom - plot_top;
+
+            let max_y = map.nodes.iter().map(|n| n.y).max().unwrap_or(14);
+            let min_y = map.nodes.iter().map(|n| n.y).min().unwrap_or(0);
+            let y_range = (max_y - min_y).max(1) as f32;
+            let cols = 7.0_f32;
+
             let to_px = |nx: i32, ny: i32| -> Pos2 {
-                let cx = rect.left() + 30.0 + nx as f32 * col_w + col_w / 2.0;
-                let cy = rect.top() + 15.0 + ny as f32 * row_h + row_h / 2.0;
-                Pos2::new(cx, cy)
+                // SOP §7.2：x = 列号归一化到 0..1；y = 从底部向上
+                let nx_norm = (nx as f32 + 0.5_f32) / cols;
+                let x_px = plot_left + node_margin + nx_norm * plot_width;
+                let floor_ratio = (ny - min_y) as f32 / y_range;
+                let y_px = plot_bottom - floor_ratio * plot_height;
+                Pos2::new(x_px, y_px)
             };
 
-            // 边
+            let painter = ui.painter_at(plot_rect);
+
+            // ---- 路线先画（SOP §7.2：路线先画，节点后画）----
             for e in &map.edges {
                 let a = to_px(e.from.0, e.from.1);
                 let b = to_px(e.to.0, e.to.1);
-                let visited_edge = map.current.map(|c| e.from == c).unwrap_or(false);
-                painter.line_segment(
-                    [a, b],
-                    Stroke::new(
-                        if visited_edge { 2.0_f32 } else { 1.0_f32 },
-                        if visited_edge { p.accent } else { p.separator },
-                    ),
-                );
+                let is_walked = map.current.map(|c| e.from == c).unwrap_or(false);
+                let stroke_w = if is_walked { M::MAP_CUR } else { M::MAP_LINE };
+                let color = if is_walked { p.text_normal } else { p.line_dim };
+                painter.line_segment([a, b], Stroke::new(stroke_w, color));
             }
 
-            // 节点
+            // ---- 节点后画（SOP §7.4：圆环 + 中文符号）----
             for n in &map.nodes {
                 let c = to_px(n.x, n.y);
                 let is_current = map.current == Some((n.x, n.y));
                 let is_reachable = map.reachable.contains(&(n.x, n.y));
-                let radius = if is_current || is_reachable {
-                    17.0
-                } else {
-                    14.0
-                };
-                let fill = if is_current {
-                    p.accent
+                let is_boss = n.symbol == 'B';
+                let (radius, sw) = if is_boss {
+                    (M::NODE_BOSS_D / 2.0_f32, M::FOCUS_W)
+                } else if is_current {
+                    (M::NODE_FOCUS_D / 2.0_f32, M::FOCUS_W)
                 } else if is_reachable {
-                    p.panel2
+                    (M::NODE_D / 2.0_f32, M::MAP_REACH)
+                } else {
+                    (M::NODE_D / 2.0_f32, 1.2_f32)
+                };
+                let color = if is_current {
+                    p.focus
+                } else if is_reachable {
+                    p.text_normal
                 } else if n.taken {
-                    p.separator
+                    p.text_muted
                 } else {
-                    p.panel
+                    p.line_dim
                 };
-                painter.circle_filled(c, radius, fill);
-                painter.circle_stroke(
-                    c,
-                    radius,
-                    Stroke::new(
-                        if is_reachable && !is_current {
-                            1.6_f32
-                        } else {
-                            1.0_f32
-                        },
-                        if is_current {
-                            p.text
-                        } else if is_reachable {
-                            p.accent
-                        } else {
-                            p.text_faint
-                        },
-                    ),
-                );
+                // 透明内部 + 圆环描边
+                painter.circle_stroke(c, radius, Stroke::new(sw, color));
+                // 12px 中文符号
                 painter.text(
-                    c + Vec2::new(
-                        0.0,
-                        if is_current || is_reachable {
-                            26.0
-                        } else {
-                            22.0
-                        },
-                    ),
+                    c,
                     Align2::CENTER_CENTER,
-                    node_symbol(n.symbol),
+                    node_symbol_zhs(n.symbol),
                     FontId::monospace(12.0_f32),
-                    if is_current || is_reachable {
-                        p.text
-                    } else {
-                        p.text_faint
-                    },
+                    color,
                 );
-                if is_current {
+                // Boss 标签
+                if is_boss {
                     painter.text(
-                        c,
+                        c + egui::vec2(0.0_f32, -(radius + 12.0_f32)),
                         Align2::CENTER_CENTER,
-                        "@",
-                        FontId::monospace(13.0_f32),
-                        p.bg,
-                    );
-                } else if is_reachable {
-                    painter.text(
-                        c,
-                        Align2::CENTER_CENTER,
-                        "·",
-                        FontId::monospace(15.0_f32),
-                        p.text,
+                        "BOSS",
+                        FontId::monospace(12.0_f32),
+                        p.text_primary,
                     );
                 }
-                // 点击
-                let hit = Rect::from_center_size(c, Vec2::splat(radius * 2.4_f32));
+                // 点击交互
+                let hit = Rect::from_center_size(c, Vec2::splat(radius * 2.6_f32));
                 let resp = ui.interact(hit, egui::Id::new(("mapnode", n.x, n.y)), Sense::click());
                 if resp.clicked() && is_reachable {
                     app.do_cmd(PlayerCommand::ChooseMapNode { x: n.x, y: n.y });
                 }
                 if resp.hovered() && is_reachable {
-                    painter.rect_stroke(hit, 6.0_f32, Stroke::new(1.0_f32, p.accent));
+                    painter.circle_stroke(c, radius + 3.0_f32, Stroke::new(1.0_f32, p.focus));
                 }
             }
         });
 }
 
-// ---------------------------------------------------------------- 牌组浮窗
+fn node_symbol_zhs(sym: char) -> &'static str {
+    match sym {
+        'M' => "战",
+        'E' => "精",
+        '?' => "?",
+        'R' => "休",
+        '$' => "商",
+        'T' => "宝",
+        'B' => "B",
+        _ => "?",
+    }
+}
 
 fn draw_deck_window(app: &mut SpireApp, ctx: &egui::Context) {
     if app.deck_mode == DeckMode::Closed {
@@ -1291,7 +1333,7 @@ fn draw_deck_window(app: &mut SpireApp, ctx: &egui::Context) {
                         );
                         let resp = ui.add_enabled(
                             pick_mode,
-                            egui::Button::new(egui::RichText::new(&label).color(p.text))
+                            egui::Button::new(egui::RichText::new(&label).color(p.text_normal))
                                 .min_size(Vec2::new(440.0_f32, 26.0_f32)),
                         );
                         if resp.clicked() {
@@ -1365,6 +1407,133 @@ fn handle_keys(app: &mut SpireApp, ctx: &egui::Context) {
     }
 }
 
+// ===============================================================
+// 终端自绘控件（SOP §5：透明底+细边框+等宽文本，直角无阴影）
+// ===============================================================
+
+/// 自绘终端按钮。返回 true = clicked。
+fn terminal_button(
+    ui: &mut egui::Ui,
+    p: &Palette,
+    label: &str,
+    enabled: bool,
+    focused: bool,
+    min_size: Vec2,
+) -> bool {
+    let (rect, resp) = ui.allocate_exact_size(min_size, Sense::click());
+    let hover = ui.rect_contains_pointer(rect);
+    let tc = if !enabled {
+        p.disabled
+    } else if focused || hover {
+        p.text_primary
+    } else {
+        p.text_normal
+    };
+    let bc = if focused {
+        p.focus
+    } else if enabled {
+        p.line
+    } else {
+        p.disabled
+    };
+    let bw = if focused { M::FOCUS_W } else { M::LINE_W };
+    ui.painter().rect_stroke(rect, 0.0_f32, Stroke::new(bw, bc));
+    if focused {
+        ui.painter().text(
+            Pos2::new(rect.left() + 6.0_f32, rect.center().y),
+            Align2::LEFT_CENTER,
+            ">",
+            FontId::monospace(13.0_f32),
+            p.focus,
+        );
+    }
+    let tx = if focused {
+        rect.left() + 20.0_f32
+    } else {
+        rect.center().x
+    };
+    let align = if focused {
+        Align2::LEFT_CENTER
+    } else {
+        Align2::CENTER_CENTER
+    };
+    ui.painter().text(
+        Pos2::new(tx, rect.center().y),
+        align,
+        label,
+        FontId::monospace(14.0_f32),
+        tc,
+    );
+    resp.clicked()
+}
+
+/// 自绘选项行（SOP §5.2）：`>` 前缀 + 2px FOCUS 左竖线 + 标题/说明。
+fn terminal_choice_row(
+    ui: &mut egui::Ui,
+    p: &Palette,
+    index: usize,
+    title: &str,
+    desc: Option<&str>,
+    focused: bool,
+    enabled: bool,
+) -> bool {
+    let desc_h = if desc.is_some() { 18.0_f32 } else { 0.0_f32 };
+    let row_h = 36.0_f32 + desc_h;
+    let (rect, resp) =
+        ui.allocate_exact_size(Vec2::new(ui.available_width(), row_h), Sense::click());
+    let hover = ui.rect_contains_pointer(rect);
+    if focused {
+        ui.painter().rect_filled(
+            Rect::from_min_size(rect.left_top(), Vec2::new(2.0_f32, row_h)),
+            0.0_f32,
+            p.focus,
+        );
+    }
+    let tc = if !enabled {
+        p.disabled
+    } else if focused || hover {
+        p.text_primary
+    } else {
+        p.text_normal
+    };
+    let prefix = if focused {
+        ">"
+    } else {
+        &format!("{:02}", index + 1)[..]
+    };
+    ui.painter().text(
+        Pos2::new(rect.left() + 14.0_f32, rect.top() + 14.0_f32),
+        Align2::LEFT_CENTER,
+        prefix,
+        FontId::monospace(13.0_f32),
+        if focused { p.focus } else { p.text_muted },
+    );
+    ui.painter().text(
+        Pos2::new(rect.left() + 44.0_f32, rect.top() + 14.0_f32),
+        Align2::LEFT_CENTER,
+        title,
+        FontId::monospace(15.0_f32),
+        tc,
+    );
+    if let Some(d) = desc {
+        ui.painter().text(
+            Pos2::new(rect.left() + 44.0_f32, rect.top() + 32.0_f32),
+            Align2::LEFT_CENTER,
+            d,
+            FontId::monospace(13.0_f32),
+            p.text_muted,
+        );
+    }
+    resp.clicked()
+}
+
+/// 1px 分隔线
+fn terminal_separator(ui: &mut egui::Ui, p: &Palette) {
+    let w = ui.available_width();
+    let (rect, _) = ui.allocate_exact_size(Vec2::new(w, M::LINE_W), Sense::hover());
+    ui.painter().rect_filled(rect, 0.0_f32, p.line);
+}
+
 fn install_fonts(ctx: &egui::Context) {
     let mut fonts = egui::FontDefinitions::default();
     // 系统中文字体候选（单面 TTF 优先；ttc 用 face index 0）
@@ -1407,17 +1576,17 @@ fn apply_theme(ctx: &egui::Context, p: &Palette) {
     v.dark_mode = true;
     v.panel_fill = p.panel;
     v.extreme_bg_color = p.bg;
-    v.window_fill = p.panel2;
-    v.widgets.noninteractive.bg_fill = p.panel2;
-    v.widgets.noninteractive.fg_stroke = Stroke::new(1.0_f32, p.text_dim);
-    v.widgets.inactive.bg_fill = p.panel2;
-    v.widgets.inactive.fg_stroke = Stroke::new(1.0_f32, p.text);
+    v.window_fill = p.panel_alt;
+    v.widgets.noninteractive.bg_fill = p.panel_alt;
+    v.widgets.noninteractive.fg_stroke = Stroke::new(1.0_f32, p.text_muted);
+    v.widgets.inactive.bg_fill = p.panel_alt;
+    v.widgets.inactive.fg_stroke = Stroke::new(1.0_f32, p.text_normal);
     v.widgets.hovered.bg_fill = p.panel;
     v.widgets.hovered.fg_stroke = Stroke::new(1.2_f32, p.accent);
     v.widgets.active.bg_fill = p.bg;
     v.widgets.active.fg_stroke = Stroke::new(1.4_f32, p.accent);
     v.selection.stroke = Stroke::new(1.2_f32, p.accent);
-    v.window_stroke = Stroke::new(1.0_f32, p.separator);
+    v.window_stroke = Stroke::new(1.0_f32, p.line);
     ctx.set_style(style);
 }
 
@@ -1478,8 +1647,8 @@ fn main() -> Result<(), eframe::Error> {
     log_line("=== sts-desktop 启动 ===");
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([1160.0_f32, 780.0_f32])
-            .with_min_inner_size([900.0_f32, 600.0_f32])
+            .with_inner_size([M::WIN_W, M::WIN_H])
+            .with_min_inner_size([M::MIN_W, M::MIN_H])
             .with_title("spire-rs —— 文字版杀戮尖塔"),
         ..Default::default()
     };
