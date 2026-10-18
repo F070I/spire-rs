@@ -130,6 +130,24 @@ pub fn attack_info(
         base,
         ty,
     );
+    // PaperFrog：目标易伤 75% 增伤（替代 50%）——raw 链重算折入
+    if b.relics_ctx.paper_frog
+        && b.monsters[target_monster]
+            .creature
+            .powers
+            .iter()
+            .any(|p| p.kind == crate::power::PowerKind::Vulnerable)
+    {
+        let raw = crate::damage::card_damage_raw(
+            &b.player.powers,
+            b.player_stance,
+            &b.monsters[target_monster].creature.powers,
+            base,
+            ty,
+        ) * 1.75
+            / 1.5;
+        info.output = raw as i32;
+    }
     // PenNib（DoubleDamagePower 语义）：力量入链后整段 ×2
     if b.relics_ctx.pen_nib && b.relic_pen_nib_active {
         info.output *= 2;

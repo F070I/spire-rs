@@ -586,6 +586,11 @@ pub struct RelicCtx {
     pub runic_dome: bool,
     pub meal_ticket: bool,        // 餐券：进商店回 15
     pub eternal_feather: bool,    // 永恒之羽：非商店房 +3 血/5 卡
+    pub paper_frog: bool,         // 纸蛙：易伤敌受 75% 增伤（替代 50%）
+    pub paper_krane: bool,        // 纸鹤：虚弱敌输出 -40%（替代 -25%）
+    pub abacus: bool,             // 算盘：洗牌 +6 格挡
+    pub golden_idol: bool,        // 金像：战斗金 ×1.25
+    pub bloody_idol: bool,        // 血像：得金回 5
 }
 
 #[allow(clippy::derivable_impls)]
@@ -707,6 +712,11 @@ impl Default for RelicCtx {
             runic_dome: false,
             meal_ticket: false,
             eternal_feather: false,
+            paper_frog: false,
+            paper_krane: false,
+            abacus: false,
+            golden_idol: false,
+            bloody_idol: false,
         }
     }
 }
@@ -1183,37 +1193,45 @@ impl BattleState {
                     _ => {}
                 }
             }
-            let m = &mut self.monsters[mi];
-            let dmg = m.script[m.move_idx.min(m.script.len() - 1)];
-            m.move_idx = (m.move_idx + 1).min(m.script.len() - 1);
+            // 快照脚本数据（m 借用在此结束）
+            let (dmg, monster_powers) = {
+                let m = &mut self.monsters[mi];
+                let d = m.script[m.move_idx.min(m.script.len() - 1)];
+                m.move_idx = (m.move_idx + 1).min(m.script.len() - 1);
+                (d, m.creature.powers.clone())
+            };
             if let Some(base) = dmg {
                 // 意图伤害链（calculateDamage）→ DamageAction 入队（原版 takeTurn 内 addToBot）
                 let info = DamageInfo {
                     owner_is_player: false,
                     base,
-                    output: damage::monster_calculate_damage(
-                        &m.creature.powers,
-                        &self.player.powers,
-                        self.player_stance,
-                        base,
-                        false,
-                    ),
+                    output: self.paper_adjust_monster_damage(
+                        damage::monster_calculate_damage_raw(
+                            &monster_powers,
+                            &self.player.powers,
+                            self.player_stance,
+                            base,
+                            false,
+                        ),
+                        mi,
+                    ) as i32,
                     ty: DamageType::Normal,
                     modified: true,
                 };
-                for _ in 0..m.hits.max(1) {
+                for _ in 0..self.monsters[mi].hits.max(1) {
                     self.mgr.add_bottom(GameAction::Damage {
                         target: TargetRef::Player,
                         info: info.clone(),
                     });
                 }
                 // 加权招式附带格挡（Jaw Worm Thrash 等 ATTACK_DEFEND）
-                if m.bonus_block > 0 {
+                if self.monsters[mi].bonus_block > 0 {
+                    let bb = self.monsters[mi].bonus_block;
                     self.mgr.add_bottom(GameAction::GainBlock {
                         target: TargetRef::Monster(mi),
-                        amount: m.bonus_block,
+                        amount: bb,
                     });
-                    m.bonus_block = 0;
+                    self.monsters[mi].bonus_block = 0;
                 }
             } else {
                 // 防御回合：+6 格挡（脚本默认）
@@ -1541,16 +1559,18 @@ impl BattleState {
     fn queue_monster_hits(&mut self, mi: usize, base: i32, hits: i32) {
         let info = {
             let m = &self.monsters[mi];
+            let out = damage::monster_calculate_damage_raw(
+                &m.creature.powers,
+                &self.player.powers,
+                self.player_stance,
+                base,
+                false,
+            );
+            let out = self.paper_adjust_monster_damage(out, mi) as i32;
             DamageInfo {
                 owner_is_player: false,
                 base,
-                output: damage::monster_calculate_damage(
-                    &m.creature.powers,
-                    &self.player.powers,
-                    self.player_stance,
-                    base,
-                    false,
-                ),
+                output: out,
                 ty: DamageType::Normal,
                 modified: true,
             }
@@ -2688,10 +2708,13 @@ impl BattleState {
                 self.exec_draw_card(amount);
             }
             GameAction::EmptyDeckShuffle => {
-                // 构造器遗物 onShuffle TODO(3.6)
                 let mut r = self.rngs.shuffle.copy();
                 self.discard_pile.shuffle(&mut r);
                 self.rngs.shuffle = r;
+                // Abacus.onShuffle：+6 格挡
+                if self.relics_ctx.abacus {
+                    self.player.add_block(6);
+                }
             }
             GameAction::GainEnergy { amount } => {
                 self.energy = (self.energy + amount).clamp(0, 999);
@@ -2923,6 +2946,31 @@ impl BattleState {
             }
         }
         self.check_battle_over();
+    }
+
+    /// 纸系伤害修正（Paper Frog/Krane——raw 链后按比例调整，取整前折入）。
+    /// Frog：目标有易伤 → ×(1.75/1.5)；Krane：攻击方有虚弱 → ×(0.6/0.75)。
+    fn paper_adjust_monster_damage(&self, out: f32, target_monster: usize) -> f32 {
+        let mut out = out;
+        if self.relics_ctx.paper_frog
+            && self.monsters[target_monster]
+                .creature
+                .powers
+                .iter()
+                .any(|p| p.kind == PowerKind::Vulnerable)
+        {
+            out *= 1.75 / 1.5;
+        }
+        if self.relics_ctx.paper_krane
+            && self.monsters[target_monster]
+                .creature
+                .powers
+                .iter()
+                .any(|p| p.kind == PowerKind::Weak)
+        {
+            out *= 0.6 / 0.75;
+        }
+        out
     }
 
     /// 治疗量修正（MagicFlower ×1.5 / MarkOfBloom 归零）。
@@ -3244,9 +3292,13 @@ impl BattleState {
                 if self.discard_pile.group.is_empty() {
                     break;
                 }
-                // EmptyDeckShuffle 语义：弃牌堆全部移入抽牌堆后洗牌（遗物 onShuffle TODO 3.6）
+                // EmptyDeckShuffle 语义：弃牌堆全部移入抽牌堆后洗牌
                 self.draw_pile.group.append(&mut self.discard_pile.group);
                 self.draw_pile.shuffle(&mut self.rngs.shuffle);
+                // Abacus.onShuffle：+6 格挡
+                if self.relics_ctx.abacus {
+                    self.player.add_block(6);
+                }
                 continue;
             }
             let card = self.draw_pile.pop_top().unwrap();

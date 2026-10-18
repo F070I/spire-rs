@@ -614,7 +614,14 @@ impl RunState4b {
             };
             self.gold_reward = self.treasure_rng.random_int_range(lo, hi);
             if !self.relics_ctx.no_gold_gain {
-                self.gold += self.gold_reward;
+                let mut gain = self.gold_reward;
+                if self.relics_ctx.golden_idol {
+                    gain = gain * 5 / 4; // Golden Idol +25%
+                }
+                self.gold += gain;
+                if self.relics_ctx.bloody_idol {
+                    self.player_hp = (self.player_hp + 5).min(self.player_max_hp);
+                }
             }
             // 卡奖：cardRng 从本职业池抽 3（简化：池=红卡）
             let mut rewards = Vec::new();
@@ -925,6 +932,29 @@ impl RunState4b {
                 self.player_hp += 6;
             }
             "Eternal Feather" => self.relics_ctx.eternal_feather = true,
+            "Golden Idol" => self.relics_ctx.golden_idol = true,
+            "Bloody Idol" => self.relics_ctx.bloody_idol = true,
+            "Paper Frog" => self.relics_ctx.paper_frog = true,
+            "Paper Krane" => self.relics_ctx.paper_krane = true,
+            "TheAbacus" => self.relics_ctx.abacus = true,
+            "DollysMirror" => {
+                // 复制随机牌组卡（原版选择）
+                if let Some(c) = self.deck.last().cloned() {
+                    self.deck.push(CardInst::new(c.sid, c.upgraded, self.uuid_next));
+                    self.uuid_next += 1;
+                }
+            }
+            "Cauldron" => {
+                // 3 瓶随机药水（原版入奖励——简化入空槽）
+                let pool: Vec<&'static str> =
+                    sts_data::gen::potions::POTIONS.iter().map(|p| p.id).collect();
+                for _ in 0..3 {
+                    if let Some(slot) = self.potions.iter_mut().find(|s| s.is_none()) {
+                        let i = self.rngs.misc.random_int_inclusive(pool.len() as i32 - 1) as usize;
+                        *slot = Some(pool[i]);
+                    }
+                }
+            }
             "PrismaticShard" => {
                 // 三色卡池解锁语义在奖励池（TODO）；此处启用球槽保底
             }

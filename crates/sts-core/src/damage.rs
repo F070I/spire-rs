@@ -20,13 +20,13 @@ fn floor_i(v: f32) -> i32 {
 /// 顺序：遗物 atDamageModify → 玩家 powers atDamageGive → 玩家架势 atDamageGive
 /// → 目标 powers atDamageReceive → 玩家 powers atDamageFinalGive → 目标 powers atDamageFinalReceive
 /// → 钳非负 → floor。
-pub fn card_damage(
+pub fn card_damage_raw(
     attacker_powers: &[Power],
     attacker_stance: StanceKind,
     target_powers: &[Power],
     base_damage: i32,
     ty: DamageType,
-) -> i32 {
+) -> f32 {
     let mut tmp = base_damage as f32;
     // 1. 遗物 atDamageModify —— TODO(批次3.6)
     for p in attacker_powers {
@@ -45,7 +45,18 @@ pub fn card_damage(
     if tmp < 0.0 {
         tmp = 0.0;
     }
-    floor_i(tmp)
+    tmp
+}
+
+/// 卡牌伤害链（取整出口）。
+pub fn card_damage(
+    attacker_powers: &[Power],
+    attacker_stance: StanceKind,
+    target_powers: &[Power],
+    base_damage: i32,
+    ty: DamageType,
+) -> i32 {
+    floor_i(card_damage_raw(attacker_powers, attacker_stance, target_powers, base_damage, ty))
 }
 
 /// 怪物意图伤害链（`AbstractMonster.calculateDamage`，记录 03 §4c）。
@@ -53,13 +64,13 @@ pub fn card_damage(
 /// 顺序：疫病（Endless，TODO 4.9）→ 怪物 powers atDamageGive → 玩家 powers atDamageReceive
 /// → 玩家架势 atDamageReceive → **背击 ×1.5（中途 int 截断）** → 怪物 atDamageFinalGive
 /// → 玩家 atDamageFinalReceive → 钳非负 → floor。
-pub fn monster_calculate_damage(
+pub fn monster_calculate_damage_raw(
     monster_powers: &[Power],
     player_powers: &[Power],
     player_stance: StanceKind,
     base_damage: i32,
     back_attack: bool,
-) -> i32 {
+) -> f32 {
     let mut tmp = base_damage as f32;
     for p in monster_powers {
         tmp = power::at_damage_give(p, tmp);
@@ -81,7 +92,23 @@ pub fn monster_calculate_damage(
     if tmp < 0.0 {
         tmp = 0.0;
     }
-    floor_i(tmp)
+    tmp
+}
+
+pub fn monster_calculate_damage(
+    monster_powers: &[Power],
+    player_powers: &[Power],
+    player_stance: StanceKind,
+    base_damage: i32,
+    back_attack: bool,
+) -> i32 {
+    floor_i(monster_calculate_damage_raw(
+        monster_powers,
+        player_powers,
+        player_stance,
+        base_damage,
+        back_attack,
+    ))
 }
 
 /// `DamageInfo.applyPowers(owner, target)`（记录 03 §4a）——非卡牌来源（怪咬人、荆棘反伤等）。
