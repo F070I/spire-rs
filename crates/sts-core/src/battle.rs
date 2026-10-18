@@ -591,6 +591,7 @@ pub struct RelicCtx {
     pub abacus: bool,             // 算盘：洗牌 +6 格挡
     pub golden_idol: bool,        // 金像：战斗金 ×1.25
     pub bloody_idol: bool,        // 血像：得金回 5
+    pub ring_of_snake: bool,      // 蛇环：前 2 回合多抽 2（观者开局）
 }
 
 #[allow(clippy::derivable_impls)]
@@ -717,6 +718,7 @@ impl Default for RelicCtx {
             abacus: false,
             golden_idol: false,
             bloody_idol: false,
+            ring_of_snake: false,
         }
     }
 }
@@ -2409,6 +2411,10 @@ impl BattleState {
             if self.relic_serpent_turns % 2 == 0 {
                 self.mgr.add_bottom(GameAction::DrawCard { amount: 1, end_turn_draw: false });
             }
+        }
+        // RingOfTheSnake：前 2 回合 +2 抽
+        if self.relics_ctx.ring_of_snake && self.mgr.turn <= 2 {
+            self.mgr.add_bottom(GameAction::DrawCard { amount: 2, end_turn_draw: false });
         }
         // —— 批次 5e 回合开始遗物 ——
         // Brimstone：+2 力，全体怪 +1 力

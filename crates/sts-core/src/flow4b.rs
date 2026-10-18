@@ -846,7 +846,7 @@ impl RunState4b {
             "Bird Faced Urn" => self.relics_ctx.bird_faced_urn = true,
             "Pocketwatch" => self.relics_ctx.pocketwatch = true,
             "Bronze Scales" => self.relics_ctx.bronze_scales = true,
-            "Clockwork Souvenir" => self.relics_ctx.clockwork_souvenir = true,
+            "ClockworkSouvenir" => self.relics_ctx.clockwork_souvenir = true,
             "TwistedFunnel" => self.relics_ctx.twisted_funnel = true,
             "Mark of Pain" => self.relics_ctx.mark_of_pain = true,
             "Du-Vu Doll" => self.relics_ctx.du_vu_doll = true,
@@ -857,7 +857,7 @@ impl RunState4b {
             "Inserter" => self.relics_ctx.inserter = true,
             "Ring of the Serpent" => self.relics_ctx.ring_of_serpent = true,
             "FrozenCore" => self.relics_ctx.frozen_core = true,
-            "RunicCube" => self.relics_ctx.runic_cube = true,
+            "Runic Cube" => self.relics_ctx.runic_cube = true,
             "Boot" => self.relics_ctx.boot = true,
             "Torii" => self.relics_ctx.torii = true,
             "Lizard Tail" => self.relics_ctx.lizard_tail = true,
@@ -885,6 +885,7 @@ impl RunState4b {
             "Ninja Scroll" => self.relics_ctx.ninja_scroll = true,
             "Symbiotic Virus" => self.relics_ctx.symbiotic_virus = true,
             "TeardropLocket" => self.relics_ctx.teardrop_locket = true,
+            "HolyWater" => self.relics_ctx.holy_water = true,
             "Nuclear Battery" => self.relics_ctx.nuclear_battery = true,
             "Toolbox" => self.relics_ctx.toolbox = true,
             "Brimstone" => self.relics_ctx.brimstone = true,
@@ -892,7 +893,7 @@ impl RunState4b {
             "CaptainsWheel" => self.relics_ctx.captains_wheel = true,
             "Incense Burner" => self.relics_ctx.incense_burner = true,
             "Sundial" => self.relics_ctx.sundial = true,
-            "Cloak Clasp" => self.relics_ctx.cloak_clasp = true,
+            "CloakClasp" => self.relics_ctx.cloak_clasp = true,
             "HoveringKite" => self.relics_ctx.hovering_kite = true,
             "Pen Nib" => self.relics_ctx.pen_nib = true,
             "Tingsha" => self.relics_ctx.tingsha = true,
@@ -935,8 +936,9 @@ impl RunState4b {
             "Golden Idol" => self.relics_ctx.golden_idol = true,
             "Bloody Idol" => self.relics_ctx.bloody_idol = true,
             "Paper Frog" => self.relics_ctx.paper_frog = true,
-            "Paper Krane" => self.relics_ctx.paper_krane = true,
+            "Paper Crane" => self.relics_ctx.paper_krane = true,
             "TheAbacus" => self.relics_ctx.abacus = true,
+            "Ring of the Snake" => self.relics_ctx.ring_of_snake = true,
             "DollysMirror" => {
                 // 复制随机牌组卡（原版选择）
                 if let Some(c) = self.deck.last().cloned() {
@@ -971,7 +973,7 @@ impl RunState4b {
                 self.deck.pop();
                 self.deck.pop();
             }
-            "PandorasBox" => {
+            "Pandora's Box" => {
                 let n0 = self.deck.len();
                 self.deck.retain(|c| {
                     !(c.st().id.starts_with("Strike_") || c.st().id.starts_with("Defend_"))
