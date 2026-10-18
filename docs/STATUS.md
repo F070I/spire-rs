@@ -49,6 +49,14 @@
 - **源码路径迁移**：`C:\Users\17366\Desktop\MySlayTheSpire-master`（原
   OneDrive\Desktop 已迁空）。
 
+## 本轮追加（批次 5i 篝火扩展，2026-10-18）
+
+- **篝火扩展选项（5i，2c250d4）**：PeacePipe（rp <卡号> 移除）/Shovel（dig 挖
+  随机遗物）/Singing Bowl（bowl +2 上限代升级）/Question Card（qcard 得牌）——
+  四遗物门控的篝火第四选项；Gambling Chip（gamble 手牌全弃重抽同数，每回合
+  一次）；Frozen Eye（vd 看抽牌堆）；Orrery（拾取得 2 牌）。映射 174/181。
+  测试 +6，累计 300。
+
 ## 本轮追加（批次 5h 细节收尾，2026-10-18）
 
 - **多怪细节 + 奖励流（5h）**：Giant Head 倒计时（瞪视/计数→死亡凝视 +5/回合）、
