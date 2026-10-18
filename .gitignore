@@ -3,3 +3,9 @@ Cargo.lock
 saves/
 *.run
 __pycache__/
+jobs.json
+runs.json
+msys2-setup.exe
+binutils.pkg.tar.zst
+crt.pkg.tar.zst
+*.json.tmp

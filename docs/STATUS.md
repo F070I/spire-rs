@@ -49,6 +49,24 @@
 - **源码路径迁移**：`C:\Users\17366\Desktop\MySlayTheSpire-master`（原
   OneDrive\Desktop 已迁空）。
 
+## 本轮追加（桌面 UI 重设计，2026-10-19）
+
+- **桌面窗口 UI（4ad7e86）**：新 crate sts-desktop（egui/glow）——独立窗口
+  1160×780、双主题（Mono/Muted）、地图节点网络画布（点击选路）、战斗全信息
+  （意图/HP条/状态/目标选择状态机）、奖励/事件/商店/宝箱/Neow/终局全场景、
+  右侧详情、底部日志、系统字体链、Windows GUI 子系统、日志文件、--version。
+- 协议接线：sts-interface 补 GameView 全量 DTO（capture 只读快照）+ dispatch
+  （PlayerCommand→核心单向，含桌面直连 4 变体）；PlayerCommand 首次被真实
+  UI 消费。
+- 测试：desktop_ui.rs 9 项（场景捕获断言/越权拒绝/协议驱动全流程）；累计 315。
+- 体积：Windows Release 3.8 MB（预算 20MB 余量巨大）。
+- CI：desktop.yml 四矩阵测试构建（macOS 钉 12.0 + minos 机器验证 + .app
+  打包；Windows 附控制台诊断用 sts.exe；仅 Artifacts，不发 Release——
+  待用户实机验证 UI 后再打新 tag）。
+- 本机工具链：MSYS2 binutils（as/dlltool）落位 C:\msys64\mingw64\bin 解决
+  raw-dylib 链接（windows-sys/targets 全系走 raw-dylib，rustup 自带 dlltool
+  缺 as 不可用）。
+
 ## 本轮追加（收官验证，2026-10-18）
 
 - **收官（final_audit）**：遗物 **181/181 全覆盖**确认（no-op 登记消化尾量）；
