@@ -15,7 +15,7 @@ mod ui;
 mod ui_core;
 
 use std::io::{BufRead, Write};
-use sts_core::flow4b::{NeowReward, RunState4b, RoomPhase};
+use sts_core::flow4b::{NeowReward, RoomPhase, RunState4b};
 
 fn main() {
     let mut run = RunState4b::new(42);
@@ -23,7 +23,10 @@ fn main() {
     let stdin = std::io::stdin();
     let mut out = std::io::stdout();
     let mut selection: usize = 0; // 键盘导航当前项
-    println!("Slay the Spire — Text Edition v{}", env!("CARGO_PKG_VERSION"));
+    println!(
+        "Slay the Spire — Text Edition v{}",
+        env!("CARGO_PKG_VERSION")
+    );
     render(&run, &mut out);
     loop {
         print!("> ");
@@ -159,7 +162,9 @@ fn main() {
                             let _ = run.campfire_rest();
                         }
                     }
-                    RoomPhase::TreasureChoice => { let _ = run.open_treasure(); }
+                    RoomPhase::TreasureChoice => {
+                        let _ = run.open_treasure();
+                    }
                     RoomPhase::EventChoice => {
                         let _ = run.choose_event(selection.min(3));
                     }
@@ -220,8 +225,15 @@ fn current_theme() -> &'static dyn theme::Theme {
 
 fn render(run: &RunState4b, out: &mut std::io::Stdout) {
     let t = current_theme();
-    let _ = writeln!(out, "═══ Act {} · 层 {} · HP {}/{} · 金 {} ═══",
-        run.act + 1, run.floor, run.player_hp, run.player_max_hp, run.gold);
+    let _ = writeln!(
+        out,
+        "═══ Act {} · 层 {} · HP {}/{} · 金 {} ═══",
+        run.act + 1,
+        run.floor,
+        run.player_hp,
+        run.player_max_hp,
+        run.gold
+    );
     if let Some(offers) = run.neow_offers {
         let _ = writeln!(out, "【Neow 祝福四选一】");
         for (i, o) in offers.iter().enumerate() {
@@ -260,11 +272,7 @@ fn render(run: &RunState4b, out: &mut std::io::Stdout) {
             // 选中节点详情（当前节点的下一步）
             if let Some((cx, cy)) = run.current {
                 let node = &run.map[cy as usize][cx as usize];
-                let next: Vec<(i32, i32)> = node
-                    .edges
-                    .iter()
-                    .map(|e| (e.dst_x, e.dst_y))
-                    .collect();
+                let next: Vec<(i32, i32)> = node.edges.iter().map(|e| (e.dst_x, e.dst_y)).collect();
                 let _ = writeln!(out, "{}", ui::map::node_detail(node, &next));
             }
         }
@@ -295,13 +303,22 @@ fn render(run: &RunState4b, out: &mut std::io::Stdout) {
         RoomPhase::TreasureChoice => {
             let _ = writeln!(out, "{}", ui_core::panel_title(t, "宝箱", 78));
             if let Some(tier) = &run.relic_reward {
-                let _ = writeln!(out, "  [遗物] {}（稀有度 {}）", theme::Style::new(None).paint("待领取"), tier);
+                let _ = writeln!(
+                    out,
+                    "  [遗物] {}（稀有度 {}）",
+                    theme::Style::new(None).paint("待领取"),
+                    tier
+                );
             }
             let _ = writeln!(out, "  金币 +{}", run.gold_reward);
             let _ = writeln!(out, "  tr 领取");
         }
         RoomPhase::ShopChoice => {
-            let _ = writeln!(out, "{}", ui_core::panel_title(t, "商店（批次后续：商品生成）", 78));
+            let _ = writeln!(
+                out,
+                "{}",
+                ui_core::panel_title(t, "商店（批次后续：商品生成）", 78)
+            );
             let _ = writeln!(out, "  金币 {}", run.gold);
         }
         RoomPhase::EventChoice => {

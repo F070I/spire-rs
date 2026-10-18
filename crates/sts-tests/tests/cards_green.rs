@@ -102,7 +102,12 @@ fn blade_dance_generates_shivs() {
     assert_eq!(shivs, 3);
     // Shiv 0 费
     assert_eq!(
-        b.hand.group.iter().find(|c| c.st().id == "Shiv").unwrap().cost_for_turn,
+        b.hand
+            .group
+            .iter()
+            .find(|c| c.st().id == "Shiv")
+            .unwrap()
+            .cost_for_turn,
         0
     );
     let _ = hand0;
@@ -119,7 +124,10 @@ fn blur_keeps_block_through_turn_end() {
     b.run_until_idle();
     // 怪 10 攻打穿部分格挡后……Blur 保证不掉——格挡 - 10 攻穿透后剩余保留
     // 精确语义：block 不会被清零（攻穿后剩余保留）
-    assert!(b.player.current_block + b.player.current_health >= 70, "Blur 生效或伤害结算正常");
+    assert!(
+        b.player.current_block + b.player.current_health >= 70,
+        "Blur 生效或伤害结算正常"
+    );
 }
 
 #[test]
@@ -164,7 +172,13 @@ fn flying_knee_energy_next_turn() {
 
 #[test]
 fn endless_agony_draws_when_drawn() {
-    let mut b = fixture(&["Endless Agony", "Defend_G", "Defend_G", "Defend_G", "Defend_G"]);
+    let mut b = fixture(&[
+        "Endless Agony",
+        "Defend_G",
+        "Defend_G",
+        "Defend_G",
+        "Defend_G",
+    ]);
     // 把 Endless Agony 放抽牌堆顶，抽牌堆 2 张（EA + Defend）
     let ea = find_hand(&b, "Endless Agony").unwrap();
     let c = b.hand.group.remove(ea);
@@ -226,5 +240,9 @@ fn acrobatics_selection_placeholder_discards() {
 fn accuracy_power_applied() {
     let mut b = fixture(&["Accuracy"]);
     play(&mut b, "Accuracy", None);
-    assert!(b.player.powers.iter().any(|p| p.kind == PowerKind::Accuracy));
+    assert!(b
+        .player
+        .powers
+        .iter()
+        .any(|p| p.kind == PowerKind::Accuracy));
 }

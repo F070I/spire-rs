@@ -8,22 +8,90 @@ use crate::battle::{BattleState, CardInst};
 use crate::power::{DamageType, Power, PowerKind};
 
 pub const HANDLED: &[&str] = &[
-    "Aggregate", "All For One", "Amplify", "Auto Shields", "Ball Lightning", "Barrage",
-    "Beam Cell", "Biased Cognition", "Blizzard", "BootSequence", "Buffer", "Capacitor",
-    "Chaos", "Cold Snap", "Core Surge", "Glacier",
-    "Conserve Battery", "Chill", "Gash", "Compile Driver", "Coolheaded", "Consume",
-    "Creative AI", "Darkness", "Defend_Blue", "Defragment", "Doom and Gloom",
-    "Double Energy", "Dualcast", "Echo Form", "Electrodynamics", "Equilibrium", "FTL",
-    "Fission", "Force Field", "Fusion", "Genetic Algorithm", "Go for the Eyes",
-    "Heatsinks", "Hello World", "Hologram", "Hyperbeam", "Impulse", "Leap", "Lock-On",
-    "Loop", "Machine Learning", "Melter", "Meteor Strike", "Multi-Cast", "Steam Power",
-    "Rainbow", "Reboot", "Rebound", "Recursion", "Recycle", "Reinforced Body",
-    "Reprogram", "Rip and Tear", "Scrape", "Seek", "Self Repair", "Skim", "Stack",
-    "Static Discharge", "Steam", "Storm", "Streamline", "Strike_B", "Sunder",
-    "Sweeping Beam", "Tempest", "Thunder Strike", "Turbo", "White Noise", "Zap",
+    "Aggregate",
+    "All For One",
+    "Amplify",
+    "Auto Shields",
+    "Ball Lightning",
+    "Barrage",
+    "Beam Cell",
+    "Biased Cognition",
+    "Blizzard",
+    "BootSequence",
+    "Buffer",
+    "Capacitor",
+    "Chaos",
+    "Cold Snap",
+    "Core Surge",
+    "Glacier",
+    "Conserve Battery",
+    "Chill",
+    "Gash",
+    "Compile Driver",
+    "Coolheaded",
+    "Consume",
+    "Creative AI",
+    "Darkness",
+    "Defend_Blue",
+    "Defragment",
+    "Doom and Gloom",
+    "Double Energy",
+    "Dualcast",
+    "Echo Form",
+    "Electrodynamics",
+    "Equilibrium",
+    "FTL",
+    "Fission",
+    "Force Field",
+    "Fusion",
+    "Genetic Algorithm",
+    "Go for the Eyes",
+    "Heatsinks",
+    "Hello World",
+    "Hologram",
+    "Hyperbeam",
+    "Impulse",
+    "Leap",
+    "Lock-On",
+    "Loop",
+    "Machine Learning",
+    "Melter",
+    "Meteor Strike",
+    "Multi-Cast",
+    "Steam Power",
+    "Rainbow",
+    "Reboot",
+    "Rebound",
+    "Recursion",
+    "Recycle",
+    "Reinforced Body",
+    "Reprogram",
+    "Rip and Tear",
+    "Scrape",
+    "Seek",
+    "Self Repair",
+    "Skim",
+    "Stack",
+    "Static Discharge",
+    "Steam",
+    "Storm",
+    "Streamline",
+    "Strike_B",
+    "Sunder",
+    "Sweeping Beam",
+    "Tempest",
+    "Thunder Strike",
+    "Turbo",
+    "White Noise",
+    "Zap",
 ];
 
-pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: &mut EffectBuilder) {
+pub fn effects(
+    b: &mut BattleState,
+    card: &CardInst,
+    target: Option<usize>,
+    eb: &mut EffectBuilder,
+) {
     match card.st().id {
         "All For One" => {
             if let Some(mi) = target {
@@ -746,7 +814,9 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
         }
         // Aggregate：AggregateEnergyAction——每种牌类抽 magic？原版：手牌每种类型 +1 能量（TODO 3.5 类型计数：先 +magic）
         "Aggregate" => {
-            eb.bot(GameAction::GainEnergy { amount: card.eff_magic() });
+            eb.bot(GameAction::GainEnergy {
+                amount: card.eff_magic(),
+            });
         }
         // Amplify：ApplyPower(Amplify, magic)（下张能力翻倍：钩子 TODO 3.5）
         "Amplify" => {
@@ -769,7 +839,11 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
         // Barrage：BarrageAction——每引动球一次 magic 伤（orbs 数 × 伤害）
         "Barrage" => {
             if let Some(mi) = target {
-                let orbs = b.orbs.iter().filter(|o| o.kind != crate::orb::OrbKind::EmptySlot).count() as i32;
+                let orbs = b
+                    .orbs
+                    .iter()
+                    .filter(|o| o.kind != crate::orb::OrbKind::EmptySlot)
+                    .count() as i32;
                 let n = (orbs * card.eff_magic()).max(0);
                 if n > 0 {
                     eb.bot(GameAction::Damage {
@@ -781,12 +855,22 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
         }
         // Blizzard：伤害 = 本战斗冰霜引动数 × magic（use 内动态基数）
         "Blizzard" => {
-            let matrix = damage_matrix(b, card.eff_magic() * b.frost_channeled_this_combat, DamageType::Normal);
-            eb.bot(GameAction::DamageAll { matrix, ty: DamageType::Normal });
+            let matrix = damage_matrix(
+                b,
+                card.eff_magic() * b.frost_channeled_this_combat,
+                DamageType::Normal,
+            );
+            eb.bot(GameAction::DamageAll {
+                matrix,
+                ty: DamageType::Normal,
+            });
         }
         // BootSequence：GainBlock 10（固有：静态标志）
         "BootSequence" => {
-            eb.bot(GameAction::GainBlock { target: TargetRef::Player, amount: card.eff_block() });
+            eb.bot(GameAction::GainBlock {
+                target: TargetRef::Player,
+                amount: card.eff_block(),
+            });
         }
         // Buffer：ApplyPower(Buffer, magic)（抵挡 HP 流失：钩子 TODO 3.5）
         "Buffer" => {
@@ -800,9 +884,13 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
         // Chaos：Channel(随机球 1-3)——升级先多 1（cardRandomRng：TODO 4.1 精确流，占位用 misc 流）
         "Chaos" => {
             if card.upgraded {
-                eb.bot(GameAction::ChannelOrb { kind: random_orb_placeholder(b) });
+                eb.bot(GameAction::ChannelOrb {
+                    kind: random_orb_placeholder(b),
+                });
             }
-            eb.bot(GameAction::ChannelOrb { kind: random_orb_placeholder(b) });
+            eb.bot(GameAction::ChannelOrb {
+                kind: random_orb_placeholder(b),
+            });
         }
         // Cold Snap：Damage 6 + Channel(Frost ×magic)
         "Cold Snap" => {
@@ -813,7 +901,9 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
                 });
             }
             for _ in 0..card.eff_magic() {
-                eb.bot(GameAction::ChannelOrb { kind: crate::orb::OrbKind::Frost });
+                eb.bot(GameAction::ChannelOrb {
+                    kind: crate::orb::OrbKind::Frost,
+                });
             }
         }
         // Core Surge：Damage 11 + Artifact 1（临时人工制品——Artifact 后清除 TODO 3.5）
@@ -833,9 +923,14 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
         }
         // Glacier：GainBlock + Channel(Frost ×magic 2/3)
         "Glacier" => {
-            eb.bot(GameAction::GainBlock { target: TargetRef::Player, amount: card.eff_block() });
+            eb.bot(GameAction::GainBlock {
+                target: TargetRef::Player,
+                amount: card.eff_block(),
+            });
             for _ in 0..card.eff_magic() {
-                eb.bot(GameAction::ChannelOrb { kind: crate::orb::OrbKind::Frost });
+                eb.bot(GameAction::ChannelOrb {
+                    kind: crate::orb::OrbKind::Frost,
+                });
             }
         }
         _ => {}

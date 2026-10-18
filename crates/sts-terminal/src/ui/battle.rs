@@ -8,10 +8,10 @@
 //!
 //! 所有数值来自核心（eff_damage/eff_block/意图），UI 不重算。
 
-use crate::ui_core::{kv, list_item, panel_title, pad_left, separator, str_width};
 use crate::theme::Theme;
+use crate::ui_core::{kv, list_item, pad_left, panel_title, separator, str_width};
 use sts_core::battle::BattleState;
-use sts_data::gen::{CardType, CardTarget};
+use sts_data::gen::{CardTarget, CardType};
 
 /// 意图显示符号 + 数值（来自核心 move 数据/真怪状态机，不猜测）。
 pub fn intent_text(m: &sts_core::battle::Monster) -> String {
@@ -27,10 +27,25 @@ pub fn render_battle(theme: &dyn Theme, b: &BattleState, width: usize) -> Vec<St
     let p = &b.player;
     out.push(format!(
         "{} {} {} {}",
-        kv(theme, "HP", &format!("{}/{}", p.current_health, p.max_health), theme.hp()),
-        kv(theme, "能量", &format!("{}/{}", b.energy, b.energy_master), theme.energy()),
+        kv(
+            theme,
+            "HP",
+            &format!("{}/{}", p.current_health, p.max_health),
+            theme.hp()
+        ),
+        kv(
+            theme,
+            "能量",
+            &format!("{}/{}", b.energy, b.energy_master),
+            theme.energy()
+        ),
         kv(theme, "格挡", &p.current_block.to_string(), theme.block()),
-        kv(theme, "手牌", &b.hand.group.len().to_string(), theme.normal()),
+        kv(
+            theme,
+            "手牌",
+            &b.hand.group.len().to_string(),
+            theme.normal()
+        ),
     ));
 
     // 2. 敌人区
@@ -48,9 +63,19 @@ pub fn render_battle(theme: &dyn Theme, b: &BattleState, width: usize) -> Vec<St
             "[敌{}] {} {} {}",
             i,
             pad_left(&m.creature.name, 12),
-            kv(theme, "HP", &format!("{}/{}", m.creature.current_health, m.creature.max_health), theme.hp()),
+            kv(
+                theme,
+                "HP",
+                &format!("{}/{}", m.creature.current_health, m.creature.max_health),
+                theme.hp()
+            ),
             if m.creature.current_block > 0 {
-                kv(theme, "格挡", &m.creature.current_block.to_string(), theme.block())
+                kv(
+                    theme,
+                    "格挡",
+                    &m.creature.current_block.to_string(),
+                    theme.block(),
+                )
             } else {
                 String::new()
             },
@@ -63,14 +88,8 @@ pub fn render_battle(theme: &dyn Theme, b: &BattleState, width: usize) -> Vec<St
     for (i, c) in b.hand.group.iter().enumerate() {
         let unplayable = b.energy < c.cost_for_turn;
         let text = match c.st().kind {
-            CardType::Attack => format!(
-                "{} 费{} 攻{}",
-                c.st().id, c.cost_for_turn, c.eff_damage()
-            ),
-            CardType::Skill => format!(
-                "{} 费{} 块{}",
-                c.st().id, c.cost_for_turn, c.eff_block()
-            ),
+            CardType::Attack => format!("{} 费{} 攻{}", c.st().id, c.cost_for_turn, c.eff_damage()),
+            CardType::Skill => format!("{} 费{} 块{}", c.st().id, c.cost_for_turn, c.eff_block()),
             _ => format!("{} 费{}", c.st().id, c.cost_for_turn),
         };
         let text = if c.upgraded {
@@ -89,16 +108,36 @@ pub fn render_battle(theme: &dyn Theme, b: &BattleState, width: usize) -> Vec<St
         };
         let needs_target = c.st().target == CardTarget::Enemy;
         let tgt = if needs_target { " [需目标]" } else { "" };
-        out.push(format!("  {:>2}. {}{}", i + 1, styled, theme.dim().paint(tgt)));
+        out.push(format!(
+            "  {:>2}. {}{}",
+            i + 1,
+            styled,
+            theme.dim().paint(tgt)
+        ));
     }
 
     // 4. 牌堆
     out.push(separator(theme, width));
     out.push(format!(
         "{} {} {}",
-        kv(theme, "抽", &b.draw_pile.group.len().to_string(), theme.dim()),
-        kv(theme, "弃", &b.discard_pile.group.len().to_string(), theme.dim()),
-        kv(theme, "耗", &b.exhaust_pile.group.len().to_string(), theme.dim()),
+        kv(
+            theme,
+            "抽",
+            &b.draw_pile.group.len().to_string(),
+            theme.dim()
+        ),
+        kv(
+            theme,
+            "弃",
+            &b.discard_pile.group.len().to_string(),
+            theme.dim()
+        ),
+        kv(
+            theme,
+            "耗",
+            &b.exhaust_pile.group.len().to_string(),
+            theme.dim()
+        ),
     ));
     out
 }

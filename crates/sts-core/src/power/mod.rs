@@ -194,7 +194,11 @@ pub fn priority(kind: PowerKind) -> i32 {
 pub fn is_debuff(kind: PowerKind) -> bool {
     matches!(
         kind,
-        PowerKind::Vulnerable | PowerKind::Weak | PowerKind::Frail | PowerKind::Slow | PowerKind::Poison
+        PowerKind::Vulnerable
+            | PowerKind::Weak
+            | PowerKind::Frail
+            | PowerKind::Slow
+            | PowerKind::Poison
     )
 }
 
@@ -202,9 +206,8 @@ pub fn is_debuff(kind: PowerKind) -> bool {
 pub fn is_turn_based_decrement(kind: PowerKind) -> bool {
     matches!(
         kind,
-        PowerKind::Vulnerable | PowerKind::Weak | PowerKind::Frail
-        // 完整集合（NoBlock/AttackBurn/SkillBurn/DoubleDamage/DrawReduction/Intangible）
-        // 随批次 3.5 补全对应 kind。
+        PowerKind::Vulnerable | PowerKind::Weak | PowerKind::Frail // 完整集合（NoBlock/AttackBurn/SkillBurn/DoubleDamage/DrawReduction/Intangible）
+                                                                   // 随批次 3.5 补全对应 kind。
     )
 }
 
@@ -268,4 +271,7 @@ pub fn modify_block_last(_p: &Power, block: f32) -> f32 {
 
 pub mod ops;
 
-pub use ops::{apply_power, add_power_raw, end_of_round_tick, reduce_power, remove_power, stack_power, ApplyCtx, ApplyOutcome, ReduceResult};
+pub use ops::{
+    add_power_raw, apply_power, end_of_round_tick, reduce_power, remove_power, stack_power,
+    ApplyCtx, ApplyOutcome, ReduceResult,
+};

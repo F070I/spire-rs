@@ -56,7 +56,13 @@ pub fn card_damage(
     base_damage: i32,
     ty: DamageType,
 ) -> i32 {
-    floor_i(card_damage_raw(attacker_powers, attacker_stance, target_powers, base_damage, ty))
+    floor_i(card_damage_raw(
+        attacker_powers,
+        attacker_stance,
+        target_powers,
+        base_damage,
+        ty,
+    ))
 }
 
 /// 怪物意图伤害链（`AbstractMonster.calculateDamage`，记录 03 §4c）。
@@ -276,9 +282,15 @@ mod tests {
     #[test]
     fn monster_intent_with_back_attack_truncation() {
         // 背击中途截断：base 7 → 玩家无 buff → (int)(7*1.5) = 10（floor 应为 10，但截断语义在此验证）
-        assert_eq!(monster_calculate_damage(&[], &[], StanceKind::Neutral, 7, true), 10);
+        assert_eq!(
+            monster_calculate_damage(&[], &[], StanceKind::Neutral, 7, true),
+            10
+        );
         // 无背击：7 → 7
-        assert_eq!(monster_calculate_damage(&[], &[], StanceKind::Neutral, 7, false), 7);
+        assert_eq!(
+            monster_calculate_damage(&[], &[], StanceKind::Neutral, 7, false),
+            7
+        );
         // Wrath 承伤：怪物 10 打 Wrath 玩家 → ×2 = 20
         assert_eq!(
             monster_calculate_damage(&[], &[], StanceKind::Wrath, 10, false),

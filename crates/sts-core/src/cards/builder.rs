@@ -10,7 +10,7 @@ use crate::action::GameAction;
 
 #[derive(Default)]
 pub struct EffectBuilder {
-    top: Vec<GameAction>,   // 后推的在前
+    top: Vec<GameAction>, // 后推的在前
     bot: Vec<GameAction>,
 }
 

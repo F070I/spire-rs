@@ -3,7 +3,26 @@
 以原版反编译源码（`MySlayTheSpire-master`，desktop-1.0 完整版）为唯一实现依据的语义移植项目。
 图形界面替换为纯文字终端 UI，游戏规则、触发顺序、随机体系、完整流程全部保留。
 
-**当前状态：阶段 0（设计与源码盘点）已完成** —— 完整机制清单、模块映射、冻结架构、UI 规范、移植顺序、测试计划、风险与决策、跨平台构建规范全部就绪；workspace 骨架与 RNG 算法层已落地。
+**当前状态：可玩完整版** —— 375 卡全灌注 / 多怪组合遭遇 + 加权 AI / 52 事件
+全覆盖 / 药水 42 种实装 / 遗物机制映射 156+ / 288 测试全过、clippy 零警告。
+`cargo run -p sts-terminal` 即玩（Neow → 全图选路 → 战斗 → 奖励 → 幕间 → 存读档）。
+
+## 运行
+
+```bash
+cargo run -p sts-terminal                # 开发运行
+cargo build --release -p sts-terminal    # 产物 ~0.6 MB
+```
+
+命令：`n` 开 Neow · `nn <0-3>` 选祝福 · `m <x> <y>` 选节点 · `p <手牌号> [目标]`
+出牌 · `e` 结束回合 · `r <0-2>|skip` 领奖 · `po <槽>` 用药 · `s`/`l` 存读档 ·
+`j`/`k` 选择 · `enter` 确认 · `t` 切主题 · `q` 退出。
+
+## 发行
+
+打 `v*` tag 自动触发 [.github/workflows/release.yml](.github/workflows/release.yml)
+三平台构建（Windows x64 / macOS Intel+ARM64 / Linux x64）→ 冒烟 → 打包发
+GitHub Release。详见 [docs/RELEASE.md](docs/RELEASE.md)。
 
 ## 阅读顺序（后续任何接手者必读）
 

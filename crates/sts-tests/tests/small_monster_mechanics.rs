@@ -7,7 +7,10 @@ use sts_core::flow4b::RunState4b;
 use sts_core::power::{DamageType, PowerKind};
 
 fn sid(id: &str) -> usize {
-    sts_data::gen::CARDS.iter().position(|c| c.id == id).expect(id)
+    sts_data::gen::CARDS
+        .iter()
+        .position(|c| c.id == id)
+        .expect(id)
 }
 
 fn battle(monsters: Vec<Monster>) -> BattleState {
@@ -37,7 +40,10 @@ fn hit_monster(b: &mut BattleState, mi: usize, amount: i32) {
 #[test]
 fn louse_defensive_curls_up_once() {
     let mut louse = Monster::scripted("Louse Defensive", 15, vec![Some(6)]);
-    louse.creature.powers.push(sts_core::power::Power::new(PowerKind::CurlUp, 5));
+    louse
+        .creature
+        .powers
+        .push(sts_core::power::Power::new(PowerKind::CurlUp, 5));
     let mut b = battle(vec![louse]);
     assert_eq!(b.monsters[0].creature.current_block, 0);
     hit_monster(&mut b, 0, 2);

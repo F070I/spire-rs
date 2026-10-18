@@ -46,9 +46,15 @@ fn find_hand(b: &BattleState, id: &str) -> Option<usize> {
 fn upgrade_deltas_extracted_mechanically() {
     // 出处：cards/*/X.java upgrade() 方法体（extract.py 机械抽取）
     let strike = &gen::CARDS[sid("Strike_R")];
-    assert_eq!((strike.up_damage, strike.up_flags & gen::UPF_DMG != 0), (3, true));
+    assert_eq!(
+        (strike.up_damage, strike.up_flags & gen::UPF_DMG != 0),
+        (3, true)
+    );
     let defend = &gen::CARDS[sid("Defend_R")];
-    assert_eq!((defend.up_block, defend.up_flags & gen::UPF_BLOCK != 0), (3, true));
+    assert_eq!(
+        (defend.up_block, defend.up_flags & gen::UPF_BLOCK != 0),
+        (3, true)
+    );
     let bash = &gen::CARDS[sid("Bash")];
     assert_eq!(bash.up_damage, 2);
     assert_eq!(bash.up_magic, 1);
@@ -150,10 +156,7 @@ fn energy_gate_blocks_expensive_card() {
     let mut b = fixture(&[("Bash", false)]);
     b.energy = 1;
     let i = find_hand(&b, "Bash").unwrap();
-    assert_eq!(
-        b.play_card(i, Some(0)).err(),
-        Some("没有足够的能量")
-    );
+    assert_eq!(b.play_card(i, Some(0)).err(), Some("没有足够的能量"));
 }
 
 // ------------------------------------------------------------ 回合末：虚无/保留

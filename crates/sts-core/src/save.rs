@@ -6,7 +6,7 @@
 //! 安全写盘：旧档复制 .backUp → 写新档 → 校验（记录 07 §2.4 同步版）。
 
 use crate::battle::CardInst;
-use crate::flow4b::{RunState4b, RoomPhase};
+use crate::flow4b::{RoomPhase, RunState4b};
 
 impl RunState4b {
     /// 序列化为 JSON 字符串。
@@ -21,11 +21,7 @@ impl RunState4b {
                 )
             })
             .collect();
-        let relics: Vec<String> = self
-            .relics
-            .iter()
-            .map(|r| format!("\"{}\"", r))
-            .collect();
+        let relics: Vec<String> = self.relics.iter().map(|r| format!("\"{}\"", r)).collect();
         let potions: Vec<String> = self
             .potions
             .iter()
@@ -125,7 +121,8 @@ impl RunState4b {
                         run.potions.push(None);
                     } else {
                         let id = t.trim_matches('"');
-                        run.potions.push(Some(Box::leak(id.to_string().into_boxed_str())));
+                        run.potions
+                            .push(Some(Box::leak(id.to_string().into_boxed_str())));
                     }
                 }
             }

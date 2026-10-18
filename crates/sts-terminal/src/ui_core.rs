@@ -69,7 +69,13 @@ pub fn pad_right(s: &str, width: usize) -> String {
 }
 
 /// 列表项渲染：选中态前缀 + 编号 + 文本（统一全场景）。
-pub fn list_item(theme: &dyn Theme, idx: usize, text: &str, selected: bool, enabled: bool) -> String {
+pub fn list_item(
+    theme: &dyn Theme,
+    idx: usize,
+    text: &str,
+    selected: bool,
+    enabled: bool,
+) -> String {
     let prefix = match (selected, enabled) {
         (true, _) => theme.selected().paint("▸ "),
         (false, true) => "  ".to_string(),
@@ -105,11 +111,7 @@ pub fn panel_title(theme: &dyn Theme, title: &str, width: usize) -> String {
 
 /// 状态键值对（"HP 72/80" 形式），统一间距。
 pub fn kv(theme: &dyn Theme, key: &str, val: &str, val_style: Style) -> String {
-    format!(
-        "{} {}",
-        theme.dim().paint(key),
-        val_style.paint(val)
-    )
+    format!("{} {}", theme.dim().paint(key), val_style.paint(val))
 }
 
 #[cfg(test)]

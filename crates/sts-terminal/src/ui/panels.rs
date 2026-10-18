@@ -1,7 +1,7 @@
 //! 其他场景面板（docs UI 规范 §六）：篝火/商店/事件/牌库/药水栏——统一列表详情风格。
 
-use crate::ui_core::{list_item, panel_title, separator};
 use crate::theme::Theme;
+use crate::ui_core::{list_item, panel_title, separator};
 
 /// 篝火选项（Rest/Smith 固定 + 遗物选项占位）。
 pub fn render_campfire(theme: &dyn Theme, can_smith: bool, width: usize) -> Vec<String> {
@@ -58,9 +58,17 @@ pub fn render_event(
 }
 
 /// 牌库视图（排序 + 计数；单卡详情走 InspectCard）。
-pub fn render_deck(theme: &dyn Theme, deck: &[sts_core::battle::CardInst], width: usize) -> Vec<String> {
+pub fn render_deck(
+    theme: &dyn Theme,
+    deck: &[sts_core::battle::CardInst],
+    width: usize,
+) -> Vec<String> {
     let mut out = Vec::new();
-    out.push(panel_title(theme, &format!("牌库（{} 张）", deck.len()), width));
+    out.push(panel_title(
+        theme,
+        &format!("牌库（{} 张）", deck.len()),
+        width,
+    ));
     let mut sorted: Vec<&sts_core::battle::CardInst> = deck.iter().collect();
     sorted.sort_by_key(|c| (c.eff_cost(), c.st().id));
     for c in sorted {
@@ -84,11 +92,17 @@ pub fn render_deck(theme: &dyn Theme, deck: &[sts_core::battle::CardInst], width
 }
 
 /// 药水栏（3 槽）。
-pub fn render_potions(theme: &dyn Theme, potions: &[Option<&'static str>], width: usize) -> Vec<String> {
+pub fn render_potions(
+    theme: &dyn Theme,
+    potions: &[Option<&'static str>],
+    width: usize,
+) -> Vec<String> {
     let mut out = Vec::new();
     out.push(panel_title(theme, "药水", width));
     for (i, p) in potions.iter().enumerate() {
-        let text = p.map(|id| id.to_string()).unwrap_or_else(|| "空".to_string());
+        let text = p
+            .map(|id| id.to_string())
+            .unwrap_or_else(|| "空".to_string());
         out.push(list_item(theme, i, &text, false, p.is_some()));
     }
     out
@@ -108,7 +122,13 @@ pub fn render_relics(theme: &dyn Theme, relics: &[&'static str], width: usize) -
 }
 
 /// 死亡/胜利结算。
-pub fn render_game_over(theme: &dyn Theme, victory: bool, floor: i64, gold: i32, width: usize) -> Vec<String> {
+pub fn render_game_over(
+    theme: &dyn Theme,
+    victory: bool,
+    floor: i64,
+    gold: i32,
+    width: usize,
+) -> Vec<String> {
     let mut out = Vec::new();
     let title = if victory { "胜利" } else { "死亡" };
     out.push(panel_title(theme, title, width));

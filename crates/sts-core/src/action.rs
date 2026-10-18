@@ -66,9 +66,13 @@ pub enum GameAction {
     /// `EmptyDeckShuffleAction`：构造器触发遗物 onShuffle（TODO 3.6）；弃牌堆洗回抽牌堆。
     EmptyDeckShuffle,
     /// `GainEnergyAction`。
-    GainEnergy { amount: i32 },
+    GainEnergy {
+        amount: i32,
+    },
     /// 战斗开始给初始能量 + 启用控制（`GainEnergyAndEnableControlsAction`，含 onEnergyRecharge 钩子位）。
-    GainEnergyAndEnableControls { amount: i32 },
+    GainEnergyAndEnableControls {
+        amount: i32,
+    },
     /// `WaitAction`：即时模型下为空屏障（保序）。
     Wait,
     /// `EnableEndTurnButtonAction`：逻辑无副作用（UI 层事件）。
@@ -78,7 +82,9 @@ pub enum GameAction {
     /// `MonsterStartTurnAction`：全体怪 applyPreTurnLogic（无 Barricade 掉格挡 + atStartOfTurnPowers）。
     MonsterStartTurn,
     /// `RollMoveAction`：怪 rollMove（aiRng；脚本怪为确定性）。
-    RollMove { monster: usize },
+    RollMove {
+        monster: usize,
+    },
     /// `ClearCardQueueAction`。
     ClearCardQueue,
     /// `DiscardAtEndOfTurnAction`（回合末弃牌；retain/ethereal 钩子 TODO 2.4）。
@@ -87,34 +93,70 @@ pub enum GameAction {
     BattleOver,
     // ---------- 批次 3 卡牌灌注：高频动作 ----------
     /// `DamageAllEnemiesAction`：预计算矩阵（索引, 伤害），执行时跳过已死目标（记录 09 §7）。
-    DamageAll { matrix: Vec<(usize, i32)>, ty: crate::power::DamageType },
+    DamageAll {
+        matrix: Vec<(usize, i32)>,
+        ty: crate::power::DamageType,
+    },
     /// `DiscardAction`：amount<0 表示任意张选择屏；is_random 用 cardRandomRng。
-    Discard { amount: i32, is_random: bool, any_number: bool },
+    Discard {
+        amount: i32,
+        is_random: bool,
+        any_number: bool,
+    },
     /// `DrawCardAction` 变体已在（DrawCard）。
     /// `GainEnergyAction` 已在（GainEnergy）。
     /// `MakeTempCardInHandAction`：生成临时卡进手牌。
-    MakeTempCardInHand { sid: usize, upgraded: bool, count: i32 },
+    MakeTempCardInHand {
+        sid: usize,
+        upgraded: bool,
+        count: i32,
+    },
     /// `MakeTempCardInDrawPileAction`：random_spot=随机位置（cardRandomRng），否则顶。
-    MakeTempCardInDrawPile { sid: usize, upgraded: bool, count: i32, random_spot: bool },
+    MakeTempCardInDrawPile {
+        sid: usize,
+        upgraded: bool,
+        count: i32,
+        random_spot: bool,
+    },
     /// `MakeTempCardInDiscardAction`（Anger 等）。
-    MakeTempCardInDiscard { sid: usize, upgraded: bool, count: i32 },
+    MakeTempCardInDiscard {
+        sid: usize,
+        upgraded: bool,
+        count: i32,
+    },
     /// `ChannelAction`：引动充能球。
-    ChannelOrb { kind: crate::orb::OrbKind },
+    ChannelOrb {
+        kind: crate::orb::OrbKind,
+    },
     /// `EvokeOrbAction`：引动 N 个球（最老优先）。
-    EvokeOrb { count: i32 },
+    EvokeOrb {
+        count: i32,
+    },
     /// `EvokeOrbAction` 变体：引动但不移除（Dualcast 半段——双倍效果不消耗球）。
-    EvokeWithoutRemove { count: i32 },
+    EvokeWithoutRemove {
+        count: i32,
+    },
     /// `IncreaseMaxOrbAction`：球槽 +amount（可为负：Consume）。
-    IncreaseOrbSlots { amount: i32 },
+    IncreaseOrbSlots {
+        amount: i32,
+    },
     /// `ChangeStanceAction`。
-    ChangeStance { stance: crate::stance::StanceKind },
+    ChangeStance {
+        stance: crate::stance::StanceKind,
+    },
     /// `ScryAction`：观/弃（选择屏，批次 6 交互；核心先实现"进入选择"标记）。
-    Scry { amount: i32 },
+    Scry {
+        amount: i32,
+    },
     /// 卡牌专属例程（对应原版 actions/unique 与卡牌专属 Action 类，共 ~110 种）。
     /// 例：WhirlwindAction / FeedAction / ExhumeAction。执行入口 `cards::routines::run`。
-    CardRoutine { call: RoutineCall },
+    CardRoutine {
+        call: RoutineCall,
+    },
     /// 批次 3.10 兜底：未转译动作（审计用描述）。
-    Future { desc: &'static str },
+    Future {
+        desc: &'static str,
+    },
     /// PenNib：本次攻击出牌结束 → 熄灭 ×2 标记（effects 内已消费）。
     PenNibConsume,
 }
@@ -282,4 +324,3 @@ impl ActionManager {
         outcome
     }
 }
-

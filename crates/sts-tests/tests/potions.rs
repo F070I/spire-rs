@@ -3,7 +3,7 @@
 use sts_core::action::{GameAction, TargetRef};
 use sts_core::battle::Monster;
 use sts_core::damage::DamageInfo;
-use sts_core::flow4b::{RunState4b, RoomPhase};
+use sts_core::flow4b::{RoomPhase, RunState4b};
 use sts_core::power::{DamageType, PowerKind};
 use sts_data::gen;
 
@@ -49,7 +49,9 @@ fn fire_potion_thorns_ignores_block() {
         b.run_until_idle();
     }
     assert_eq!(
-        run.battle.as_ref().unwrap().monsters[0].creature.current_health,
+        run.battle.as_ref().unwrap().monsters[0]
+            .creature
+            .current_health,
         24,
         "THORNS 20 无视 99 格挡"
     );
@@ -61,18 +63,16 @@ fn speed_and_steroid_gain_then_lose() {
     let _ = run.use_potion(0, None);
     let b = run.battle.as_mut().unwrap();
     b.run_until_idle();
-    assert!(
-        b.player
-            .powers
-            .iter()
-            .any(|p| p.kind == PowerKind::Dexterity && p.amount == 5)
-    );
-    assert!(
-        b.player
-            .powers
-            .iter()
-            .any(|p| p.kind == PowerKind::LoseDexterity && p.amount == 5)
-    );
+    assert!(b
+        .player
+        .powers
+        .iter()
+        .any(|p| p.kind == PowerKind::Dexterity && p.amount == 5));
+    assert!(b
+        .player
+        .powers
+        .iter()
+        .any(|p| p.kind == PowerKind::LoseDexterity && p.amount == 5));
 }
 
 #[test]
@@ -82,7 +82,11 @@ fn regen_potion_heals_and_decays() {
     let _ = run.use_potion(0, None);
     let b = run.battle.as_mut().unwrap();
     b.run_until_idle();
-    assert!(b.player.powers.iter().any(|p| p.kind == PowerKind::Regen && p.amount == 5));
+    assert!(b
+        .player
+        .powers
+        .iter()
+        .any(|p| p.kind == PowerKind::Regen && p.amount == 5));
     // 回合推进：回合末回 5 → -1
     b.player.current_health = 40;
     b.end_turn();
@@ -129,13 +133,20 @@ fn elixir_exhausts_status_and_curses() {
         let b = run.battle.as_mut().unwrap();
         for id in ["Burn", "Doubt", "Strike_R"] {
             let sid = gen::CARDS.iter().position(|c| c.id == id).unwrap();
-            b.hand.add_top(sts_core::battle::CardInst::new(sid, false, 9000 + sid as u64));
+            b.hand.add_top(sts_core::battle::CardInst::new(
+                sid,
+                false,
+                9000 + sid as u64,
+            ));
         }
     }
     let _ = run.use_potion(0, None);
     let b = run.battle.as_ref().unwrap();
     assert!(
-        !b.hand.group.iter().any(|c| c.st().id == "Burn" || c.st().id == "Doubt"),
+        !b.hand
+            .group
+            .iter()
+            .any(|c| c.st().id == "Burn" || c.st().id == "Doubt"),
         "状态/诅咒被消耗"
     );
     assert!(b.hand.group.iter().any(|c| c.st().id == "Strike_R"));
@@ -147,10 +158,7 @@ fn entropic_brew_fills_slots() {
     run.potions[1] = None;
     run.potions[2] = None;
     let _ = run.use_potion(0, None);
-    assert!(
-        run.potions.iter().all(|s| s.is_some()),
-        "全部药水槽填满"
-    );
+    assert!(run.potions.iter().all(|s| s.is_some()), "全部药水槽填满");
 }
 
 #[test]
@@ -185,7 +193,11 @@ fn ancient_potion_gives_artifact() {
     let _ = run.use_potion(0, None);
     let b = run.battle.as_mut().unwrap();
     b.run_until_idle();
-    assert!(b.player.powers.iter().any(|p| p.kind == PowerKind::Artifact && p.amount == 1));
+    assert!(b
+        .player
+        .powers
+        .iter()
+        .any(|p| p.kind == PowerKind::Artifact && p.amount == 1));
 }
 
 #[test]

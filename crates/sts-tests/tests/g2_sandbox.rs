@@ -14,10 +14,28 @@ fn sid(id: &str) -> usize {
 /// 手动装配的确定性战斗（不走洗牌）。
 fn fixture(hand: &[(&str, bool)]) -> BattleState {
     let deck: Vec<(usize, bool)> = hand.iter().map(|(id, up)| (sid(id), *up)).collect();
-    let mut b = BattleState::new(80, 3, deck, vec![Monster::scripted("Jaw Worm", 44, vec![Some(10), Some(10), None])], 5);
+    let mut b = BattleState::new(
+        80,
+        3,
+        deck,
+        vec![Monster::scripted(
+            "Jaw Worm",
+            44,
+            vec![Some(10), Some(10), None],
+        )],
+        5,
+    );
     b.relics_ctx = RelicCtx::default();
     // 确定性手牌：把 master_deck 全部以新 uuid 装入手牌（绕开洗牌）
-    let cards: Vec<CardInst> = b.master_deck.group.iter().map(|c| CardInst { uuid: 0, ..c.clone() }).collect();
+    let cards: Vec<CardInst> = b
+        .master_deck
+        .group
+        .iter()
+        .map(|c| CardInst {
+            uuid: 0,
+            ..c.clone()
+        })
+        .collect();
     b.master_deck.group.clear();
     for mut c in cards {
         c.uuid = b.uuid_next;
@@ -34,8 +52,17 @@ fn find_hand(b: &BattleState, id: &str) -> Option<usize> {
 
 #[test]
 fn battle_start_sequence() {
-    let deck: Vec<(usize, bool)> = (0..5).map(|_| (sid("Strike_R"), false)).chain((0..5).map(|_| (sid("Defend_R"), false))).collect();
-    let mut b = BattleState::new(80, 3, deck, vec![Monster::scripted("Jaw Worm", 44, vec![Some(10)])], 5);
+    let deck: Vec<(usize, bool)> = (0..5)
+        .map(|_| (sid("Strike_R"), false))
+        .chain((0..5).map(|_| (sid("Defend_R"), false)))
+        .collect();
+    let mut b = BattleState::new(
+        80,
+        3,
+        deck,
+        vec![Monster::scripted("Jaw Worm", 44, vec![Some(10)])],
+        5,
+    );
     b.start_battle();
     b.run_until_idle();
     assert_eq!(b.energy, 3, "开场充能");
@@ -126,11 +153,18 @@ fn turn_loop_two_rounds_and_discard_flow() {
 fn poison_ticks_at_round_end_hp_loss() {
     let mut b = fixture(&[("Defend_R", false)]);
     // 毒（PoisonPower 语义：atEndOfRound 伤害 + 递减，HP_LOSS 无视格挡）
-    b.monsters[0].creature.powers.push(Power::new(PowerKind::Poison, 5));
+    b.monsters[0]
+        .creature
+        .powers
+        .push(Power::new(PowerKind::Poison, 5));
     let hp0 = b.monsters[0].creature.current_health;
     b.end_turn();
     b.run_until_idle();
-    assert_eq!(b.monsters[0].creature.current_health, hp0 - 5, "毒按层数扣血");
+    assert_eq!(
+        b.monsters[0].creature.current_health,
+        hp0 - 5,
+        "毒按层数扣血"
+    );
     assert_eq!(
         b.monsters[0]
             .creature
@@ -147,7 +181,10 @@ fn poison_ticks_at_round_end_hp_loss() {
 fn monster_block_wiped_at_its_turn_then_poison_bypasses() {
     let mut b = fixture(&[("Defend_R", false)]);
     b.monsters[0].creature.add_block(50);
-    b.monsters[0].creature.powers.push(Power::new(PowerKind::Poison, 5));
+    b.monsters[0]
+        .creature
+        .powers
+        .push(Power::new(PowerKind::Poison, 5));
     let hp0 = b.monsters[0].creature.current_health;
     b.end_turn();
     b.run_until_idle();
@@ -169,21 +206,33 @@ fn monster_debuffs_just_applied_skip_first_tick() {
     });
     b.run_until_idle();
     assert_eq!(
-        b.player.powers.iter().find(|p| p.kind == PowerKind::Vulnerable).map(|p| p.amount),
+        b.player
+            .powers
+            .iter()
+            .find(|p| p.kind == PowerKind::Vulnerable)
+            .map(|p| p.amount),
         Some(2)
     );
     b.end_turn();
     b.run_until_idle();
     // 本回合结束时 justApplied 跳过 → 仍 2；下回合结束 → 1
     assert_eq!(
-        b.player.powers.iter().find(|p| p.kind == PowerKind::Vulnerable).map(|p| p.amount),
+        b.player
+            .powers
+            .iter()
+            .find(|p| p.kind == PowerKind::Vulnerable)
+            .map(|p| p.amount),
         Some(2),
         "justApplied 首跳"
     );
     b.end_turn();
     b.run_until_idle();
     assert_eq!(
-        b.player.powers.iter().find(|p| p.kind == PowerKind::Vulnerable).map(|p| p.amount),
+        b.player
+            .powers
+            .iter()
+            .find(|p| p.kind == PowerKind::Vulnerable)
+            .map(|p| p.amount),
         Some(1)
     );
 }
@@ -192,12 +241,8 @@ fn monster_debuffs_just_applied_skip_first_tick() {
 fn player_strength_and_weak_on_attacker() {
     let mut b = fixture(&[("Strike_R", false)]);
     // 力量在玩家（give 段加法），虚弱在玩家（give 段 ×0.75）——怪身上的 Weak 不影响被打
-    b.player
-        .powers
-        .push(Power::new(PowerKind::Strength, 3));
-    b.player
-        .powers
-        .push(Power::new(PowerKind::Weak, 1));
+    b.player.powers.push(Power::new(PowerKind::Strength, 3));
+    b.player.powers.push(Power::new(PowerKind::Weak, 1));
     let hp0 = b.monsters[0].creature.current_health;
     let i = find_hand(&b, "Strike_R").unwrap();
     b.play_card(i, Some(0)).unwrap();

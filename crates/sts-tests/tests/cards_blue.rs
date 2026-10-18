@@ -164,7 +164,11 @@ fn melt_strips_block_then_hits() {
     let hp0 = b.monsters[0].creature.current_health;
     let expected = gen::CARDS[sid("Melter")].base_damage;
     play(&mut b, "Melter", Some(0));
-    assert_eq!(b.monsters[0].creature.current_health, hp0 - expected, "清格挡后全额命中");
+    assert_eq!(
+        b.monsters[0].creature.current_health,
+        hp0 - expected,
+        "清格挡后全额命中"
+    );
     assert_eq!(b.monsters[0].creature.current_block, 0);
 }
 
@@ -173,9 +177,21 @@ fn consume_reduces_slots_negatively() {
     let mut b = fixture(&["Consume"]);
     b.max_orbs = 3;
     b.orbs = vec![
-        sts_core::orb::Orb { kind: OrbKind::Lightning, passive_amount: 3, evoke_amount: 8 },
-        sts_core::orb::Orb { kind: OrbKind::Frost, passive_amount: 2, evoke_amount: 5 },
-        sts_core::orb::Orb { kind: OrbKind::Plasma, passive_amount: 1, evoke_amount: 2 },
+        sts_core::orb::Orb {
+            kind: OrbKind::Lightning,
+            passive_amount: 3,
+            evoke_amount: 8,
+        },
+        sts_core::orb::Orb {
+            kind: OrbKind::Frost,
+            passive_amount: 2,
+            evoke_amount: 5,
+        },
+        sts_core::orb::Orb {
+            kind: OrbKind::Plasma,
+            passive_amount: 1,
+            evoke_amount: 2,
+        },
     ];
     play(&mut b, "Consume", None);
     assert_eq!(b.max_orbs, 2);

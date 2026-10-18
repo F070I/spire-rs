@@ -24,7 +24,10 @@ fn mindbloom_upgrade_all_and_bathe() {
     let mut run = run_with_event();
     run.player_hp = 10;
     let gold0 = run.gold;
-    let normality = sts_data::gen::CARDS.iter().position(|c| c.id == "Normality").unwrap();
+    let normality = sts_data::gen::CARDS
+        .iter()
+        .position(|c| c.id == "Normality")
+        .unwrap();
     let curses_before = run.deck.iter().filter(|c| c.sid == normality).count();
     let _ = run.choose_event(2); // 沐浴
     assert_eq!(run.player_hp, run.player_max_hp);
@@ -41,14 +44,21 @@ fn fountain_removes_all_curses_keeps_ascendersbane() {
     run.force_event("Fountain of Cleansing");
     // 手动塞诅咒（含不可移除的 AscendersBane）
     for id in ["Decay", "Doubt", "AscendersBane"] {
-        let sid = sts_data::gen::CARDS.iter().position(|c| c.id == id).unwrap();
-        run.deck.push(sts_core::battle::CardInst::new(sid, false, run.uuid_next));
+        let sid = sts_data::gen::CARDS
+            .iter()
+            .position(|c| c.id == id)
+            .unwrap();
+        run.deck
+            .push(sts_core::battle::CardInst::new(sid, false, run.uuid_next));
         run.uuid_next += 1;
     }
     let _ = run.choose_event(0); // 饮用
     assert!(!run.deck.iter().any(|c| c.st().id == "Decay"));
     assert!(!run.deck.iter().any(|c| c.st().id == "Doubt"));
-    assert!(run.deck.iter().any(|c| c.st().id == "AscendersBane"), "开局诅咒豁免");
+    assert!(
+        run.deck.iter().any(|c| c.st().id == "AscendersBane"),
+        "开局诅咒豁免"
+    );
 }
 
 #[test]
@@ -79,15 +89,34 @@ fn back_to_basics_upgrades_strikes_defends_only() {
     let mut run = run_with_event();
     run.force_event("Back to Basics");
     // 塞一张非 S/D 可升级卡（Bash）与一张 Strike_R
-    let bash = sts_data::gen::CARDS.iter().position(|c| c.id == "Bash").unwrap();
-    let strike = sts_data::gen::CARDS.iter().position(|c| c.id == "Strike_R").unwrap();
-    run.deck.push(sts_core::battle::CardInst::new(bash, false, run.uuid_next));
+    let bash = sts_data::gen::CARDS
+        .iter()
+        .position(|c| c.id == "Bash")
+        .unwrap();
+    let strike = sts_data::gen::CARDS
+        .iter()
+        .position(|c| c.id == "Strike_R")
+        .unwrap();
+    run.deck
+        .push(sts_core::battle::CardInst::new(bash, false, run.uuid_next));
     run.uuid_next += 1;
-    run.deck.push(sts_core::battle::CardInst::new(strike, false, run.uuid_next));
+    run.deck.push(sts_core::battle::CardInst::new(
+        strike,
+        false,
+        run.uuid_next,
+    ));
     run.uuid_next += 1;
     let _ = run.choose_event(0); // 返璞归真
-    assert!(run.deck.iter().any(|c| c.st().id == "Bash" && !c.upgraded), "非 S/D 不升级");
-    assert!(run.deck.iter().any(|c| c.st().id == "Strike_R" && c.upgraded), "打击升级");
+    assert!(
+        run.deck.iter().any(|c| c.st().id == "Bash" && !c.upgraded),
+        "非 S/D 不升级"
+    );
+    assert!(
+        run.deck
+            .iter()
+            .any(|c| c.st().id == "Strike_R" && c.upgraded),
+        "打击升级"
+    );
 }
 
 #[test]
@@ -108,11 +137,17 @@ fn compound_effects_apply_in_order() {
     let mut run = run_with_event();
     run.force_event("Liars Game");
     let gold0 = run.gold;
-    let doubt = sts_data::gen::CARDS.iter().position(|c| c.id == "Doubt").unwrap();
+    let doubt = sts_data::gen::CARDS
+        .iter()
+        .position(|c| c.id == "Doubt")
+        .unwrap();
     let before = run.deck.iter().filter(|c| c.sid == doubt).count();
     let _ = run.choose_event(0); // +175 金 + 疑虑
     assert_eq!(run.gold, gold0 + 175);
-    assert_eq!(run.deck.iter().filter(|c| c.sid == doubt).count(), before + 1);
+    assert_eq!(
+        run.deck.iter().filter(|c| c.sid == doubt).count(),
+        before + 1
+    );
 }
 
 #[test]

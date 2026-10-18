@@ -8,16 +8,53 @@ use crate::battle::{BattleState, CardInst};
 use crate::power::{DamageType, Power, PowerKind};
 
 pub const HANDLED: &[&str] = &[
-    "Apotheosis", "Bandage Up", "Bite", "Blind", "Ghostly", "Chrysalis", "Dark Shackles",
-    "Deep Breath", "Discovery", "Dramatic Entrance", "Enlightenment", "Finesse",
-    "Flash of Steel", "Forethought", "Good Instincts", "HandOfGreed", "Impatience",
-    "Jack Of All Trades", "J.A.X.", "Madness", "Magnetism", "Master of Strategy",
-    "Mayhem", "Metamorphosis", "Mind Blast", "Panacea", "Panache", "PanicButton",
-    "Purity", "RitualDagger", "Sadistic Nature", "Secret Technique", "Secret Weapon",
-    "Swift Strike", "The Bomb", "Thinking Ahead", "Transmutation", "Trip", "Violence",
+    "Apotheosis",
+    "Bandage Up",
+    "Bite",
+    "Blind",
+    "Ghostly",
+    "Chrysalis",
+    "Dark Shackles",
+    "Deep Breath",
+    "Discovery",
+    "Dramatic Entrance",
+    "Enlightenment",
+    "Finesse",
+    "Flash of Steel",
+    "Forethought",
+    "Good Instincts",
+    "HandOfGreed",
+    "Impatience",
+    "Jack Of All Trades",
+    "J.A.X.",
+    "Madness",
+    "Magnetism",
+    "Master of Strategy",
+    "Mayhem",
+    "Metamorphosis",
+    "Mind Blast",
+    "Panacea",
+    "Panache",
+    "PanicButton",
+    "Purity",
+    "RitualDagger",
+    "Sadistic Nature",
+    "Secret Technique",
+    "Secret Weapon",
+    "Swift Strike",
+    "The Bomb",
+    "Thinking Ahead",
+    "Transmutation",
+    "Trip",
+    "Violence",
 ];
 
-pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: &mut EffectBuilder) {
+pub fn effects(
+    b: &mut BattleState,
+    card: &CardInst,
+    target: Option<usize>,
+    eb: &mut EffectBuilder,
+) {
     match card.st().id {
         // Apotheosis：ApotheosisAction——全牌升级
         "Apotheosis" => {

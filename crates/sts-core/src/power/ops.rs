@@ -73,10 +73,7 @@ pub fn apply_power(
         if let Some(existing) = powers.iter_mut().find(|p| p.kind == to_apply.kind) {
             if stack_power(existing, to_apply.amount, &mut pending_removals) {
                 // Mantra 满 10 信号：通过 pending 之外的通道——直接在此返回 special outcome
-                return (
-                    ApplyOutcome::MantraDivinity,
-                    pending_removals,
-                );
+                return (ApplyOutcome::MantraDivinity, pending_removals);
             }
         }
         return (ApplyOutcome::Applied { stacked: true }, pending_removals);
@@ -192,7 +189,11 @@ mod tests {
     fn apply_new_sorts_by_priority_stable() {
         let mut ps = vec![];
         let (o1, _) = apply_power(&mut ps, Power::new(PowerKind::Weak, 2), ApplyCtx::default());
-        let (o2, _) = apply_power(&mut ps, Power::new(PowerKind::Frail, 2), ApplyCtx::default());
+        let (o2, _) = apply_power(
+            &mut ps,
+            Power::new(PowerKind::Frail, 2),
+            ApplyCtx::default(),
+        );
         assert_eq!(o1, ApplyOutcome::Applied { stacked: false });
         assert_eq!(o2, ApplyOutcome::Applied { stacked: false });
         assert_eq!(
@@ -201,9 +202,21 @@ mod tests {
         );
         // 同 priority 保持插入序（稳定排序）
         let mut ps2 = vec![];
-        apply_power(&mut ps2, Power::new(PowerKind::Strength, 1), ApplyCtx::default());
-        apply_power(&mut ps2, Power::new(PowerKind::Dexterity, 1), ApplyCtx::default());
-        apply_power(&mut ps2, Power::new(PowerKind::Slow, 1), ApplyCtx::default());
+        apply_power(
+            &mut ps2,
+            Power::new(PowerKind::Strength, 1),
+            ApplyCtx::default(),
+        );
+        apply_power(
+            &mut ps2,
+            Power::new(PowerKind::Dexterity, 1),
+            ApplyCtx::default(),
+        );
+        apply_power(
+            &mut ps2,
+            Power::new(PowerKind::Slow, 1),
+            ApplyCtx::default(),
+        );
         assert_eq!(
             ps2.iter().map(|p| p.kind).collect::<Vec<_>>(),
             vec![PowerKind::Strength, PowerKind::Dexterity, PowerKind::Slow]
@@ -213,9 +226,21 @@ mod tests {
     #[test]
     fn stack_existing_does_not_resort() {
         let mut ps = vec![];
-        apply_power(&mut ps, Power::new(PowerKind::Strength, 5), ApplyCtx::default());
-        apply_power(&mut ps, Power::new(PowerKind::Weak, 99), ApplyCtx::default());
-        let (o, _) = apply_power(&mut ps, Power::new(PowerKind::Strength, 2), ApplyCtx::default());
+        apply_power(
+            &mut ps,
+            Power::new(PowerKind::Strength, 5),
+            ApplyCtx::default(),
+        );
+        apply_power(
+            &mut ps,
+            Power::new(PowerKind::Weak, 99),
+            ApplyCtx::default(),
+        );
+        let (o, _) = apply_power(
+            &mut ps,
+            Power::new(PowerKind::Strength, 2),
+            ApplyCtx::default(),
+        );
         assert_eq!(o, ApplyOutcome::Applied { stacked: true });
         assert_eq!(ps[0].kind, PowerKind::Strength);
         assert_eq!(ps[0].amount, 7);
@@ -232,8 +257,12 @@ mod tests {
         assert_eq!(o, ApplyOutcome::BlockedByArtifact);
         assert_eq!(pend, vec![PowerKind::Artifact]);
         assert_eq!(ps[0].amount, 0); // 移除由动作层执行（延迟语义）
-        // BUFF（力量）不受 Artifact 拦截——原版 Strength 恒为 BUFF
-        let (o2, _) = apply_power(&mut ps, Power::new(PowerKind::Strength, 3), ApplyCtx::default());
+                                     // BUFF（力量）不受 Artifact 拦截——原版 Strength 恒为 BUFF
+        let (o2, _) = apply_power(
+            &mut ps,
+            Power::new(PowerKind::Strength, 3),
+            ApplyCtx::default(),
+        );
         assert_eq!(o2, ApplyOutcome::Applied { stacked: false });
         remove_power(&mut ps, PowerKind::Artifact);
         let (o3, _) = apply_power(&mut ps, Power::new(PowerKind::Weak, 2), ApplyCtx::default());
@@ -318,7 +347,11 @@ mod tests {
     #[test]
     fn nodraw_no_stack() {
         let mut ps = vec![Power::new(PowerKind::NoDraw, 1)];
-        let (o, _) = apply_power(&mut ps, Power::new(PowerKind::NoDraw, 1), ApplyCtx::default());
+        let (o, _) = apply_power(
+            &mut ps,
+            Power::new(PowerKind::NoDraw, 1),
+            ApplyCtx::default(),
+        );
         assert_eq!(o, ApplyOutcome::NoDrawExists);
         assert_eq!(ps[0].amount, 1);
     }

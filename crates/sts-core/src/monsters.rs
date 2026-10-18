@@ -109,7 +109,11 @@ mod tests {
         assert_eq!(h[0].creature.max_health, 264);
         let aw = build_real("Awakened One", 19, 300).unwrap();
         match aw.last().unwrap().special {
-            Some(SpecialAi::AwakenedOneAi { regen, curiosity, str_pre }) => {
+            Some(SpecialAi::AwakenedOneAi {
+                regen,
+                curiosity,
+                str_pre,
+            }) => {
                 assert_eq!((regen, curiosity, str_pre), (15, 2, 2));
             }
             _ => panic!("应有 AwakenedOneAi"),

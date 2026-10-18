@@ -83,8 +83,10 @@ fn whirlwind(b: &mut BattleState, call: &RoutineCall) {
     let base = sts_data::gen::CARDS[call.sid].base_damage;
     for _ in 0..call.amount.max(0) {
         let matrix = damage_matrix(b, base, DamageType::Normal);
-        b.mgr
-            .add_bottom(GameAction::DamageAll { matrix, ty: DamageType::Normal });
+        b.mgr.add_bottom(GameAction::DamageAll {
+            matrix,
+            ty: DamageType::Normal,
+        });
     }
     // X 费的能量扣减由动作本体承担（useCard 对 cost=-1 不扣）
     b.energy = (b.energy - call.amount2).max(0);
@@ -162,7 +164,12 @@ fn fiend_fire(b: &mut BattleState, call: &RoutineCall) {
         if let Some(mi) = call.target {
             b.mgr.add_bottom(GameAction::Damage {
                 target: TargetRef::Monster(mi),
-                info: attack_info(b, mi, sts_data::gen::CARDS[call.sid].base_damage, DamageType::Normal),
+                info: attack_info(
+                    b,
+                    mi,
+                    sts_data::gen::CARDS[call.sid].base_damage,
+                    DamageType::Normal,
+                ),
             });
         }
     }
@@ -191,7 +198,12 @@ fn limit_break(b: &mut BattleState, call: &RoutineCall) {
 /// FeedAction：伤害；目标因此死亡 → increaseMaxHp(magic)。
 fn feed(b: &mut BattleState, call: &RoutineCall) {
     if let Some(mi) = call.target {
-        let info = attack_info(b, mi, sts_data::gen::CARDS[call.sid].base_damage, DamageType::Normal);
+        let info = attack_info(
+            b,
+            mi,
+            sts_data::gen::CARDS[call.sid].base_damage,
+            DamageType::Normal,
+        );
         b.exec_damage(TargetRef::Monster(mi), info);
         if b.monsters[mi].creature.is_dying {
             b.player.increase_max_hp(call.amount);
@@ -249,7 +261,10 @@ fn attack_random(b: &mut BattleState, call: &RoutineCall) {
     let mi = if alive.len() == 1 {
         alive[0]
     } else {
-        let idx = b.rngs.card_random.random_int_inclusive(alive.len() as i32 - 1) as usize;
+        let idx = b
+            .rngs
+            .card_random
+            .random_int_inclusive(alive.len() as i32 - 1) as usize;
         alive[idx]
     };
     b.exec_damage(
@@ -290,7 +305,10 @@ fn calculated_gamble(b: &mut BattleState, call: &RoutineCall) {
         b.discard_pile.add_top(c);
     }
     if n > 0 {
-        b.mgr.add_bottom(GameAction::DrawCard { amount: n, end_turn_draw: false });
+        b.mgr.add_bottom(GameAction::DrawCard {
+            amount: n,
+            end_turn_draw: false,
+        });
     }
 }
 
@@ -332,10 +350,18 @@ fn heel_hook(b: &mut BattleState, call: &RoutineCall) {
     if let Some(mi) = call.target {
         b.mgr.add_bottom(GameAction::Damage {
             target: TargetRef::Monster(mi),
-            info: attack_info(b, mi, sts_data::gen::CARDS[call.sid].base_damage, DamageType::Normal),
+            info: attack_info(
+                b,
+                mi,
+                sts_data::gen::CARDS[call.sid].base_damage,
+                DamageType::Normal,
+            ),
         });
         if b.total_discarded_this_turn > 0 {
-            b.mgr.add_bottom(GameAction::DrawCard { amount: 1, end_turn_draw: false });
+            b.mgr.add_bottom(GameAction::DrawCard {
+                amount: 1,
+                end_turn_draw: false,
+            });
             b.mgr.add_bottom(GameAction::GainEnergy { amount: 1 });
         }
     }

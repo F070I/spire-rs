@@ -61,7 +61,9 @@ fn get_node(x: i32, y: i32, nodes: &[Vec<MapRoomNode>]) -> Option<&MapRoomNode> 
 }
 
 fn get_node_mut(x: i32, y: i32, nodes: &mut [Vec<MapRoomNode>]) -> Option<&mut MapRoomNode> {
-    nodes.get_mut(y as usize).and_then(|row| row.get_mut(x as usize))
+    nodes
+        .get_mut(y as usize)
+        .and_then(|row| row.get_mut(x as usize))
 }
 
 /// randRange：`rng.random(max - min) + min`（双闭区间 [min, max]）。
@@ -114,7 +116,11 @@ fn get_common_ancestor(
 /// createNodes：height×width 全空节点。
 fn create_nodes(height: usize, width: usize) -> Vec<Vec<MapRoomNode>> {
     (0..height)
-        .map(|y| (0..width).map(|x| MapRoomNode::new(x as i32, y as i32)).collect())
+        .map(|y| {
+            (0..width)
+                .map(|x| MapRoomNode::new(x as i32, y as i32))
+                .collect()
+        })
         .collect()
 }
 
@@ -183,12 +189,7 @@ fn create_paths_recurse(
                 let ancestor = if is_same {
                     None
                 } else {
-                    get_common_ancestor(
-                        parent,
-                        (edge.dst_x, edge.dst_y),
-                        &nodes,
-                        5,
-                    )
+                    get_common_ancestor(parent, (edge.dst_x, edge.dst_y), &nodes, 5)
                 };
                 if let Some(ancestor) = ancestor.filter(|_| !is_same) {
                     let ancestor_y = ancestor.1;
@@ -226,11 +227,7 @@ fn create_paths_recurse(
     if edge.dst_x != 0 {
         if let Some(left_node) = get_node(edge.dst_x - 1, edge.dst_y, &nodes) {
             if !left_node.edges.is_empty() {
-                let right_edge_of_left = left_node
-                    .edges
-                    .iter()
-                    .max_by_key(|e| e.dst_x)
-                    .unwrap();
+                let right_edge_of_left = left_node.edges.iter().max_by_key(|e| e.dst_x).unwrap();
                 if right_edge_of_left.dst_x > new_edge_x {
                     new_edge_x = right_edge_of_left.dst_x;
                 }
@@ -240,11 +237,7 @@ fn create_paths_recurse(
     if edge.dst_x < row_end_node {
         if let Some(right_node) = get_node(edge.dst_x + 1, edge.dst_y, &nodes) {
             if !right_node.edges.is_empty() {
-                let left_edge_of_right = right_node
-                    .edges
-                    .iter()
-                    .min_by_key(|e| e.dst_x)
-                    .unwrap();
+                let left_edge_of_right = right_node.edges.iter().min_by_key(|e| e.dst_x).unwrap();
                 if left_edge_of_right.dst_x < new_edge_x {
                     new_edge_x = left_edge_of_right.dst_x;
                 }
@@ -269,9 +262,7 @@ fn create_paths_recurse(
 }
 
 /// filterRedundantEdgesFromRow：仅首行，删除与先前节点目的地相同的重复边。
-fn filter_redundant_edges_from_row(
-    mut map: Vec<Vec<MapRoomNode>>,
-) -> Vec<Vec<MapRoomNode>> {
+fn filter_redundant_edges_from_row(mut map: Vec<Vec<MapRoomNode>>) -> Vec<Vec<MapRoomNode>> {
     let mut existing: Vec<(i32, i32)> = Vec::new();
     if let Some(row) = map.first_mut() {
         for node in row.iter_mut() {

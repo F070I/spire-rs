@@ -8,24 +8,89 @@ use crate::battle::{BattleState, CardInst};
 use crate::power::{DamageType, Power, PowerKind};
 
 pub const HANDLED: &[&str] = &[
-    "Accuracy", "Acrobatics", "A Thousand Cuts", "After Image", "All Out Attack",
-    "Backflip", "Backstab", "Bane", "Blade Dance", "Blur", "Bouncing Flask",
-    "Bullet Time", "Burst", "Calculated Gamble", "Caltrops", "Catalyst", "Choke",
-    "Cloak And Dagger", "Concentrate", "Corpse Explosion", "Crippling Poison",
-    "Dagger Spray", "Dagger Throw", "Dash", "Deadly Poison", "Defend_G", "Deflect",
-    "Die Die Die", "Distraction", "Dodge and Roll", "Doppelganger", "Endless Agony",
-    "Envenom", "Escape Plan", "Eviscerate", "Expertise", "Finisher", "Flechettes",
-    "Flying Knee", "Footwork", "Glass Knife", "Grand Finale", "Heel Hook",
-    "Infinite Blades", "Leg Sweep", "Malaise", "Masterful Stab", "Neutralize",
-    "Night Terror", "Noxious Fumes", "Outmaneuver", "Phantasmal Killer", "PiercingWail",
-    "Poisoned Stab", "Predator", "Prepared", "Quick Slash", "Reflex",
-    "Riddle With Holes", "Setup", "Skewer", "Slice",
-    "Storm of Steel", "Strike_G", "Sucker Punch", "Survivor", "Tactician",
-    "Tools of the Trade", "Unload", "Well Laid Plans", "Wraith Form", "Adrenaline",
-    "Venomology", "Terror", "Underhanded Strike",
+    "Accuracy",
+    "Acrobatics",
+    "A Thousand Cuts",
+    "After Image",
+    "All Out Attack",
+    "Backflip",
+    "Backstab",
+    "Bane",
+    "Blade Dance",
+    "Blur",
+    "Bouncing Flask",
+    "Bullet Time",
+    "Burst",
+    "Calculated Gamble",
+    "Caltrops",
+    "Catalyst",
+    "Choke",
+    "Cloak And Dagger",
+    "Concentrate",
+    "Corpse Explosion",
+    "Crippling Poison",
+    "Dagger Spray",
+    "Dagger Throw",
+    "Dash",
+    "Deadly Poison",
+    "Defend_G",
+    "Deflect",
+    "Die Die Die",
+    "Distraction",
+    "Dodge and Roll",
+    "Doppelganger",
+    "Endless Agony",
+    "Envenom",
+    "Escape Plan",
+    "Eviscerate",
+    "Expertise",
+    "Finisher",
+    "Flechettes",
+    "Flying Knee",
+    "Footwork",
+    "Glass Knife",
+    "Grand Finale",
+    "Heel Hook",
+    "Infinite Blades",
+    "Leg Sweep",
+    "Malaise",
+    "Masterful Stab",
+    "Neutralize",
+    "Night Terror",
+    "Noxious Fumes",
+    "Outmaneuver",
+    "Phantasmal Killer",
+    "PiercingWail",
+    "Poisoned Stab",
+    "Predator",
+    "Prepared",
+    "Quick Slash",
+    "Reflex",
+    "Riddle With Holes",
+    "Setup",
+    "Skewer",
+    "Slice",
+    "Storm of Steel",
+    "Strike_G",
+    "Sucker Punch",
+    "Survivor",
+    "Tactician",
+    "Tools of the Trade",
+    "Unload",
+    "Well Laid Plans",
+    "Wraith Form",
+    "Adrenaline",
+    "Venomology",
+    "Terror",
+    "Underhanded Strike",
 ];
 
-pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: &mut EffectBuilder) {
+pub fn effects(
+    b: &mut BattleState,
+    card: &CardInst,
+    target: Option<usize>,
+    eb: &mut EffectBuilder,
+) {
     match card.st().id {
         // Accuracy：ApplyPower(Accuracy, magic)（Shiv +伤：钩子 TODO 3.5）
         "Accuracy" => {
@@ -910,14 +975,22 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
             eb.bot(GameAction::GainEnergy {
                 amount: if card.upgraded { 2 } else { 1 },
             });
-            eb.bot(GameAction::DrawCard { amount: 2, end_turn_draw: false });
+            eb.bot(GameAction::DrawCard {
+                amount: 2,
+                end_turn_draw: false,
+            });
         }
         // Venomology（类 Alchemize）：获得随机药水——TODO 4.1 池随机（potionRng limited=true）
         "Venomology" => {
             eb.bot(GameAction::CardRoutine {
                 call: RoutineCall {
-                    id: "ObtainPotionAction", target: None, amount: 0, amount2: 0,
-                    card_uuid: card.uuid, sid: card.sid, upgraded: card.upgraded,
+                    id: "ObtainPotionAction",
+                    target: None,
+                    amount: 0,
+                    amount2: 0,
+                    card_uuid: card.uuid,
+                    sid: card.sid,
+                    upgraded: card.upgraded,
                 },
             });
         }
@@ -956,8 +1029,13 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
                 });
                 eb.bot(GameAction::CardRoutine {
                     call: RoutineCall {
-                        id: "GainEnergyIfDiscardAction", target: None, amount: 1, amount2: 0,
-                        card_uuid: card.uuid, sid: card.sid, upgraded: card.upgraded,
+                        id: "GainEnergyIfDiscardAction",
+                        target: None,
+                        amount: 1,
+                        amount2: 0,
+                        card_uuid: card.uuid,
+                        sid: card.sid,
+                        upgraded: card.upgraded,
                     },
                 });
             }

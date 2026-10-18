@@ -159,7 +159,8 @@ impl JdkRandom {
     }
 
     /// JDK `nextInt(bound)`（与 RandomXS128 处相同的拒绝采样，但基于 LCG 的 next(31)）。
-    pub fn next_int_bounded(&mut self, bound: i32) -> i32 {        assert!(bound > 0, "bound must be positive");
+    pub fn next_int_bounded(&mut self, bound: i32) -> i32 {
+        assert!(bound > 0, "bound must be positive");
         let m = bound - 1;
         if (bound & m) == 0 {
             let r = self.next_bits(31) as i64;

@@ -13,7 +13,13 @@ fn sid(id: &str) -> usize {
 
 fn battle(r: RelicCtx) -> BattleState {
     let deck: Vec<(usize, bool)> = (0..10).map(|_| (sid("Defend_R"), false)).collect();
-    let mut b = BattleState::new(80, 3, deck, vec![Monster::scripted("Jaw Worm", 44, vec![Some(10)])], 5);
+    let mut b = BattleState::new(
+        80,
+        3,
+        deck,
+        vec![Monster::scripted("Jaw Worm", 44, vec![Some(10)])],
+        5,
+    );
     b.relics_ctx = r;
     b.start_battle();
     b.roll_weighted_initial();
@@ -23,9 +29,15 @@ fn battle(r: RelicCtx) -> BattleState {
 
 #[test]
 fn paper_frog_boosts_vulnerable_target() {
-    let r = RelicCtx { paper_frog: true, ..RelicCtx::default() };
+    let r = RelicCtx {
+        paper_frog: true,
+        ..RelicCtx::default()
+    };
     let mut b = battle(r);
-    b.monsters[0].creature.powers.push(sts_core::power::Power::new(PowerKind::Vulnerable, 2));
+    b.monsters[0]
+        .creature
+        .powers
+        .push(sts_core::power::Power::new(PowerKind::Vulnerable, 2));
     // attack_info 路径：10 伤 → 链内易伤 ×1.5=15 → 纸蛙 ×(1.75/1.5)=17.5 → 17
     let info = sts_core::cards::attack_info(&b, 0, 10, DamageType::Normal);
     assert_eq!(info.output, 17, "纸蛙 75% 增伤（floor 17.5）");
@@ -33,9 +45,15 @@ fn paper_frog_boosts_vulnerable_target() {
 
 #[test]
 fn paper_krane_dampens_weak_attacker() {
-    let r = RelicCtx { paper_krane: true, ..RelicCtx::default() };
+    let r = RelicCtx {
+        paper_krane: true,
+        ..RelicCtx::default()
+    };
     let mut b = battle(r);
-    b.monsters[0].creature.powers.push(sts_core::power::Power::new(PowerKind::Weak, 2));
+    b.monsters[0]
+        .creature
+        .powers
+        .push(sts_core::power::Power::new(PowerKind::Weak, 2));
     let hp0 = b.player.current_health;
     b.monsters[0].script = vec![Some(10)];
     b.monsters[0].move_idx = 0;
@@ -47,7 +65,10 @@ fn paper_krane_dampens_weak_attacker() {
 
 #[test]
 fn abacus_blocks_on_shuffle() {
-    let r = RelicCtx { abacus: true, ..RelicCtx::default() };
+    let r = RelicCtx {
+        abacus: true,
+        ..RelicCtx::default()
+    };
     let mut b = battle(r);
     b.player.current_block = 0;
     b.mgr.add_bottom(GameAction::EmptyDeckShuffle);
@@ -68,7 +89,13 @@ fn golden_idol_boosts_combat_gold() {
         b.run_until_idle();
         b.mgr.add_bottom(GameAction::Damage {
             target: TargetRef::Monster(0),
-            info: DamageInfo { owner_is_player: true, base: 99, output: 99, ty: DamageType::Normal, modified: true },
+            info: DamageInfo {
+                owner_is_player: true,
+                base: 99,
+                output: 99,
+                ty: DamageType::Normal,
+                modified: true,
+            },
         });
         b.run_until_idle();
     }
@@ -91,7 +118,13 @@ fn bloody_idol_heals_on_gold() {
         b.run_until_idle();
         b.mgr.add_bottom(GameAction::Damage {
             target: TargetRef::Monster(0),
-            info: DamageInfo { owner_is_player: true, base: 99, output: 99, ty: DamageType::Normal, modified: true },
+            info: DamageInfo {
+                owner_is_player: true,
+                base: 99,
+                output: 99,
+                ty: DamageType::Normal,
+                modified: true,
+            },
         });
         b.run_until_idle();
     }
@@ -117,5 +150,8 @@ fn cauldron_fills_potion_slots() {
     let _ = run.take_neow(0);
     run.apply_relic_effect("Cauldron");
     run.relics.push("Cauldron");
-    assert!(run.potions.iter().filter(|s| s.is_some()).count() >= 3, "3 瓶药水");
+    assert!(
+        run.potions.iter().filter(|s| s.is_some()).count() >= 3,
+        "3 瓶药水"
+    );
 }

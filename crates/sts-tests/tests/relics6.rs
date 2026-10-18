@@ -1,8 +1,8 @@
 //! 批次 5g 测试：卡上下文三件套（打击假人/腕刃/化学 X）+ 破冠奖励 + 噩梦捕手。
 
 use sts_core::battle::{BattleState, Monster, RelicCtx};
-use sts_core::power::DamageType;
 use sts_core::flow4b::RunState4b;
+use sts_core::power::DamageType;
 use sts_data::gen;
 
 fn sid(id: &str) -> usize {
@@ -11,7 +11,13 @@ fn sid(id: &str) -> usize {
 
 fn battle(r: RelicCtx) -> BattleState {
     let deck: Vec<(usize, bool)> = (0..10).map(|_| (sid("Defend_R"), false)).collect();
-    let mut b = BattleState::new(80, 3, deck, vec![Monster::scripted("Jaw Worm", 44, vec![Some(10)])], 5);
+    let mut b = BattleState::new(
+        80,
+        3,
+        deck,
+        vec![Monster::scripted("Jaw Worm", 44, vec![Some(10)])],
+        5,
+    );
     b.relics_ctx = r;
     b.start_battle();
     b.roll_weighted_initial();
@@ -21,7 +27,10 @@ fn battle(r: RelicCtx) -> BattleState {
 
 #[test]
 fn strike_dummy_boosts_strike_named_attacks() {
-    let r = RelicCtx { strike_dummy: true, ..RelicCtx::default() };
+    let r = RelicCtx {
+        strike_dummy: true,
+        ..RelicCtx::default()
+    };
     let mut b = battle(r);
     let strike_sid = sid("Strike_R");
     b.playing_card = Some((strike_sid, 1));
@@ -35,7 +44,10 @@ fn strike_dummy_boosts_strike_named_attacks() {
 
 #[test]
 fn wrist_blade_boosts_zero_cost_attacks() {
-    let r = RelicCtx { wrist_blade: true, ..RelicCtx::default() };
+    let r = RelicCtx {
+        wrist_blade: true,
+        ..RelicCtx::default()
+    };
     let mut b = battle(r);
     let shiv = sid("Shiv");
     b.playing_card = Some((shiv, 0));
@@ -48,7 +60,10 @@ fn wrist_blade_boosts_zero_cost_attacks() {
 
 #[test]
 fn chemical_x_boosts_x_value() {
-    let r = RelicCtx { chemical_x: true, ..RelicCtx::default() };
+    let r = RelicCtx {
+        chemical_x: true,
+        ..RelicCtx::default()
+    };
     let b = battle(r);
     assert_eq!(sts_core::cards::x_value(&b), b.energy + 2);
     let r2 = RelicCtx::default();

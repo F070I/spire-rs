@@ -63,11 +63,24 @@ fn kunai_shuriken_fan_every_third_attack() {
     let mut b = battle(r);
     // 手动堆 2 次
     b.relic_attack_count = 2;
-    let i = b.hand.group.iter().position(|c| c.st().kind == gen::CardType::Attack).unwrap();
+    let i = b
+        .hand
+        .group
+        .iter()
+        .position(|c| c.st().kind == gen::CardType::Attack)
+        .unwrap();
     b.play_card(i, Some(0)).unwrap();
     b.run_until_idle();
-    assert!(b.player.powers.iter().any(|p| p.kind == PowerKind::Dexterity && p.amount >= 1));
-    assert!(b.player.powers.iter().any(|p| p.kind == PowerKind::Strength && p.amount >= 1));
+    assert!(b
+        .player
+        .powers
+        .iter()
+        .any(|p| p.kind == PowerKind::Dexterity && p.amount >= 1));
+    assert!(b
+        .player
+        .powers
+        .iter()
+        .any(|p| p.kind == PowerKind::Strength && p.amount >= 1));
     assert!(b.player.current_block >= 4, "装饰扇 +4 格挡");
 }
 
@@ -81,8 +94,14 @@ fn bird_faced_urn_heals_on_power() {
     b.player.current_health = 40;
     // 塞一张能力牌入手
     let inflame = sid("Inflame");
-    b.hand.add_top(sts_core::battle::CardInst::new(inflame, false, 99001));
-    let i = b.hand.group.iter().position(|c| c.st().id == "Inflame").unwrap();
+    b.hand
+        .add_top(sts_core::battle::CardInst::new(inflame, false, 99001));
+    let i = b
+        .hand
+        .group
+        .iter()
+        .position(|c| c.st().id == "Inflame")
+        .unwrap();
     b.play_card(i, None).unwrap();
     b.run_until_idle();
     assert!(b.player.current_health > 40, "鸟脸瓮打能力牌回 6");
@@ -134,8 +153,16 @@ fn bronze_scales_and_clockwork_at_start() {
         ..RelicCtx::default()
     };
     let b = battle(r);
-    assert!(b.player.powers.iter().any(|p| p.kind == PowerKind::Thorns && p.amount == 3));
-    assert!(b.player.powers.iter().any(|p| p.kind == PowerKind::Artifact && p.amount == 1));
+    assert!(b
+        .player
+        .powers
+        .iter()
+        .any(|p| p.kind == PowerKind::Thorns && p.amount == 3));
+    assert!(b
+        .player
+        .powers
+        .iter()
+        .any(|p| p.kind == PowerKind::Artifact && p.amount == 1));
 }
 
 #[test]
@@ -145,13 +172,11 @@ fn twisted_funnel_poisons_all() {
         ..RelicCtx::default()
     };
     let b = battle(r);
-    assert!(
-        b.monsters[0]
-            .creature
-            .powers
-            .iter()
-            .any(|p| p.kind == PowerKind::Poison && p.amount == 4)
-    );
+    assert!(b.monsters[0]
+        .creature
+        .powers
+        .iter()
+        .any(|p| p.kind == PowerKind::Poison && p.amount == 4));
 }
 
 #[test]

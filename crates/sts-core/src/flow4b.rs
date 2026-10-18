@@ -10,8 +10,8 @@
 
 use crate::action::{GameAction, TargetRef};
 use crate::battle::{BattleState, CardInst, Monster, RelicCtx, SpecialAi};
-use crate::power::{Power, PowerKind};
 use crate::map::{generate_dungeon, MapRoomNode, MAP_HEIGHT, MAP_WIDTH, PATH_DENSITY};
+use crate::power::{Power, PowerKind};
 use sts_data::encounters;
 use sts_data::rng::StsRandom;
 
@@ -68,7 +68,10 @@ impl ShopState {
                 .enumerate()
                 .filter(|(i, c)| {
                     c.rarity == rarity
-                        && !matches!(c.kind, sts_data::gen::CardType::Status | sts_data::gen::CardType::Curse)
+                        && !matches!(
+                            c.kind,
+                            sts_data::gen::CardType::Status | sts_data::gen::CardType::Curse
+                        )
                         && c.color != sts_data::gen::CardColor::Colorless
                         && used.insert(c.id)
                         && *i < usize::MAX
@@ -92,7 +95,12 @@ impl ShopState {
             relics.push((id, price_of(rng, 150), false));
         }
         // 3 药水
-        let potion_pool = ["Fire Potion", "Blood Potion", "Block Potion", "Swift Potion"];
+        let potion_pool = [
+            "Fire Potion",
+            "Blood Potion",
+            "Block Potion",
+            "Swift Potion",
+        ];
         let mut potions = Vec::new();
         for _ in 0..3 {
             let id = potion_pool[rng.random_int_inclusive(potion_pool.len() as i32 - 1) as usize];
@@ -194,7 +202,13 @@ impl RunState4b {
             floor: 0,
             map: {
                 let mut m = generate_dungeon(MAP_HEIGHT, MAP_WIDTH, PATH_DENSITY, &mut map_rng);
-                crate::map::assign_rooms(&mut m, &crate::map::DEFAULT_CHANCES, 0, false, &mut map_rng);
+                crate::map::assign_rooms(
+                    &mut m,
+                    &crate::map::DEFAULT_CHANCES,
+                    0,
+                    false,
+                    &mut map_rng,
+                );
                 m
             },
             current: None,
@@ -262,12 +276,7 @@ impl RunState4b {
     pub fn open_neow(&mut self) {
         use NeowReward::*;
         // cat0（6 选 1 简化为 4）：
-        let cat0 = [
-            ThreeCards,
-            OneRandomRareCard,
-            RemoveCard,
-            UpgradeCard,
-        ];
+        let cat0 = [ThreeCards, OneRandomRareCard, RemoveCard, UpgradeCard];
         // cat1（5 选 1 简化为 3）：
         let cat1 = [ThreeSmallPotions, RandomCommonRelic, TenPercentHpBonus];
         // cat2（大额金币）
@@ -297,11 +306,15 @@ impl RunState4b {
                 let rare: Vec<usize> = sts_data::gen::CARDS
                     .iter()
                     .enumerate()
-                    .filter(|(_, c)| c.rarity == sts_data::gen::CardRarity::Rare && c.color == sts_data::gen::CardColor::Red)
+                    .filter(|(_, c)| {
+                        c.rarity == sts_data::gen::CardRarity::Rare
+                            && c.color == sts_data::gen::CardColor::Red
+                    })
                     .map(|(i, _)| i)
                     .collect();
                 if !rare.is_empty() {
-                    let sid = rare[self.neow_rng.random_int_inclusive(rare.len() as i32 - 1) as usize];
+                    let sid =
+                        rare[self.neow_rng.random_int_inclusive(rare.len() as i32 - 1) as usize];
                     self.deck.push(CardInst::new(sid, false, self.uuid_next));
                     self.uuid_next += 1;
                 }
@@ -454,7 +467,10 @@ impl RunState4b {
             self.boss
         } else if symbol == 'E' {
             if self.elite_list.is_empty() {
-                encounters::roll(encounters::act_pools(self.act).elites, &mut self.monster_rng)
+                encounters::roll(
+                    encounters::act_pools(self.act).elites,
+                    &mut self.monster_rng,
+                )
             } else {
                 self.elite_list.remove(0)
             }
@@ -493,13 +509,7 @@ impl RunState4b {
                 out
             }
         };
-        let mut b = BattleState::new(
-            self.player_hp,
-            3,
-            Vec::new(),
-            monsters,
-            5,
-        );
+        let mut b = BattleState::new(self.player_hp, 3, Vec::new(), monsters, 5);
         b.master_deck.group = self.deck.clone();
         for c in &mut b.master_deck.group {
             c.reset_attributes();
@@ -558,7 +568,11 @@ impl RunState4b {
     }
 
     /// 战斗中操作透传（出牌/结束回合）。
-    pub fn play_card(&mut self, hand_index: usize, target: Option<usize>) -> Result<(), &'static str> {
+    pub fn play_card(
+        &mut self,
+        hand_index: usize,
+        target: Option<usize>,
+    ) -> Result<(), &'static str> {
         if self.phase != RoomPhase::InBattle {
             return Err("不在战斗中");
         }
@@ -592,7 +606,8 @@ impl RunState4b {
             self.player_hp = b.player.current_health.max(1);
             // BurningBlood.onVictory：战斗结束回 N
             if self.relics_ctx.burning_blood_heal > 0 {
-                self.player_hp = (self.player_hp + self.relics_ctx.burning_blood_heal).min(self.player_max_hp);
+                self.player_hp =
+                    (self.player_hp + self.relics_ctx.burning_blood_heal).min(self.player_max_hp);
             }
             // MeatOnTheBone.onTrigger：战后 <50% 回 12
             if self.relics_ctx.meat_on_bone
@@ -686,7 +701,9 @@ impl RunState4b {
                 .position(|c| c.id == "Strike_R")
                 .unwrap();
         }
-        candidates[self.card_rng.random_int_inclusive(candidates.len() as i32 - 1) as usize]
+        candidates[self
+            .card_rng
+            .random_int_inclusive(candidates.len() as i32 - 1) as usize]
     }
 
     /// 幕间转换：Act Boss 胜利领奖后调用。回血规则（进阶 5 半回/否则满）、act++、
@@ -703,18 +720,10 @@ impl RunState4b {
         };
         self.map_rng = map_rng;
         let pools = encounters::act_pools(self.act);
-        self.monster_list = encounters::populate_list(
-            pools.weak,
-            pools.weak_count,
-            false,
-            &mut self.monster_rng,
-        );
-        self.elite_list = encounters::populate_list(
-            pools.elites,
-            pools.elite_count,
-            true,
-            &mut self.monster_rng,
-        );
+        self.monster_list =
+            encounters::populate_list(pools.weak, pools.weak_count, false, &mut self.monster_rng);
+        self.elite_list =
+            encounters::populate_list(pools.elites, pools.elite_count, true, &mut self.monster_rng);
         self.monster_list.extend(encounters::populate_list(
             pools.strong,
             pools.strong_count,
@@ -946,21 +955,23 @@ impl RunState4b {
             // —— no-op 装饰/流程类（显式登记——审计可见）——
             "Circlet" | "Spirit Poop" | "Red Circlet" | "Nloth's Gift" | "NeowsBlessing"
             | "Odd Mushroom" | "Nilry's Codex" | "FaceOfCleric" | "GremlinMask"
-            | "SsserpentHead" | "MutagenicStrength" | "GoldenEye" | "Yang"
-            | "WingedGreaves" | "PureWater" | "White Beast Statue" | "Snake Skull"
-            | "Cables" => {} // 无战斗内机制（原版即无钩子或纯文本）
+            | "SsserpentHead" | "MutagenicStrength" | "GoldenEye" | "Yang" | "WingedGreaves"
+            | "PureWater" | "White Beast Statue" | "Snake Skull" | "Cables" => {} // 无战斗内机制（原版即无钩子或纯文本）
             "Dream Catcher" => self.relics_ctx.has_dream_catcher = true,
             "DollysMirror" => {
                 // 复制随机牌组卡（原版选择）
                 if let Some(c) = self.deck.last().cloned() {
-                    self.deck.push(CardInst::new(c.sid, c.upgraded, self.uuid_next));
+                    self.deck
+                        .push(CardInst::new(c.sid, c.upgraded, self.uuid_next));
                     self.uuid_next += 1;
                 }
             }
             "Cauldron" => {
                 // 3 瓶随机药水（原版入奖励——简化入空槽）
-                let pool: Vec<&'static str> =
-                    sts_data::gen::potions::POTIONS.iter().map(|p| p.id).collect();
+                let pool: Vec<&'static str> = sts_data::gen::potions::POTIONS
+                    .iter()
+                    .map(|p| p.id)
+                    .collect();
                 for _ in 0..3 {
                     if let Some(slot) = self.potions.iter_mut().find(|s| s.is_none()) {
                         let i = self.rngs.misc.random_int_inclusive(pool.len() as i32 - 1) as usize;
@@ -1171,8 +1182,10 @@ impl RunState4b {
             "Block Potion" => {
                 if self.phase == RoomPhase::InBattle {
                     let b = self.battle.as_mut().unwrap();
-                    b.mgr
-                        .add_bottom(GameAction::GainBlock { target: TargetRef::Player, amount: 12 });
+                    b.mgr.add_bottom(GameAction::GainBlock {
+                        target: TargetRef::Player,
+                        amount: 12,
+                    });
                 }
             }
             "Energy Potion" => {
@@ -1184,14 +1197,20 @@ impl RunState4b {
             "Swift Potion" => {
                 if self.phase == RoomPhase::InBattle {
                     let b = self.battle.as_mut().unwrap();
-                    b.mgr.add_bottom(GameAction::DrawCard { amount: 3, end_turn_draw: false });
+                    b.mgr.add_bottom(GameAction::DrawCard {
+                        amount: 3,
+                        end_turn_draw: false,
+                    });
                 }
             }
             "SneckoOil" => {
                 // 抽 5 + 手牌费用随机化（0-3，cardRandomRng）
                 if self.phase == RoomPhase::InBattle {
                     let b = self.battle.as_mut().unwrap();
-                    b.mgr.add_bottom(GameAction::DrawCard { amount: 5, end_turn_draw: false });
+                    b.mgr.add_bottom(GameAction::DrawCard {
+                        amount: 5,
+                        end_turn_draw: false,
+                    });
                     let mut r = b.rngs.card_random.copy();
                     for c in b.hand.group.iter_mut() {
                         c.cost_for_turn = r.random_int_inclusive(3);
@@ -1219,7 +1238,10 @@ impl RunState4b {
                 if self.phase == RoomPhase::InBattle {
                     let b = self.battle.as_mut().unwrap();
                     b.mgr.add_bottom(GameAction::MakeTempCardInHand {
-                        sid: sts_data::gen::CARDS.iter().position(|c| c.id == "Shiv").unwrap(),
+                        sid: sts_data::gen::CARDS
+                            .iter()
+                            .position(|c| c.id == "Shiv")
+                            .unwrap(),
                         upgraded: false,
                         count: 3,
                     });
@@ -1241,8 +1263,7 @@ impl RunState4b {
                         .enumerate()
                         .filter(|(_, c)| {
                             c.kind == kind
-                                && (!colorless
-                                    || c.color == sts_data::gen::CardColor::Colorless)
+                                && (!colorless || c.color == sts_data::gen::CardColor::Colorless)
                                 && c.color != sts_data::gen::CardColor::Curse
                         })
                         .map(|(i, _)| i)
@@ -1345,8 +1366,10 @@ impl RunState4b {
             }
             "EntropicBrew" => {
                 // 填满全部药水槽（含本槽——原版先消耗再入瓶，slot 0 也被替换）
-                let pool: Vec<&'static str> =
-                    sts_data::gen::potions::POTIONS.iter().map(|p| p.id).collect();
+                let pool: Vec<&'static str> = sts_data::gen::potions::POTIONS
+                    .iter()
+                    .map(|p| p.id)
+                    .collect();
                 let mut roll = || {
                     let i = self.rngs.misc.random_int_inclusive(pool.len() as i32 - 1) as usize;
                     pool[i]
@@ -1381,7 +1404,10 @@ impl RunState4b {
                 // 弃任意张抽同数（选择屏 TODO）——简化抽 1
                 if self.phase == RoomPhase::InBattle {
                     let b = self.battle.as_mut().unwrap();
-                    b.mgr.add_bottom(GameAction::DrawCard { amount: 1, end_turn_draw: false });
+                    b.mgr.add_bottom(GameAction::DrawCard {
+                        amount: 1,
+                        end_turn_draw: false,
+                    });
                 }
             }
             "SmokeBomb" => {
@@ -1537,10 +1563,8 @@ impl RunState4b {
         }
         // AscendersBane/诅咒不可移除（getPurgeableCards 语义子集）
         let idx = deck_index.min(self.deck.len() - 1);
-        if matches!(
-            self.deck[idx].st().kind,
-            sts_data::gen::CardType::Curse
-        ) && self.deck[idx].st().id == "AscendersBane"
+        if matches!(self.deck[idx].st().kind, sts_data::gen::CardType::Curse)
+            && self.deck[idx].st().id == "AscendersBane"
         {
             return Err("该牌不可移除");
         }
@@ -1650,8 +1674,8 @@ impl RunState4b {
                 self.player_hp = (self.player_hp + h).min(self.player_max_hp);
             }
             crate::event::Effect::HealMaxPct(p) => {
-                self.player_hp = (self.player_hp + self.player_max_hp * p / 100)
-                    .min(self.player_max_hp);
+                self.player_hp =
+                    (self.player_hp + self.player_max_hp * p / 100).min(self.player_max_hp);
             }
             crate::event::Effect::HealFull => self.player_hp = self.player_max_hp,
             crate::event::Effect::GainMaxHp(n) => {
@@ -1685,8 +1709,7 @@ impl RunState4b {
             crate::event::Effect::RemoveAllCurses => {
                 // Fountain of Cleansing：不可移除诅咒豁免（AscendersBane）
                 self.deck.retain(|c| {
-                    c.st().kind != sts_data::gen::CardType::Curse
-                        || c.st().id == "AscendersBane"
+                    c.st().kind != sts_data::gen::CardType::Curse || c.st().id == "AscendersBane"
                 });
             }
             crate::event::Effect::RemoveTypedCards => {
@@ -1707,7 +1730,8 @@ impl RunState4b {
             }
             crate::event::Effect::DuplicateCard => {
                 if let Some(c) = self.deck.last().cloned() {
-                    self.deck.push(CardInst::new(c.sid, c.upgraded, self.uuid_next));
+                    self.deck
+                        .push(CardInst::new(c.sid, c.upgraded, self.uuid_next));
                     self.uuid_next += 1;
                 }
             }
@@ -1773,9 +1797,13 @@ impl RunState4b {
                     .map(|(i, _)| i)
                     .collect();
                 for _ in 0..n {
-                    let i =
-                        self.rngs.card_random.random_int_inclusive(pool.len() as i32 - 1) as usize;
-                    self.deck.push(CardInst::new(pool[i], false, self.uuid_next));
+                    let i = self
+                        .rngs
+                        .card_random
+                        .random_int_inclusive(pool.len() as i32 - 1)
+                        as usize;
+                    self.deck
+                        .push(CardInst::new(pool[i], false, self.uuid_next));
                     self.uuid_next += 1;
                 }
             }
@@ -1825,7 +1853,10 @@ impl RunState4b {
             })
             .map(|(i, _)| i)
             .collect();
-        let i = self.rngs.card_random.random_int_inclusive(pool.len() as i32 - 1) as usize;
+        let i = self
+            .rngs
+            .card_random
+            .random_int_inclusive(pool.len() as i32 - 1) as usize;
         pool[i]
     }
 
@@ -1943,9 +1974,9 @@ impl RunState4b {
                             && st.kind == sts_data::gen::CardType::Skill)
                         || (self.relics_ctx.has_frozen_egg
                             && st.kind == sts_data::gen::CardType::Power))
-                    {
-                        up = true;
-                    }
+                {
+                    up = true;
+                }
                 if self.relics_ctx.ceramic_fish {
                     self.gold += 9;
                 }
@@ -1963,7 +1994,10 @@ impl RunState4b {
 
     /// 当前是否可继续（测试用）。
     pub fn alive(&self) -> bool {
-        matches!(self.phase, RoomPhase::MapChoice | RoomPhase::InBattle | RoomPhase::Rewards | RoomPhase::RoomDone)
+        matches!(
+            self.phase,
+            RoomPhase::MapChoice | RoomPhase::InBattle | RoomPhase::Rewards | RoomPhase::RoomDone
+        )
     }
 }
 
@@ -1977,7 +2011,6 @@ fn symbol_is_elite_or_boss(map: &[Vec<MapRoomNode>], current: &Option<(i32, i32)
         })
         .unwrap_or(false)
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -2000,11 +2033,12 @@ mod tests {
                     let b = run.battle.as_mut().unwrap();
                     if !b.hand.group.is_empty() && b.energy > 0 {
                         // 贪心：有怪就打第一张能打的目标牌
-                        let target = if b.hand.group[0].st().target == sts_data::gen::CardTarget::Enemy {
-                            Some(0)
-                        } else {
-                            None
-                        };
+                        let target =
+                            if b.hand.group[0].st().target == sts_data::gen::CardTarget::Enemy {
+                                Some(0)
+                            } else {
+                                None
+                            };
                         let _ = run.play_card(0, target);
                         run.settle_battle();
                     } else {
@@ -2025,10 +2059,7 @@ mod tests {
             }
         }
         // 死亡或活到深层都算跑通（脚本 AI 不保证通关；关键是无 panic、状态一致）
-        assert!(
-            run.floor > 0,
-            "至少推进了楼层"
-        );
+        assert!(run.floor > 0, "至少推进了楼层");
         assert!(
             !matches!(run.phase, RoomPhase::Dead | RoomPhase::Victory) || !run.alive() || true,
             "状态机合法（新阶段均为合法状态）"

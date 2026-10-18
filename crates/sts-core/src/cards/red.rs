@@ -7,18 +7,54 @@ use super::builder::EffectBuilder;
 use super::{attack_info, damage_matrix};
 use crate::action::{GameAction, RoutineCall, TargetRef};
 use crate::battle::{BattleState, CardInst};
-use sts_data::gen;
 use crate::power::{DamageType, Power, PowerKind};
+use sts_data::gen;
 
 pub const HANDLED: &[&str] = &[
-    "Barricade", "Battle Trance", "Berserk", "Bludgeon", "Carnage", "Combust",
-    "Corruption", "Dark Embrace", "Demon Form", "Disarm", "Double Tap", "Entrench",
-    "Evolve", "Feed", "Feel No Pain", "Fiend Fire", "Flame Barrier", "Ghostly Armor",
-    "Hemokinesis", "Immolate", "Infernal Blade", "Juggernaut", "Limit Break", "Metallicize",
-    "Anger", "Defend_R", "Strike_R", "Exhume", "Impervious", "Offering",
-    "Power Through", "Pummel", "Reaper", "Reckless Charge", "Rupture", "Searing Blow",
-    "Second Wind", "Seeing Red", "Sentinel", "Sever Soul", "Shockwave", "Spot Weakness",
-    "Sword Boomerang", "Uppercut",
+    "Barricade",
+    "Battle Trance",
+    "Berserk",
+    "Bludgeon",
+    "Carnage",
+    "Combust",
+    "Corruption",
+    "Dark Embrace",
+    "Demon Form",
+    "Disarm",
+    "Double Tap",
+    "Entrench",
+    "Evolve",
+    "Feed",
+    "Feel No Pain",
+    "Fiend Fire",
+    "Flame Barrier",
+    "Ghostly Armor",
+    "Hemokinesis",
+    "Immolate",
+    "Infernal Blade",
+    "Juggernaut",
+    "Limit Break",
+    "Metallicize",
+    "Anger",
+    "Defend_R",
+    "Strike_R",
+    "Exhume",
+    "Impervious",
+    "Offering",
+    "Power Through",
+    "Pummel",
+    "Reaper",
+    "Reckless Charge",
+    "Rupture",
+    "Searing Blow",
+    "Second Wind",
+    "Seeing Red",
+    "Sentinel",
+    "Sever Soul",
+    "Shockwave",
+    "Spot Weakness",
+    "Sword Boomerang",
+    "Uppercut",
     "Armaments",
     "Bash",
     "Blood for Blood",
@@ -49,7 +85,12 @@ pub const HANDLED: &[&str] = &[
     "Wild Strike",
 ];
 
-pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: &mut EffectBuilder) {
+pub fn effects(
+    b: &mut BattleState,
+    card: &CardInst,
+    target: Option<usize>,
+    eb: &mut EffectBuilder,
+) {
     match card.st().id {
         // cards/red/Bash.java use()：DamageAction + ApplyPowerAction(Vulnerable, magic)
         "Bash" => {
@@ -464,7 +505,10 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
         }
         // Battle Trance：DrawCard(magic 3) + NoDrawPower（本回合不再抽牌）
         "Battle Trance" => {
-            eb.bot(GameAction::DrawCard { amount: card.eff_magic(), end_turn_draw: false });
+            eb.bot(GameAction::DrawCard {
+                amount: card.eff_magic(),
+                end_turn_draw: false,
+            });
             eb.bot(GameAction::ApplyPower {
                 target: TargetRef::Player,
                 source: Some(TargetRef::Player),
@@ -565,7 +609,10 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
         "Entrench" => {
             let cur = b.player.current_block;
             if cur > 0 {
-                eb.bot(GameAction::GainBlock { target: TargetRef::Player, amount: cur });
+                eb.bot(GameAction::GainBlock {
+                    target: TargetRef::Player,
+                    amount: cur,
+                });
             }
         }
         // Evolve：ApplyPower(Evolve, magic)
@@ -620,7 +667,10 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
         }
         // Flame Barrier：GainBlock + ApplyPower(FlameBarrier, magic)（受击反伤 TODO 3.5）
         "Flame Barrier" => {
-            eb.bot(GameAction::GainBlock { target: TargetRef::Player, amount: card.eff_block() });
+            eb.bot(GameAction::GainBlock {
+                target: TargetRef::Player,
+                amount: card.eff_block(),
+            });
             eb.bot(GameAction::ApplyPower {
                 target: TargetRef::Player,
                 source: Some(TargetRef::Player),
@@ -630,7 +680,10 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
         }
         // Ghostly Armor：GainBlock 11（虚无：静态标志）
         "Fire Breathing" => {
-            eb.bot(GameAction::GainBlock { target: TargetRef::Player, amount: card.eff_block() });
+            eb.bot(GameAction::GainBlock {
+                target: TargetRef::Player,
+                amount: card.eff_block(),
+            });
         }
         // Hemokinesis：LoseHP(magic 2) + Damage 15
         "Hemokinesis" => {
@@ -649,7 +702,10 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
         // Immolate：DamageAll + 洗入 Burn 到弃牌堆
         "Immolate" => {
             let matrix = damage_matrix(b, card.eff_damage(), DamageType::Normal);
-            eb.bot(GameAction::DamageAll { matrix, ty: DamageType::Normal });
+            eb.bot(GameAction::DamageAll {
+                matrix,
+                ty: DamageType::Normal,
+            });
             eb.bot(GameAction::MakeTempCardInDiscard {
                 sid: super::sid_of("Burn"),
                 upgraded: false,
@@ -704,7 +760,10 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
         }
         // Defend_R：GainBlock（基础卡显式化；isDebug 分支为调试代码不移植）
         "Defend_R" => {
-            eb.bot(GameAction::GainBlock { target: TargetRef::Player, amount: card.eff_block() });
+            eb.bot(GameAction::GainBlock {
+                target: TargetRef::Player,
+                amount: card.eff_block(),
+            });
         }
         // Strike_R：Damage（基础卡显式化）
         "Strike_R" => {
@@ -719,29 +778,47 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
         "Exhume" => {
             eb.bot(GameAction::CardRoutine {
                 call: RoutineCall {
-                    id: "ExhumeAction", target: None, amount: 0, amount2: 0,
-                    card_uuid: card.uuid, sid: card.sid, upgraded: card.upgraded,
+                    id: "ExhumeAction",
+                    target: None,
+                    amount: 0,
+                    amount2: 0,
+                    card_uuid: card.uuid,
+                    sid: card.sid,
+                    upgraded: card.upgraded,
                 },
             });
         }
         // Impervious：GainBlock 30（消耗：静态标志）
         "Impervious" => {
-            eb.bot(GameAction::GainBlock { target: TargetRef::Player, amount: card.eff_block() });
+            eb.bot(GameAction::GainBlock {
+                target: TargetRef::Player,
+                amount: card.eff_block(),
+            });
         }
         // Offering：LoseHP 6 + GainEnergy 2 + DrawCard(magic 3/5)（消耗：静态）
         "Offering" => {
             eb.bot(GameAction::LoseHp {
-                target: TargetRef::Player, source: Some(TargetRef::Player), amount: 6,
+                target: TargetRef::Player,
+                source: Some(TargetRef::Player),
+                amount: 6,
             });
             eb.bot(GameAction::GainEnergy { amount: 2 });
-            eb.bot(GameAction::DrawCard { amount: card.eff_magic(), end_turn_draw: false });
+            eb.bot(GameAction::DrawCard {
+                amount: card.eff_magic(),
+                end_turn_draw: false,
+            });
         }
         // Power Through：MakeTempCardInHand(Wound ×2) + GainBlock 15
         "Power Through" => {
             eb.bot(GameAction::MakeTempCardInHand {
-                sid: super::sid_of("Wound"), upgraded: false, count: 2,
+                sid: super::sid_of("Wound"),
+                upgraded: false,
+                count: 2,
             });
-            eb.bot(GameAction::GainBlock { target: TargetRef::Player, amount: card.eff_block() });
+            eb.bot(GameAction::GainBlock {
+                target: TargetRef::Player,
+                amount: card.eff_block(),
+            });
         }
         // Pummel：magic 次伤害
         "Pummel" => {
@@ -758,8 +835,13 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
         "Reaper" => {
             eb.bot(GameAction::CardRoutine {
                 call: RoutineCall {
-                    id: "VampireDamageAllEnemiesAction", target: None, amount: 0, amount2: 0,
-                    card_uuid: card.uuid, sid: card.sid, upgraded: card.upgraded,
+                    id: "VampireDamageAllEnemiesAction",
+                    target: None,
+                    amount: 0,
+                    amount2: 0,
+                    card_uuid: card.uuid,
+                    sid: card.sid,
+                    upgraded: card.upgraded,
                 },
             });
         }
@@ -771,7 +853,10 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
                     info: attack_info(b, mi, card.eff_damage(), DamageType::Normal),
                 });
                 eb.bot(GameAction::MakeTempCardInDrawPile {
-                    sid: super::sid_of("Dazed"), upgraded: false, count: 1, random_spot: true,
+                    sid: super::sid_of("Dazed"),
+                    upgraded: false,
+                    count: 1,
+                    random_spot: true,
                 });
             }
         }
@@ -788,8 +873,13 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
         "Second Wind" => {
             eb.bot(GameAction::CardRoutine {
                 call: RoutineCall {
-                    id: "SecondWindAction", target: None, amount: card.eff_block(), amount2: 0,
-                    card_uuid: card.uuid, sid: card.sid, upgraded: card.upgraded,
+                    id: "SecondWindAction",
+                    target: None,
+                    amount: card.eff_block(),
+                    amount2: 0,
+                    card_uuid: card.uuid,
+                    sid: card.sid,
+                    upgraded: card.upgraded,
                 },
             });
         }
@@ -799,14 +889,22 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
         }
         // Sentinel：GainBlock；自身被消耗 → +2 能量（consume 消耗分支已接）
         "Sentinel" => {
-            eb.bot(GameAction::GainBlock { target: TargetRef::Player, amount: card.eff_block() });
+            eb.bot(GameAction::GainBlock {
+                target: TargetRef::Player,
+                amount: card.eff_block(),
+            });
         }
         // Sever Soul：ExhaustAllNonAttack + Damage
         "Sever Soul" => {
             eb.bot(GameAction::CardRoutine {
                 call: RoutineCall {
-                    id: "ExhaustAllNonAttackAction", target: None, amount: 0, amount2: 0,
-                    card_uuid: card.uuid, sid: card.sid, upgraded: card.upgraded,
+                    id: "ExhaustAllNonAttackAction",
+                    target: None,
+                    amount: 0,
+                    amount2: 0,
+                    card_uuid: card.uuid,
+                    sid: card.sid,
+                    upgraded: card.upgraded,
                 },
             });
             if let Some(mi) = target {
@@ -853,9 +951,13 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
             for _ in 0..card.eff_magic() {
                 eb.bot(GameAction::CardRoutine {
                     call: RoutineCall {
-                        id: "AttackDamageRandomEnemyAction", target: None,
-                        amount: 3, amount2: 0,
-                        card_uuid: card.uuid, sid: card.sid, upgraded: card.upgraded,
+                        id: "AttackDamageRandomEnemyAction",
+                        target: None,
+                        amount: 3,
+                        amount2: 0,
+                        card_uuid: card.uuid,
+                        sid: card.sid,
+                        upgraded: card.upgraded,
                     },
                 });
             }
@@ -918,13 +1020,16 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
         "Dual Wield" => {
             eb.bot(GameAction::CardRoutine {
                 call: RoutineCall {
-                    id: "DualWieldAction", target: None,
-                    amount: card.eff_magic(), amount2: 0,
-                    card_uuid: card.uuid, sid: card.sid, upgraded: card.upgraded,
+                    id: "DualWieldAction",
+                    target: None,
+                    amount: card.eff_magic(),
+                    amount2: 0,
+                    card_uuid: card.uuid,
+                    sid: card.sid,
+                    upgraded: card.upgraded,
                 },
             });
         }
         _ => {}
     }
 }
-

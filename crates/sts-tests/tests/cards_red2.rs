@@ -79,7 +79,10 @@ fn barricade_prevents_block_loss() {
         .push(sts_core::power::Power::new(PowerKind::Barricade, -1));
     b2.end_turn();
     b2.run_until_idle();
-    assert_eq!(b2.player.current_block, 5, "屏障：15 - 10 攻，新回合不掉格挡");
+    assert_eq!(
+        b2.player.current_block, 5,
+        "屏障：15 - 10 攻，新回合不掉格挡"
+    );
 }
 
 #[test]
@@ -117,21 +120,32 @@ fn corruption_makes_skills_free_and_exhaust() {
     // 打出技能：不扣能 + 消耗
     let hand0 = b.hand.group.len();
     play(&mut b, "Defend_R", None);
-    assert_eq!(b.energy, 9, "Corruption 技能免能量（play 助手预置 9，未扣）");
+    assert_eq!(
+        b.energy, 9,
+        "Corruption 技能免能量（play 助手预置 9，未扣）"
+    );
     assert_eq!(b.hand.group.len(), hand0 - 1);
     assert!(b.exhaust_pile.group.iter().any(|c| c.st().id == "Defend_R"));
 }
 
 #[test]
 fn fiend_fire_exhausts_hand_and_hits_per_card() {
-    let mut b = fixture2(&[("Fiend Fire", false), ("Strike_R", false), ("Defend_R", false)]);
+    let mut b = fixture2(&[
+        ("Fiend Fire", false),
+        ("Strike_R", false),
+        ("Defend_R", false),
+    ]);
     let hp0 = b.monsters[0].creature.current_health;
     play(&mut b, "Fiend Fire", Some(0));
     // 打出时手牌 3 张（FF 本体离手后剩 2？——FiendFireAction 在动作执行时计手牌数：
     // FF 离手在 useCard 步骤 7 → 动作执行时手牌 = 2（Strike+Defend）→ 2×7=14
     assert_eq!(b.monsters[0].creature.current_health, hp0 - 14);
     assert_eq!(b.hand.group.len(), 0);
-    assert_eq!(b.exhaust_pile.group.len(), 3, "手牌 2 张 + FF 自身（静态消耗标志）");
+    assert_eq!(
+        b.exhaust_pile.group.len(),
+        3,
+        "手牌 2 张 + FF 自身（静态消耗标志）"
+    );
 }
 
 #[test]
@@ -155,7 +169,11 @@ fn juggernaut_hits_on_block() {
     play(&mut b, "Juggernaut", None);
     let hp0 = b.monsters[0].creature.current_health;
     play(&mut b, "Defend_R", None);
-    assert_eq!(b.monsters[0].creature.current_health, hp0 - 5, "获 5 格挡 → 5 THORNS 伤");
+    assert_eq!(
+        b.monsters[0].creature.current_health,
+        hp0 - 5,
+        "获 5 格挡 → 5 THORNS 伤"
+    );
 }
 
 #[test]
@@ -180,7 +198,10 @@ fn evolve_draws_on_status_draw() {
     b.uuid_next += 1;
     b.draw_pile.add_top(dazed); // 顶 = 先抽到 Dazed
     b.draw_pile.add_top(defend);
-    b.mgr.add_bottom(sts_core::action::GameAction::DrawCard { amount: 2, end_turn_draw: false });
+    b.mgr.add_bottom(sts_core::action::GameAction::DrawCard {
+        amount: 2,
+        end_turn_draw: false,
+    });
     b.run_until_idle();
     // 抽 2：Defend（正常）→ Dazed（状态 → Evolve 抽 1）——但抽完已空，Evolve 不再产出
     assert!(b.hand.group.iter().any(|c| c.st().id == "Dazed"));

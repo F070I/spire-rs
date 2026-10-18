@@ -109,7 +109,11 @@ fn flex_strength_then_end_of_turn_loss() {
     b.end_turn();
     b.run_until_idle();
     // 回合末：LoseStrength（原版 ID "Flex"）收回力量；Strength 归 0 → 移除
-    assert!(b.player.powers.iter().all(|p| p.kind != PowerKind::Strength));
+    assert!(b
+        .player
+        .powers
+        .iter()
+        .all(|p| p.kind != PowerKind::Strength));
 }
 
 #[test]
@@ -157,7 +161,11 @@ fn whirlwind_x_cost_multi_hits() {
     let hp0 = b.monsters[0].creature.current_health;
     play(&mut b, "Whirlwind", Some(0));
     assert_eq!(b.energy, 0);
-    assert_eq!(b.monsters[0].creature.current_health, hp0 - 15, "3 点能量 × 5 伤");
+    assert_eq!(
+        b.monsters[0].creature.current_health,
+        hp0 - 15,
+        "3 点能量 × 5 伤"
+    );
 }
 
 #[test]
@@ -182,18 +190,36 @@ fn true_grit_block_and_exhaust() {
     let hand0 = b.hand.group.len();
     play(&mut b, "True Grit", None);
     assert_eq!(b.player.current_block, 7, "源码 baseBlock=7");
-    assert_eq!(b.hand.group.len(), hand0 - 2, "打出的卡 + 随机消耗占位（取顶）");
+    assert_eq!(
+        b.hand.group.len(),
+        hand0 - 2,
+        "打出的卡 + 随机消耗占位（取顶）"
+    );
     assert_eq!(b.exhaust_pile.group.len(), 1);
 }
 
 #[test]
 fn armaments_upgraded_upgrades_all_hand() {
-    let mut b = fixture2(&[("Armaments", true), ("Strike_R", false), ("Defend_R", false)]);
+    let mut b = fixture2(&[
+        ("Armaments", true),
+        ("Strike_R", false),
+        ("Defend_R", false),
+    ]);
     play(&mut b, "Armaments", None);
     assert_eq!(b.player.current_block, 5);
     // Armaments+ 不升级自己（POWER? Armaments 是 SKILL 且已升级不可再升）——其余手牌全升级
-    let strike = b.hand.group.iter().find(|c| c.st().id == "Strike_R").unwrap();
-    let defend = b.hand.group.iter().find(|c| c.st().id == "Defend_R").unwrap();
+    let strike = b
+        .hand
+        .group
+        .iter()
+        .find(|c| c.st().id == "Strike_R")
+        .unwrap();
+    let defend = b
+        .hand
+        .group
+        .iter()
+        .find(|c| c.st().id == "Defend_R")
+        .unwrap();
     assert!(strike.upgraded && strike.eff_damage() == 9);
     assert!(defend.upgraded && defend.eff_block() == 8);
 }
@@ -201,7 +227,8 @@ fn armaments_upgraded_upgrades_all_hand() {
 #[test]
 fn intimidate_weak_all_and_cleave_damage_all() {
     let mut b = fixture(&["Intimidate", "Cleave", "Strike_R"]);
-    b.monsters.push(Monster::scripted("Cultist", 50, vec![None]));
+    b.monsters
+        .push(Monster::scripted("Cultist", 50, vec![None]));
     play(&mut b, "Intimidate", None);
     for m in &b.monsters {
         assert_eq!(
@@ -213,7 +240,11 @@ fn intimidate_weak_all_and_cleave_damage_all() {
             Some(1)
         );
     }
-    let hp0: Vec<i32> = b.monsters.iter().map(|m| m.creature.current_health).collect();
+    let hp0: Vec<i32> = b
+        .monsters
+        .iter()
+        .map(|m| m.creature.current_health)
+        .collect();
     play(&mut b, "Cleave", None);
     for (i, m) in b.monsters.iter().enumerate() {
         // 怪身上的 Weak 只减它自己的攻击（give 段）；被打全额
@@ -225,7 +256,15 @@ fn intimidate_weak_all_and_cleave_damage_all() {
 #[test]
 fn blood_for_blood_cost_reduces_on_exhaust() {
     let mut b = fixture(&["Blood for Blood", "Strike_R", "True Grit"]); // 占位消耗取手牌顶=Strike_R
-    assert_eq!(b.hand.group.iter().find(|c| c.st().id == "Blood for Blood").unwrap().cost_for_turn, 4);
+    assert_eq!(
+        b.hand
+            .group
+            .iter()
+            .find(|c| c.st().id == "Blood for Blood")
+            .unwrap()
+            .cost_for_turn,
+        4
+    );
     // True Grit 随机消耗触发 B4B 降费
     play(&mut b, "True Grit", None);
     let b4b = b

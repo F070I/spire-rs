@@ -1,4 +1,4 @@
-use sts_data::rng::{RandomXS128, JdkRandom, shuffle_jdk};
+use sts_data::rng::{shuffle_jdk, JdkRandom, RandomXS128};
 fn main() {
     let mut r = RandomXS128::new(1);
     let out: Vec<i64> = (0..16).map(|_| r.next_long()).collect();

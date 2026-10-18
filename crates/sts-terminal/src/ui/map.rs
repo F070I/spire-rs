@@ -135,8 +135,7 @@ pub fn render_map(
             let is_current = current == Some((node.x, node.y));
             let disp = if is_current { '@' } else { sym };
             grid.put(c, r, disp);
-            if node.taken
-                && c > 0 {
+            if node.taken && c > 0 {
                 grid.put(c - 1, r, '·'); // 已访问标记（左缘）
             }
         }
@@ -148,10 +147,10 @@ pub fn render_map(
         let map_y = MAP_H - 1 - r / 2;
         let mut line = String::new();
         // 行首标注：当前行 / 可达节点所在行
-        let has_current = current.map(|(_, y)| row_of(y as usize) == r).unwrap_or(false);
-        let has_reachable = reachable
-            .iter()
-            .any(|(_, y)| row_of(*y as usize) == r);
+        let has_current = current
+            .map(|(_, y)| row_of(y as usize) == r)
+            .unwrap_or(false);
+        let has_reachable = reachable.iter().any(|(_, y)| row_of(*y as usize) == r);
         if has_current {
             line.push_str(&theme.selected().paint("▸"));
         } else if has_reachable {
@@ -163,7 +162,9 @@ pub fn render_map(
         let is_node_row = r % 2 == 0;
         if is_node_row {
             let raw: String = cells.iter().collect();
-            line.push_str(&colorize_node_row(&raw, map, map_y, &current, reachable, theme));
+            line.push_str(&colorize_node_row(
+                &raw, map, map_y, &current, reachable, theme,
+            ));
         } else {
             line.push_str(&theme.edge_future().paint(&cells.iter().collect::<String>()));
         }

@@ -8,21 +8,21 @@
 //! 模块按 docs/02-模块映射.md 的批次逐步落地；当前为阶段 0 骨架，
 //! 各模块以 `// TODO(批次N.N)` 标注落地点。
 
-pub mod state;
-pub mod flow;
-pub mod power;
-pub mod stance;
-pub mod damage;
-pub mod creature;
 pub mod action;
-pub mod orb;
-pub mod cards;
-pub mod event;
-pub mod flow4b;
-pub mod metrics;
-pub mod save;
-pub mod map;
-pub mod monsters;
 pub mod battle;
+pub mod cards;
+pub mod creature;
+pub mod damage;
+pub mod event;
+pub mod flow;
+pub mod flow4b;
+pub mod map;
+pub mod metrics;
+pub mod monsters;
+pub mod orb;
+pub mod power;
+pub mod save;
+pub mod stance;
+pub mod state;
 
 pub use state::Game;

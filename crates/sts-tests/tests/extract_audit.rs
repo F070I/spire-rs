@@ -32,7 +32,10 @@ fn card_ids_unique_and_spotchecked() {
     }
     // 抽查（出处：cards/ 源码 super(...) 调用）
     let strike = card("Strike_R").expect("Strike_R");
-    assert_eq!((strike.kind, strike.color, strike.rarity), (CardType::Attack, CardColor::Red, CardRarity::Basic));
+    assert_eq!(
+        (strike.kind, strike.color, strike.rarity),
+        (CardType::Attack, CardColor::Red, CardRarity::Basic)
+    );
     assert_eq!(strike.cost, 1);
     assert_eq!(strike.base_damage, 6);
     assert_eq!(strike.tags & TAG_STRIKE, TAG_STRIKE);
@@ -54,16 +57,25 @@ fn card_ids_unique_and_spotchecked() {
 #[test]
 fn localization_coverage() {
     // eng 文本覆盖：423 键；375 张卡中除 Impulse（反编译资产缺口，docs/modules/extract.md 已记录）外全部有名
-    let missing: Vec<&str> = CARDS.iter().filter(|c| c.name_en.is_none()).map(|c| c.id).collect();
+    let missing: Vec<&str> = CARDS
+        .iter()
+        .filter(|c| c.name_en.is_none())
+        .map(|c| c.id)
+        .collect();
     assert_eq!(missing, vec!["Impulse"]);
     // 中文（zhs）覆盖同样完整（Impulse 同缺）
-    assert!(CARDS.iter().all(|c| c.name_zhs.is_some() || c.id == "Impulse"));
+    assert!(CARDS
+        .iter()
+        .all(|c| c.name_zhs.is_some() || c.id == "Impulse"));
 
     // 遗物/药水/怪物/能力：抽查知名 ID 双语文本
     let vajra = RELICS.iter().find(|r| r.id == "Vajra").expect("Vajra");
     assert_eq!(vajra.name_en, Some("Vajra"));
     assert_eq!(vajra.name_zhs, Some("金刚杵"));
-    let fire = POTIONS.iter().find(|p| p.id == "Fire Potion").expect("Fire Potion");
+    let fire = POTIONS
+        .iter()
+        .find(|p| p.id == "Fire Potion")
+        .expect("Fire Potion");
     assert_eq!(fire.rarity, PotionRarity::Common);
 }
 

@@ -1,28 +1,61 @@
 //! 诅咒/状态/临时/选项卡效果（批次 3.6 收尾）。
 //! 诅咒/状态大多不可打出（use 空），触发语义在 3.5 钩子清账（Power/future 占位）。
 
-use super::builder::EffectBuilder;
 use super::attack_info;
+use super::builder::EffectBuilder;
 use crate::action::{GameAction, TargetRef};
 use crate::battle::{BattleState, CardInst};
 use crate::power::{DamageType, Power};
 
 pub const HANDLED_CURSES: &[&str] = &[
-    "AscendersBane", "Clumsy", "Curse of the Bell", "Decay", "Doubt",
-    "Injury", "Necronomicurse", "Normality", "Pain", "Regret",
-    "Shame", "Slimed", "Void", "Wound", "Parasite", "Pride", "Writhe", "CurseOfTheBell",
+    "AscendersBane",
+    "Clumsy",
+    "Curse of the Bell",
+    "Decay",
+    "Doubt",
+    "Injury",
+    "Necronomicurse",
+    "Normality",
+    "Pain",
+    "Regret",
+    "Shame",
+    "Slimed",
+    "Void",
+    "Wound",
+    "Parasite",
+    "Pride",
+    "Writhe",
+    "CurseOfTheBell",
 ];
 
 pub const HANDLED_STATUS: &[&str] = &["Burn", "Dazed", "Slimed", "Void", "Wound"];
 
-pub const HANDLED_OPTIONS: &[&str] = &["BecomeAlmighty", "Calm", "Wrath", "FameAndFortune", "LiveForever"];
-
-pub const HANDLED_TEMP: &[&str] = &[
-    "Shiv", "Insight", "Miracle", "Smite", "Safety", "Expunger",
-    "Beta", "Omega", "Through Violence",
+pub const HANDLED_OPTIONS: &[&str] = &[
+    "BecomeAlmighty",
+    "Calm",
+    "Wrath",
+    "FameAndFortune",
+    "LiveForever",
 ];
 
-pub fn effects_curses(_b: &mut BattleState, card: &CardInst, _target: Option<usize>, _eb: &mut EffectBuilder) {
+pub const HANDLED_TEMP: &[&str] = &[
+    "Shiv",
+    "Insight",
+    "Miracle",
+    "Smite",
+    "Safety",
+    "Expunger",
+    "Beta",
+    "Omega",
+    "Through Violence",
+];
+
+pub fn effects_curses(
+    _b: &mut BattleState,
+    card: &CardInst,
+    _target: Option<usize>,
+    _eb: &mut EffectBuilder,
+) {
     match card.st().id {
         // Slimed：打出效果空（消耗一层软泥由 UseCardAction 去向处理）
         "Slimed" => {}
@@ -61,14 +94,24 @@ pub fn effects_curses(_b: &mut BattleState, card: &CardInst, _target: Option<usi
     }
 }
 
-pub fn effects_status(_b: &mut BattleState, card: &CardInst, _target: Option<usize>, _eb: &mut EffectBuilder) {
+pub fn effects_status(
+    _b: &mut BattleState,
+    card: &CardInst,
+    _target: Option<usize>,
+    _eb: &mut EffectBuilder,
+) {
     match card.st().id {
         "Burn" | "Dazed" | "Slimed" | "Void" | "Wound" => {}
         _ => {}
     }
 }
 
-pub fn effects_temp(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: &mut EffectBuilder) {
+pub fn effects_temp(
+    b: &mut BattleState,
+    card: &CardInst,
+    target: Option<usize>,
+    eb: &mut EffectBuilder,
+) {
     match card.st().id {
         // Shiv：Damage 4（0 费攻击）
         "Shiv" => {
@@ -139,6 +182,11 @@ pub fn effects_temp(b: &mut BattleState, card: &CardInst, target: Option<usize>,
     }
 }
 
-pub fn effects_option(_b: &mut BattleState, _card: &CardInst, _target: Option<usize>, _eb: &mut EffectBuilder) {
+pub fn effects_option(
+    _b: &mut BattleState,
+    _card: &CardInst,
+    _target: Option<usize>,
+    _eb: &mut EffectBuilder,
+) {
     // 选项卡（cost=-2 不可打出；onChoseThisOption 钩子 TODO 6 选项系统）——效果全部空
 }

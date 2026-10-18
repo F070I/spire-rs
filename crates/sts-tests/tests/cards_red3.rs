@@ -58,12 +58,19 @@ fn rng_streams_exist_and_diverge() {
     let a = b.rngs.shuffle.random_long();
     b.set_rng_seed(7, 3);
     let c = b.rngs.card_random.random_long();
-    assert_eq!(a, c, "同 seed 同位置：不同流首次取数一致（异流分叉由消费模式决定）");
+    assert_eq!(
+        a, c,
+        "同 seed 同位置：不同流首次取数一致（异流分叉由消费模式决定）"
+    );
 }
 
 #[test]
 fn second_wind_exhausts_non_attacks_only() {
-    let mut b = fixture2(&[("Second Wind", false), ("Strike_R", false), ("Defend_R", false)]);
+    let mut b = fixture2(&[
+        ("Second Wind", false),
+        ("Strike_R", false),
+        ("Defend_R", false),
+    ]);
     let _n_non_attack = b
         .hand
         .group
@@ -71,19 +78,35 @@ fn second_wind_exhausts_non_attacks_only() {
         .filter(|c| c.st().kind != gen::CardType::Attack)
         .count() as i32;
     play(&mut b, "Second Wind", Some(0));
-    assert_eq!(b.exhaust_pile.group.len(), 1, "SW 无自身消耗（源码核对）：仅 Defend 被消耗");
+    assert_eq!(
+        b.exhaust_pile.group.len(),
+        1,
+        "SW 无自身消耗（源码核对）：仅 Defend 被消耗"
+    );
     // 动作执行时 SW 已离手：非攻击数 = 1（Defend）→ 格挡 5
     assert_eq!(b.player.current_block, 5);
 }
 
 #[test]
 fn sever_soul_exhausts_non_attacks_then_hits() {
-    let mut b = fixture2(&[("Sever Soul", false), ("Strike_R", false), ("Defend_R", false)]);
+    let mut b = fixture2(&[
+        ("Sever Soul", false),
+        ("Strike_R", false),
+        ("Defend_R", false),
+    ]);
     let hp0 = b.monsters[0].creature.current_health;
     play(&mut b, "Sever Soul", Some(0));
     assert_eq!(b.monsters[0].creature.current_health, hp0 - 16);
-    assert_eq!(b.exhaust_pile.group.len(), 1, "仅 Defend（Sever Soul 无消耗标志——源码核对）");
-    assert!(b.discard_pile.group.iter().any(|c| c.st().id == "Sever Soul"));
+    assert_eq!(
+        b.exhaust_pile.group.len(),
+        1,
+        "仅 Defend（Sever Soul 无消耗标志——源码核对）"
+    );
+    assert!(b
+        .discard_pile
+        .group
+        .iter()
+        .any(|c| c.st().id == "Sever Soul"));
 }
 
 #[test]
@@ -92,11 +115,17 @@ fn shockwave_weak_and_frail_all() {
     play(&mut b, "Shockwave", None);
     let m = &b.monsters[0].creature;
     assert_eq!(
-        m.powers.iter().find(|p| p.kind == PowerKind::Weak).map(|p| p.amount),
+        m.powers
+            .iter()
+            .find(|p| p.kind == PowerKind::Weak)
+            .map(|p| p.amount),
         Some(3)
     );
     assert_eq!(
-        m.powers.iter().find(|p| p.kind == PowerKind::Frail).map(|p| p.amount),
+        m.powers
+            .iter()
+            .find(|p| p.kind == PowerKind::Frail)
+            .map(|p| p.amount),
         Some(3)
     );
 }
@@ -118,7 +147,11 @@ fn spot_weakness_only_vs_attacking_intent() {
     let mut b2 = fixture2(&[("Spot Weakness", false)]);
     b2.monsters[0].script = vec![None]; // 防御意图
     play(&mut b2, "Spot Weakness", Some(0));
-    assert!(b2.player.powers.iter().all(|p| p.kind != PowerKind::Strength));
+    assert!(b2
+        .player
+        .powers
+        .iter()
+        .all(|p| p.kind != PowerKind::Strength));
 }
 
 #[test]
@@ -137,7 +170,11 @@ fn reckless_charge_shuffles_dazed() {
     let mut b = fixture2(&[("Reckless Charge", false)]);
     let hp0 = b.monsters[0].creature.current_health;
     play(&mut b, "Reckless Charge", Some(0));
-    assert_eq!(b.monsters[0].creature.current_health, hp0 - 7, "源码 baseDamage=7");
+    assert_eq!(
+        b.monsters[0].creature.current_health,
+        hp0 - 7,
+        "源码 baseDamage=7"
+    );
     // Dazed 进抽牌堆（随机位——此处 1 张堆）
     assert!(b.draw_pile.group.iter().any(|c| c.st().id == "Dazed"));
 }
@@ -147,7 +184,11 @@ fn sword_boomerang_random_hits() {
     let mut b = fixture2(&[("Sword Boomerang", false)]);
     let hp0 = b.monsters[0].creature.current_health;
     play(&mut b, "Sword Boomerang", Some(0));
-    assert_eq!(b.monsters[0].creature.current_health, hp0 - 9, "3 次 × 3 伤（单怪全中）");
+    assert_eq!(
+        b.monsters[0].creature.current_health,
+        hp0 - 9,
+        "3 次 × 3 伤（单怪全中）"
+    );
 }
 
 #[test]
@@ -155,8 +196,14 @@ fn uppercut_weak_vulnerable() {
     let mut b = fixture2(&[("Uppercut", false)]);
     play(&mut b, "Uppercut", Some(0));
     let m = &b.monsters[0].creature;
-    assert!(m.powers.iter().any(|p| p.kind == PowerKind::Weak && p.amount == 1));
-    assert!(m.powers.iter().any(|p| p.kind == PowerKind::Vulnerable && p.amount == 1));
+    assert!(m
+        .powers
+        .iter()
+        .any(|p| p.kind == PowerKind::Weak && p.amount == 1));
+    assert!(m
+        .powers
+        .iter()
+        .any(|p| p.kind == PowerKind::Vulnerable && p.amount == 1));
 }
 
 #[test]

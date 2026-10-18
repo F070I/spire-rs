@@ -24,27 +24,78 @@ pub struct ActPools {
 
 pub static EXORDIUM: ActPools = ActPools {
     weak: &[
-        Weights { key: "Cultist", weight: 2.0 },
-        Weights { key: "JawWorm", weight: 2.0 },
-        Weights { key: "2 Louse", weight: 2.0 },
-        Weights { key: "Small Slimes", weight: 2.0 },
+        Weights {
+            key: "Cultist",
+            weight: 2.0,
+        },
+        Weights {
+            key: "JawWorm",
+            weight: 2.0,
+        },
+        Weights {
+            key: "2 Louse",
+            weight: 2.0,
+        },
+        Weights {
+            key: "Small Slimes",
+            weight: 2.0,
+        },
     ],
     strong: &[
-        Weights { key: "Blue Slaver", weight: 2.0 },
-        Weights { key: "Gremlin Gang", weight: 1.0 },
-        Weights { key: "Looter", weight: 2.0 },
-        Weights { key: "Large Slime", weight: 2.0 },
-        Weights { key: "Lots of Slimes", weight: 1.0 },
-        Weights { key: "Exordium Thugs", weight: 1.5 },
-        Weights { key: "Exordium Wildlife", weight: 1.5 },
-        Weights { key: "Red Slaver", weight: 1.0 },
-        Weights { key: "3 Louse", weight: 2.0 },
-        Weights { key: "2 Fungi", weight: 2.0 },
+        Weights {
+            key: "Blue Slaver",
+            weight: 2.0,
+        },
+        Weights {
+            key: "Gremlin Gang",
+            weight: 1.0,
+        },
+        Weights {
+            key: "Looter",
+            weight: 2.0,
+        },
+        Weights {
+            key: "Large Slime",
+            weight: 2.0,
+        },
+        Weights {
+            key: "Lots of Slimes",
+            weight: 1.0,
+        },
+        Weights {
+            key: "Exordium Thugs",
+            weight: 1.5,
+        },
+        Weights {
+            key: "Exordium Wildlife",
+            weight: 1.5,
+        },
+        Weights {
+            key: "Red Slaver",
+            weight: 1.0,
+        },
+        Weights {
+            key: "3 Louse",
+            weight: 2.0,
+        },
+        Weights {
+            key: "2 Fungi",
+            weight: 2.0,
+        },
     ],
     elites: &[
-        Weights { key: "Gremlin Nob", weight: 1.0 },
-        Weights { key: "Lagavulin", weight: 1.0 },
-        Weights { key: "3 Sentries", weight: 1.0 },
+        Weights {
+            key: "Gremlin Nob",
+            weight: 1.0,
+        },
+        Weights {
+            key: "Lagavulin",
+            weight: 1.0,
+        },
+        Weights {
+            key: "3 Sentries",
+            weight: 1.0,
+        },
     ],
     bosses: &["The Guardian", "Hexaghost", "Slime Boss"],
     weak_count: 3,
@@ -54,26 +105,74 @@ pub static EXORDIUM: ActPools = ActPools {
 
 pub static THE_CITY: ActPools = ActPools {
     weak: &[
-        Weights { key: "Spheric Guardian", weight: 2.0 },
-        Weights { key: "Chosen", weight: 2.0 },
-        Weights { key: "Shell Parasite", weight: 2.0 },
-        Weights { key: "3 Byrds", weight: 2.0 },
-        Weights { key: "2 Thieves", weight: 2.0 },
+        Weights {
+            key: "Spheric Guardian",
+            weight: 2.0,
+        },
+        Weights {
+            key: "Chosen",
+            weight: 2.0,
+        },
+        Weights {
+            key: "Shell Parasite",
+            weight: 2.0,
+        },
+        Weights {
+            key: "3 Byrds",
+            weight: 2.0,
+        },
+        Weights {
+            key: "2 Thieves",
+            weight: 2.0,
+        },
     ],
     strong: &[
-        Weights { key: "Chosen & Byrds", weight: 2.0 },
-        Weights { key: "Sentry & Sphere", weight: 2.0 },
-        Weights { key: "Snake Plant", weight: 6.0 },
-        Weights { key: "Snecko", weight: 4.0 },
-        Weights { key: "Centurion & Healer", weight: 6.0 },
-        Weights { key: "Cultist & Chosen", weight: 3.0 },
-        Weights { key: "3 Cultists", weight: 3.0 },
-        Weights { key: "Shelled Parasite & Fungi", weight: 3.0 },
+        Weights {
+            key: "Chosen & Byrds",
+            weight: 2.0,
+        },
+        Weights {
+            key: "Sentry & Sphere",
+            weight: 2.0,
+        },
+        Weights {
+            key: "Snake Plant",
+            weight: 6.0,
+        },
+        Weights {
+            key: "Snecko",
+            weight: 4.0,
+        },
+        Weights {
+            key: "Centurion & Healer",
+            weight: 6.0,
+        },
+        Weights {
+            key: "Cultist & Chosen",
+            weight: 3.0,
+        },
+        Weights {
+            key: "3 Cultists",
+            weight: 3.0,
+        },
+        Weights {
+            key: "Shelled Parasite & Fungi",
+            weight: 3.0,
+        },
     ],
     elites: &[
-        Weights { key: "Gremlin Leader", weight: 1.0 },
-        Weights { key: "Slavers", weight: 1.0 },
-        Weights { key: "Book of Stabbing", weight: 1.0 },
+        Weights {
+            key: "Gremlin Leader",
+            weight: 1.0,
+        },
+        Weights {
+            key: "Slavers",
+            weight: 1.0,
+        },
+        Weights {
+            key: "Book of Stabbing",
+            weight: 1.0,
+        },
     ],
     bosses: &["Bronze Automaton", "The Collector", "Champ"],
     weak_count: 2,
@@ -83,24 +182,66 @@ pub static THE_CITY: ActPools = ActPools {
 
 pub static THE_BEYOND: ActPools = ActPools {
     weak: &[
-        Weights { key: "3 Darklings", weight: 2.0 },
-        Weights { key: "Orb Walker", weight: 2.0 },
-        Weights { key: "3 Shapes", weight: 2.0 },
+        Weights {
+            key: "3 Darklings",
+            weight: 2.0,
+        },
+        Weights {
+            key: "Orb Walker",
+            weight: 2.0,
+        },
+        Weights {
+            key: "3 Shapes",
+            weight: 2.0,
+        },
     ],
     strong: &[
-        Weights { key: "Spire Growth", weight: 1.0 },
-        Weights { key: "Transient", weight: 1.0 },
-        Weights { key: "4 Shapes", weight: 1.0 },
-        Weights { key: "Maw", weight: 1.0 },
-        Weights { key: "Sphere & 2 Shapes", weight: 1.0 },
-        Weights { key: "Jaw Worm Horde", weight: 1.0 },
-        Weights { key: "3 Darklings", weight: 1.0 },
-        Weights { key: "Writhing Mass", weight: 1.0 },
+        Weights {
+            key: "Spire Growth",
+            weight: 1.0,
+        },
+        Weights {
+            key: "Transient",
+            weight: 1.0,
+        },
+        Weights {
+            key: "4 Shapes",
+            weight: 1.0,
+        },
+        Weights {
+            key: "Maw",
+            weight: 1.0,
+        },
+        Weights {
+            key: "Sphere & 2 Shapes",
+            weight: 1.0,
+        },
+        Weights {
+            key: "Jaw Worm Horde",
+            weight: 1.0,
+        },
+        Weights {
+            key: "3 Darklings",
+            weight: 1.0,
+        },
+        Weights {
+            key: "Writhing Mass",
+            weight: 1.0,
+        },
     ],
     elites: &[
-        Weights { key: "Giant Head", weight: 2.0 },
-        Weights { key: "Nemesis", weight: 2.0 },
-        Weights { key: "Reptomancer", weight: 2.0 },
+        Weights {
+            key: "Giant Head",
+            weight: 2.0,
+        },
+        Weights {
+            key: "Nemesis",
+            weight: 2.0,
+        },
+        Weights {
+            key: "Reptomancer",
+            weight: 2.0,
+        },
     ],
     bosses: &["Awakened One", "Time Eater", "Donu & Deca"],
     weak_count: 2,
@@ -111,7 +252,10 @@ pub static THE_BEYOND: ActPools = ActPools {
 pub static THE_ENDING: ActPools = ActPools {
     weak: &[],
     strong: &[],
-    elites: &[Weights { key: "Shield and Spear", weight: 1.0 }],
+    elites: &[Weights {
+        key: "Shield and Spear",
+        weight: 1.0,
+    }],
     bosses: &["The Heart"],
     weak_count: 0,
     strong_count: 0,
@@ -207,7 +351,13 @@ pub fn composition(key: &str, rng: &mut crate::rng::StsRandom) -> Vec<&'static s
             }
         }
         "Lots of Slimes" => {
-            let pool = ["Spike Slime S", "Spike Slime S", "Spike Slime S", "Acid Slime S", "Acid Slime S"];
+            let pool = [
+                "Spike Slime S",
+                "Spike Slime S",
+                "Spike Slime S",
+                "Acid Slime S",
+                "Acid Slime S",
+            ];
             let mut idx: Vec<usize> = (0..pool.len()).collect();
             let mut out = Vec::new();
             for _ in 0..5 {
@@ -218,7 +368,16 @@ pub fn composition(key: &str, rng: &mut crate::rng::StsRandom) -> Vec<&'static s
             out
         }
         "Gremlin Gang" => {
-            let pool = ["Gremlin Warrior", "Gremlin Warrior", "Gremlin Thief", "Gremlin Thief", "Gremlin Fat", "Gremlin Fat", "Gremlin Tsundere", "Gremlin Wizard"];
+            let pool = [
+                "Gremlin Warrior",
+                "Gremlin Warrior",
+                "Gremlin Thief",
+                "Gremlin Thief",
+                "Gremlin Fat",
+                "Gremlin Fat",
+                "Gremlin Tsundere",
+                "Gremlin Wizard",
+            ];
             let mut idx: Vec<usize> = (0..pool.len()).collect();
             let mut out = Vec::new();
             for _ in 0..4 {
@@ -268,7 +427,9 @@ pub fn composition(key: &str, rng: &mut crate::rng::StsRandom) -> Vec<&'static s
         "Jaw Worm Horde" => vec!["Jaw Worm", "Jaw Worm", "Jaw Worm"],
         "3 Shapes" | "4 Shapes" => {
             let n = if k == "4 Shapes" { 4 } else { 3 };
-            let pool = ["Repulsor", "Repulsor", "Exploder", "Exploder", "Spiker", "Spiker"];
+            let pool = [
+                "Repulsor", "Repulsor", "Exploder", "Exploder", "Spiker", "Spiker",
+            ];
             let mut idx: Vec<usize> = (0..pool.len()).collect();
             let mut out = Vec::new();
             for _ in 0..n {
@@ -279,7 +440,9 @@ pub fn composition(key: &str, rng: &mut crate::rng::StsRandom) -> Vec<&'static s
             out
         }
         "Sphere and 2 Shapes" => {
-            let pool = ["Repulsor", "Repulsor", "Exploder", "Exploder", "Spiker", "Spiker"];
+            let pool = [
+                "Repulsor", "Repulsor", "Exploder", "Exploder", "Spiker", "Spiker",
+            ];
             vec![pool[roll(6)], pool[roll(6)], "Spheric Guardian"]
         }
         "Orb Walker" => vec!["Orb Walker"],
@@ -342,4 +505,3 @@ mod tests {
         }
     }
 }
-

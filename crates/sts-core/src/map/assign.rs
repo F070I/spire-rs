@@ -65,7 +65,11 @@ pub fn assign_rooms(
     };
     push_n(&mut pool, RoomKind::Shop, f2i(count as f32 * chances.shop));
     push_n(&mut pool, RoomKind::Rest, f2i(count as f32 * chances.rest));
-    push_n(&mut pool, RoomKind::Event, f2i(count as f32 * chances.event));
+    push_n(
+        &mut pool,
+        RoomKind::Event,
+        f2i(count as f32 * chances.event),
+    );
     let elite_mult = if big_game_hunter {
         2.5
     } else if ascension >= 1 {
@@ -129,11 +133,11 @@ pub fn assign_rooms(
                 );
                 let parent_match = parent_applicable
                     && parents.iter().any(|(px, py)| {
-                    map.get(*py as usize)
-                        .and_then(|r| r.get(*px as usize))
-                        .map(|p| p.symbol == Some(sym))
-                        .unwrap_or(false)
-                });
+                        map.get(*py as usize)
+                            .and_then(|r| r.get(*px as usize))
+                            .map(|p| p.symbol == Some(sym))
+                            .unwrap_or(false)
+                    });
                 let sibling_match = parents.iter().any(|(px, py)| {
                     map.get(*py as usize)
                         .and_then(|r| r.get(*px as usize))
@@ -167,7 +171,6 @@ pub fn assign_rooms(
         }
     }
 }
-
 
 fn room_symbol(k: RoomKind) -> char {
     match k {
@@ -229,7 +232,8 @@ mod tests {
         // 硬性行
         assert!(map[0].iter().filter(|n| n.edges.is_empty()).count() < MAP_WIDTH);
         assert_eq!(
-            map[8].iter().filter(|n| n.symbol == Some('T')).count() + map[8].iter().filter(|n| n.symbol.is_none()).count(),
+            map[8].iter().filter(|n| n.symbol == Some('T')).count()
+                + map[8].iter().filter(|n| n.symbol.is_none()).count(),
             MAP_WIDTH
         );
     }
@@ -256,10 +260,7 @@ mod tests {
                     if let (Some(a), Some(b)) = (psym, n.symbol) {
                         // 原版 parent 规则只适用 Rest/Treasure/Shop/Elite
                         // （Monster/Event 父子同类型允许）；y==0 豁免全部
-                        let parent_rule = matches!(
-                            a,
-                            'R' | 'T' | '$' | 'E'
-                        );
+                        let parent_rule = matches!(a, 'R' | 'T' | '$' | 'E');
                         if *py != 0 && parent_rule {
                             assert_ne!(a, b, "父子同类型 ({px},{py})→({x},{y})");
                         }
@@ -277,8 +278,14 @@ mod tests {
         let mut mb = generate_dungeon(MAP_HEIGHT, MAP_WIDTH, PATH_DENSITY, &mut b);
         assign_rooms(&mut ma, &DEFAULT_CHANCES, 0, false, &mut a);
         assign_rooms(&mut mb, &DEFAULT_CHANCES, 0, false, &mut b);
-        let sa: Vec<Vec<char>> = ma.iter().map(|r| r.iter().map(|n| n.symbol.unwrap_or(' ')).collect()).collect();
-        let sb: Vec<Vec<char>> = mb.iter().map(|r| r.iter().map(|n| n.symbol.unwrap_or(' ')).collect()).collect();
+        let sa: Vec<Vec<char>> = ma
+            .iter()
+            .map(|r| r.iter().map(|n| n.symbol.unwrap_or(' ')).collect())
+            .collect();
+        let sb: Vec<Vec<char>> = mb
+            .iter()
+            .map(|r| r.iter().map(|n| n.symbol.unwrap_or(' ')).collect())
+            .collect();
         assert_eq!(sa, sb);
     }
 }

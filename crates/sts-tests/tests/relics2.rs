@@ -48,13 +48,11 @@ fn bag_of_marbles_applies_vulnerable_to_all() {
         ..RelicCtx::default()
     };
     let b = battle(r);
-    assert!(
-        b.monsters[0]
-            .creature
-            .powers
-            .iter()
-            .any(|p| p.kind == PowerKind::Vulnerable)
-    );
+    assert!(b.monsters[0]
+        .creature
+        .powers
+        .iter()
+        .any(|p| p.kind == PowerKind::Vulnerable));
 }
 
 #[test]
@@ -64,12 +62,11 @@ fn thread_and_needle_gives_plated_armor() {
         ..RelicCtx::default()
     };
     let b = battle(r);
-    assert!(
-        b.player
-            .powers
-            .iter()
-            .any(|p| p.kind == PowerKind::PlatedArmor && p.amount == 4)
-    );
+    assert!(b
+        .player
+        .powers
+        .iter()
+        .any(|p| p.kind == PowerKind::PlatedArmor && p.amount == 4));
 }
 
 #[test]
@@ -185,7 +182,12 @@ fn nunchaku_energy_every_ten_attacks() {
     // 手动堆 9 次
     b.relic_nunchaku = 9;
     b.energy = 3;
-    let i = b.hand.group.iter().position(|c| c.st().kind == gen::CardType::Attack).unwrap();
+    let i = b
+        .hand
+        .group
+        .iter()
+        .position(|c| c.st().kind == gen::CardType::Attack)
+        .unwrap();
     b.play_card(i, Some(0)).unwrap();
     b.run_until_idle();
     assert_eq!(b.relic_nunchaku % 10, 0);

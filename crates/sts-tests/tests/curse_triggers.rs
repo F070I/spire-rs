@@ -13,7 +13,11 @@ fn run_with_hand(ids: &[&str]) -> RunState4b {
     b.run_until_idle();
     for id in ids {
         let sid = gen::CARDS.iter().position(|c| c.id == *id).unwrap();
-        b.hand.add_top(sts_core::battle::CardInst::new(sid, false, 88000 + sid as u64));
+        b.hand.add_top(sts_core::battle::CardInst::new(
+            sid,
+            false,
+            88000 + sid as u64,
+        ));
     }
     run
 }
@@ -45,12 +49,11 @@ fn shame_grants_frail() {
     let b = run.battle.as_mut().unwrap();
     b.end_turn();
     b.run_until_idle();
-    assert!(
-        b.player
-            .powers
-            .iter()
-            .any(|p| p.kind == sts_core::power::PowerKind::Frail && p.amount == 1)
-    );
+    assert!(b
+        .player
+        .powers
+        .iter()
+        .any(|p| p.kind == sts_core::power::PowerKind::Frail && p.amount == 1));
 }
 
 #[test]
@@ -58,7 +61,12 @@ fn pain_loses_one_per_card() {
     let mut run = run_with_hand(&["Pain", "Strike_R", "Strike_R"]);
     let b = run.battle.as_mut().unwrap();
     b.player.current_health = 80;
-    let i = b.hand.group.iter().position(|c| c.st().id == "Strike_R").unwrap();
+    let i = b
+        .hand
+        .group
+        .iter()
+        .position(|c| c.st().id == "Strike_R")
+        .unwrap();
     b.play_card(i, Some(0)).unwrap();
     b.run_until_idle();
     assert_eq!(b.player.current_health, 79, "苦痛：出牌掉 1 血");
@@ -69,6 +77,11 @@ fn normality_caps_three_cards() {
     let mut run = run_with_hand(&["Normality", "Strike_R", "Strike_R", "Strike_R", "Strike_R"]);
     let b = run.battle.as_mut().unwrap();
     b.cards_played_this_turn = 3;
-    let i = b.hand.group.iter().position(|c| c.st().id == "Strike_R").unwrap();
+    let i = b
+        .hand
+        .group
+        .iter()
+        .position(|c| c.st().id == "Strike_R")
+        .unwrap();
     assert!(b.play_card(i, Some(0)).is_err(), "凡庸：3 张上限");
 }

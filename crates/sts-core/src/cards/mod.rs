@@ -6,14 +6,14 @@
 //! - 未转译卡回落 `generic_effects()`（通用攻击/防御/能力占位），由灌注进度表跟踪；
 //! - 卡牌专属例程（原版卡牌 Action 类）在 `routines.rs` 注册执行。
 
-pub mod builder;
 pub mod blue;
+pub mod builder;
 pub mod colorless;
-pub mod simple;
-pub mod purple;
 pub mod green;
+pub mod purple;
 pub mod red;
 pub mod routines;
+pub mod simple;
 
 use crate::action::{GameAction, RoutineCall, TargetRef};
 use crate::battle::{BattleState, CardInst};
@@ -73,7 +73,12 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>) -> V
 }
 
 /// 未转译卡的通用行为（与原版不等价，灌注进度跟踪；G3 门后应只剩特殊卡）。
-pub fn generic_effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: &mut EffectBuilder) {
+pub fn generic_effects(
+    b: &mut BattleState,
+    card: &CardInst,
+    target: Option<usize>,
+    eb: &mut EffectBuilder,
+) {
     let st = card.st();
     match st.kind {
         CardType::Attack => {

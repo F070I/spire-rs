@@ -5,7 +5,7 @@
 //! changeState/usePreBattleAction），数值断言以升阶 0 为基线。
 
 use sts_core::action::{GameAction, TargetRef};
-use sts_core::battle::{BattleState, CardInst, Brain, Monster, RelicCtx, SpecialAi};
+use sts_core::battle::{BattleState, Brain, CardInst, Monster, RelicCtx, SpecialAi};
 use sts_core::damage::DamageInfo;
 use sts_core::power::{DamageType, PowerKind};
 use sts_data::gen;
@@ -87,7 +87,7 @@ fn hexaghost_full_burn_cycle() {
     b.run_until_idle(); // ACTIVATE
     b.end_turn();
     b.run_until_idle(); // DIVIDER
-    // 六火轮转：SEAR→TACKLE→SEAR→INFLAME→TACKLE→SEAR→INFERNO（7 回合）
+                        // 六火轮转：SEAR→TACKLE→SEAR→INFLAME→TACKLE→SEAR→INFERNO（7 回合）
     let expected = [4, 2, 4, 3, 2, 4, 6];
     for (t, byte) in expected.iter().enumerate() {
         assert_eq!(b.monsters[0].next_byte, *byte, "轮转第 {t} 招");
@@ -109,13 +109,11 @@ fn hexaghost_full_burn_cycle() {
     assert!(all_up, "全部灼伤为升级版");
     assert!(b.monsters[0].brain.burn_up);
     // INFLAME 已给力量 +2
-    assert!(
-        b.monsters[0]
-            .creature
-            .powers
-            .iter()
-            .any(|p| p.kind == PowerKind::Strength && p.amount >= 2)
-    );
+    assert!(b.monsters[0]
+        .creature
+        .powers
+        .iter()
+        .any(|p| p.kind == PowerKind::Strength && p.amount >= 2));
 }
 
 // ---------------------------------------------------------------- Orb Walker
@@ -154,12 +152,11 @@ fn donu_deca_phases_and_buffs() {
     assert_eq!(b.monsters[1].creature.name, "Donu");
     assert_eq!(b.monsters[1].next_byte, 2);
     for m in &b.monsters {
-        assert!(
-            m.creature
-                .powers
-                .iter()
-                .any(|p| p.kind == PowerKind::Artifact && p.amount == 2)
-        );
+        assert!(m
+            .creature
+            .powers
+            .iter()
+            .any(|p| p.kind == PowerKind::Artifact && p.amount == 2));
     }
     b.end_turn();
     b.run_until_idle();
@@ -167,12 +164,11 @@ fn donu_deca_phases_and_buffs() {
     assert_eq!(b.player.current_health, 280);
     assert_eq!(count_card(&b, "Dazed"), 2);
     for m in &b.monsters {
-        assert!(
-            m.creature
-                .powers
-                .iter()
-                .any(|p| p.kind == PowerKind::Strength && p.amount >= 3)
-        );
+        assert!(m
+            .creature
+            .powers
+            .iter()
+            .any(|p| p.kind == PowerKind::Strength && p.amount >= 3));
     }
     // 相位翻转：Deca → 方阵，Donu → 光束
     assert_eq!(b.monsters[0].next_byte, 2);
@@ -192,8 +188,16 @@ fn awakened_one_rebirth_transition() {
     let mut b = fixture_real("Awakened One", 300);
     // 开局：Regenerate 10 + Curiosity 1（升阶 0 无先行力量）；首招 Pounce
     let m = &b.monsters[1];
-    assert!(m.creature.powers.iter().any(|p| p.kind == PowerKind::Regenerate && p.amount == 10));
-    assert!(m.creature.powers.iter().any(|p| p.kind == PowerKind::Curiosity && p.amount == 1));
+    assert!(m
+        .creature
+        .powers
+        .iter()
+        .any(|p| p.kind == PowerKind::Regenerate && p.amount == 10));
+    assert!(m
+        .creature
+        .powers
+        .iter()
+        .any(|p| p.kind == PowerKind::Curiosity && p.amount == 1));
     assert_eq!(m.next_byte, 1);
     b.end_turn();
     b.run_until_idle();
@@ -217,11 +221,17 @@ fn awakened_one_rebirth_transition() {
     assert!(m.brain.form2);
     assert_eq!(m.next_byte, 3, "转换后下招 REBIRTH");
     assert!(
-        !m.creature.powers.iter().any(|p| p.kind == PowerKind::Curiosity),
+        !m.creature
+            .powers
+            .iter()
+            .any(|p| p.kind == PowerKind::Curiosity),
         "转换时去除 Curiosity"
     );
     assert!(
-        m.creature.powers.iter().any(|p| p.kind == PowerKind::Regenerate),
+        m.creature
+            .powers
+            .iter()
+            .any(|p| p.kind == PowerKind::Regenerate),
         "增益保留"
     );
     assert!(!b.is_battle_over, "半死不算胜利");
@@ -253,14 +263,27 @@ fn awakened_one_curiosity_on_power_card() {
     b.setup_real_monsters();
     b.run_until_idle();
     // 把 Inflame 抽到手（确定性）
-    if let Some(pos) = b.master_deck.group.iter().position(|c| c.st().id == "Inflame") {
+    if let Some(pos) = b
+        .master_deck
+        .group
+        .iter()
+        .position(|c| c.st().id == "Inflame")
+    {
         let c = b.master_deck.group.remove(pos);
-        let mut c = CardInst { uuid: b.uuid_next, ..c };
+        let mut c = CardInst {
+            uuid: b.uuid_next,
+            ..c
+        };
         b.uuid_next += 1;
         c.uuid = b.uuid_next; // 占位避免 warning
         b.hand.add_top(c);
     }
-    let i = b.hand.group.iter().position(|c| c.st().id == "Inflame").unwrap();
+    let i = b
+        .hand
+        .group
+        .iter()
+        .position(|c| c.st().id == "Inflame")
+        .unwrap();
     b.play_card(i, None).unwrap();
     b.run_until_idle();
     assert!(
@@ -335,7 +358,10 @@ fn void_on_draw_loses_energy() {
     c.uuid = b.uuid_next;
     b.draw_pile.add_top(c);
     let e0 = b.energy;
-    b.mgr.add_bottom(GameAction::DrawCard { amount: 1, end_turn_draw: false });
+    b.mgr.add_bottom(GameAction::DrawCard {
+        amount: 1,
+        end_turn_draw: false,
+    });
     b.run_until_idle();
     assert_eq!(b.energy, e0 - 1, "抽到虚空失去 1 能量");
 }
@@ -353,14 +379,21 @@ fn brain_defaults_match_scripted_monsters() {
 fn hexaghost_variants_by_ascension() {
     let a4 = sts_core::monsters::build_real("Hexaghost", 4, 250).unwrap();
     match a4[0].special {
-        Some(SpecialAi::HexaghostFull { fire_tackle, inferno, str_amt, sear_burn }) => {
+        Some(SpecialAi::HexaghostFull {
+            fire_tackle,
+            inferno,
+            str_amt,
+            sear_burn,
+        }) => {
             assert_eq!((fire_tackle, inferno, str_amt, sear_burn), (6, 3, 2, 1));
         }
         _ => panic!("应有 HexaghostFull"),
     }
     let a19 = sts_core::monsters::build_real("Hexaghost", 19, 250).unwrap();
     match a19[0].special {
-        Some(SpecialAi::HexaghostFull { str_amt, sear_burn, .. }) => {
+        Some(SpecialAi::HexaghostFull {
+            str_amt, sear_burn, ..
+        }) => {
             assert_eq!((str_amt, sear_burn), (3, 2));
         }
         _ => panic!("应有 HexaghostFull"),

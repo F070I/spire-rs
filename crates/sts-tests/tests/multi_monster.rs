@@ -3,7 +3,7 @@
 use sts_core::action::{GameAction, TargetRef};
 use sts_core::battle::Monster;
 use sts_core::damage::DamageInfo;
-use sts_core::flow4b::{NeowReward, RunState4b, RoomPhase};
+use sts_core::flow4b::{NeowReward, RoomPhase, RunState4b};
 use sts_data::encounters;
 use sts_data::rng::StsRandom;
 
@@ -15,23 +15,38 @@ fn comp(key: &str, seed: i64) -> Vec<&'static str> {
 fn fixed_compositions_match_source() {
     // Louse 50/50 双变体（getLouse 转译）
     for m in comp("2 Louse", 1) {
-        assert!(m == "Louse" || m == "Louse Defensive", "非法 Louse 变体 {m}");
+        assert!(
+            m == "Louse" || m == "Louse Defensive",
+            "非法 Louse 变体 {m}"
+        );
     }
     assert_eq!(comp("2 Louse", 1).len(), 2);
     assert_eq!(comp("3 Louse", 1).len(), 3);
     assert_eq!(comp("2 Fungi", 1), vec!["Fungi Beast", "Fungi Beast"]);
     assert_eq!(comp("3 Sentries", 1), vec!["Sentry", "Sentry", "Sentry"]);
     assert_eq!(comp("3 Cultists", 1), vec!["Cultist", "Cultist", "Cultist"]);
-    assert_eq!(comp("3 Darklings", 1), vec!["Darkling", "Darkling", "Darkling"]);
-    assert_eq!(comp("Jaw Worm Horde", 1), vec!["Jaw Worm", "Jaw Worm", "Jaw Worm"]);
     assert_eq!(
-        comp("Centurion & Healer", 1),
-        vec!["Centurion", "Healer"]
+        comp("3 Darklings", 1),
+        vec!["Darkling", "Darkling", "Darkling"]
     );
-    assert_eq!(comp("Slavers", 1), vec!["Blue Slaver", "Taskmaster", "Red Slaver"]);
-    assert_eq!(comp("Shield and Spear", 1), vec!["Spire Shield", "Spire Spear"]);
+    assert_eq!(
+        comp("Jaw Worm Horde", 1),
+        vec!["Jaw Worm", "Jaw Worm", "Jaw Worm"]
+    );
+    assert_eq!(comp("Centurion & Healer", 1), vec!["Centurion", "Healer"]);
+    assert_eq!(
+        comp("Slavers", 1),
+        vec!["Blue Slaver", "Taskmaster", "Red Slaver"]
+    );
+    assert_eq!(
+        comp("Shield and Spear", 1),
+        vec!["Spire Shield", "Spire Spear"]
+    );
     // & 与 and 两写法等价
-    assert_eq!(comp("Centurion and Healer", 1), comp("Centurion & Healer", 1));
+    assert_eq!(
+        comp("Centurion and Healer", 1),
+        comp("Centurion & Healer", 1)
+    );
     // JawWorm 无空格写法
     assert_eq!(comp("JawWorm", 1), vec!["Jaw Worm"]);
     // Boss 单体键直通
@@ -47,7 +62,13 @@ fn random_pools_roll_within_members() {
     // 哥布林帮：4 只不重复
     let g = comp("Gremlin Gang", 5);
     assert_eq!(g.len(), 4);
-    let valid = ["Gremlin Warrior", "Gremlin Thief", "Gremlin Fat", "Gremlin Tsundere", "Gremlin Wizard"];
+    let valid = [
+        "Gremlin Warrior",
+        "Gremlin Thief",
+        "Gremlin Fat",
+        "Gremlin Tsundere",
+        "Gremlin Wizard",
+    ];
     for m in &g {
         assert!(valid.contains(m), "非法成员 {m}");
     }
@@ -72,11 +93,19 @@ fn two_louse_fight_has_two_monsters_and_targeting() {
         b.monsters[0].creature.current_health,
         b.monsters[1].creature.current_health,
     );
-    let i = b.hand.group.iter().position(|c| c.st().id == "Strike_R").unwrap();
+    let i = b
+        .hand
+        .group
+        .iter()
+        .position(|c| c.st().id == "Strike_R")
+        .unwrap();
     b.play_card(i, Some(1)).unwrap();
     b.run_until_idle();
     if b.monsters[0].creature.current_health == hp0 {
-        assert!(b.monsters[1].creature.current_health < hp1, "伤害落在目标 1");
+        assert!(
+            b.monsters[1].creature.current_health < hp1,
+            "伤害落在目标 1"
+        );
     }
 }
 
@@ -96,14 +125,28 @@ fn cultist_trio_all_have_ritual() {
     let s0: i32 = b
         .monsters
         .iter()
-        .map(|m| m.creature.powers.iter().find(|p| p.kind == sts_core::power::PowerKind::Strength).map(|p| p.amount).unwrap_or(0))
+        .map(|m| {
+            m.creature
+                .powers
+                .iter()
+                .find(|p| p.kind == sts_core::power::PowerKind::Strength)
+                .map(|p| p.amount)
+                .unwrap_or(0)
+        })
         .sum();
     b.end_turn();
     b.run_until_idle();
     let s1: i32 = b
         .monsters
         .iter()
-        .map(|m| m.creature.powers.iter().find(|p| p.kind == sts_core::power::PowerKind::Strength).map(|p| p.amount).unwrap_or(0))
+        .map(|m| {
+            m.creature
+                .powers
+                .iter()
+                .find(|p| p.kind == sts_core::power::PowerKind::Strength)
+                .map(|p| p.amount)
+                .unwrap_or(0)
+        })
         .sum();
     assert!(s1 > s0, "三教徒全员仪式");
 }

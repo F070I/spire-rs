@@ -1,0 +1,115 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows-x86_64
+            os: windows-latest
+            target: x86_64-pc-windows-gnu
+            bin: sts.exe
+            archive: sts-windows-x86_64.zip
+          - name: macOS-intel
+            os: macos-13
+            target: x86_64-apple-darwin
+            bin: sts
+            archive: sts-macos-x86_64.zip
+          - name: macOS-apple-silicon
+            os: macos-latest
+            target: aarch64-apple-darwin
+            bin: sts
+            archive: sts-macos-aarch64.zip
+          - name: linux-x86_64
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            bin: sts
+            archive: sts-linux-x86_64.zip
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      # Windows 用 GNU 目标（本仓库零依赖，gnu 工具链即可；避免 MSVC link 环境差异）
+      - name: Install mingw-w64 (windows-gnu)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: choco install mingw -y --no-progress
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Test (workspace)
+        run: cargo test --workspace --release
+
+      - name: Build (release)
+        run: cargo build --release -p sts-terminal --target ${{ matrix.target }}
+
+      - name: Smoke test
+        shell: bash
+        run: |
+          printf 'q\n' | "target/${{ matrix.target }}/release/${{ matrix.bin }}" >/dev/null 2>&1 || true
+
+      - name: Package
+        shell: bash
+        run: |
+          dir="sts-${{ matrix.target }}"
+          mkdir -p "$dir"
+          cp "target/${{ matrix.target }}/release/${{ matrix.bin }}" "$dir/"
+          cp README.md "$dir/" 2>/dev/null || true
+          cp LICENSE-MIT "$dir/" 2>/dev/null || cp LICENSE "$dir/" 2>/dev/null || true
+          if [[ "${{ matrix.archive }}" == *.zip ]]; then
+            if command -v 7z >/dev/null; then
+              7z a "${{ matrix.archive }}" "$dir"
+            else
+              zip -r "${{ matrix.archive }}" "$dir"
+            fi
+          fi
+          sha256sum "${{ matrix.archive }}" > "${{ matrix.archive }}.sha256" || shasum -a 256 "${{ matrix.archive }}" > "${{ matrix.archive }}.sha256"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: |
+            ${{ matrix.archive }}
+            ${{ matrix.archive }}.sha256
+
+  github-release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/**/*.zip
+            artifacts/**/*.sha256
+          generate_release_notes: true
