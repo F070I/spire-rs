@@ -96,6 +96,44 @@ fn main() {
                 }
                 render(&run, &mut out);
             }
+            // 篝火扩展（遗物解锁）：rp <卡号> 移除 / dig 挖遗物 /
+            // bowl +2 上限 / qcard 得牌 / gamble 手牌重抽
+            "rp" => {
+                if let Some(i) = args.get(1).and_then(|s| s.parse().ok()) {
+                    let _ = run.campfire_pipe(i);
+                }
+                render(&run, &mut out);
+            }
+            "dig" => {
+                let _ = run.campfire_dig();
+                render(&run, &mut out);
+            }
+            "bowl" => {
+                let _ = run.campfire_bowl();
+                render(&run, &mut out);
+            }
+            "qcard" => {
+                let _ = run.campfire_question();
+                render(&run, &mut out);
+            }
+            "gamble" => {
+                let _ = run.gambling_redraw();
+                run.settle_battle();
+                render(&run, &mut out);
+            }
+            // 查看抽牌堆（Frozen Eye）
+            "vd" => {
+                if let Some(b) = &run.battle {
+                    if run.relics_ctx.has_frozen_eye {
+                        println!("── 抽牌堆（顶到底）──");
+                        for c in b.draw_pile.group.iter().rev() {
+                            println!("  {}", c.st().id);
+                        }
+                    } else {
+                        println!("需要冻结之眼");
+                    }
+                }
+            }
             // 药水
             "po" => {
                 if let Some(i) = args.get(1).and_then(|s| s.parse().ok()) {
@@ -211,6 +249,7 @@ fn help() {
     println!("命令：n[开Neow] nn <0-3>[选祝福] m <x> <y>[选节点] p <手牌号> [目标]");
     println!("      e[结束回合] r <0-2>|skip[领奖] po <槽>[用药] s[存档] l[读档] q[退出]");
     println!("      j/k[下/上选择] enter[确认] t[切主题]");
+    println!("      rp <卡号>[移除] dig[挖] bowl[+2上限] qcard[得牌] gamble[重抽] vd[看抽堆]");
 }
 
 /// 当前主题（主题切换不改游戏状态——UI 规范 §三）。

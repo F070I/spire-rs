@@ -1002,6 +1002,19 @@ impl RunState4b {
             "PrismaticShard" => self.relics_ctx.prismatic_shard = true,
             "Matryoshka" => self.relics_ctx.matryoshka = true,
             "Tiny Chest" => self.relics_ctx.tiny_chest = true,
+            "Peace Pipe" => self.relics_ctx.has_peace_pipe = true,
+            "Shovel" => self.relics_ctx.has_shovel = true,
+            "Singing Bowl" => self.relics_ctx.has_singing_bowl = true,
+            "Question Card" => self.relics_ctx.has_question_card = true,
+            "Orrery" => {
+                // 拾取获得 2 张随机牌（原版选择 1/5——简化）
+                for _ in 0..2 {
+                    let sid = self.random_obtainable_card_sid();
+                    self.deck.push(CardInst::new(sid, false, self.uuid_next));
+                    self.uuid_next += 1;
+                }
+            }
+            "Frozen Eye" => self.relics_ctx.has_frozen_eye = true,
             "DollysMirror" => {
                 // 复制随机牌组卡（原版选择）
                 if let Some(c) = self.deck.last().cloned() {
@@ -1644,6 +1657,83 @@ impl RunState4b {
             self.uuid_next += 1;
         }
         self.phase = RoomPhase::RoomDone;
+        Ok(())
+    }
+
+    /// 篝火：和平烟斗（移除一张卡——PeacePipe 持有时可选）。
+    pub fn campfire_pipe(&mut self, deck_index: usize) -> Result<(), &'static str> {
+        if self.phase != RoomPhase::CampfireChoice {
+            return Err("不在篝火选择阶段");
+        }
+        if !self.relics_ctx.has_peace_pipe {
+            return Err("需要和平烟斗");
+        }
+        if deck_index < self.deck.len() {
+            self.deck.remove(deck_index);
+        }
+        self.phase = RoomPhase::RoomDone;
+        Ok(())
+    }
+
+    /// 篝火：铲子挖掘（获得随机遗物——Shovel 持有时可选）。
+    pub fn campfire_dig(&mut self) -> Result<(), &'static str> {
+        if self.phase != RoomPhase::CampfireChoice {
+            return Err("不在篝火选择阶段");
+        }
+        if !self.relics_ctx.has_shovel {
+            return Err("需要铲子");
+        }
+        let id = ["Vajra", "Orichalcum", "Girya"][self.rngs.misc.random_int_inclusive(2) as usize];
+        self.apply_relic_effect(id);
+        self.relics.push(id);
+        self.phase = RoomPhase::RoomDone;
+        Ok(())
+    }
+
+    /// 篝火：吟唱碗（+2 最大生命代替升级——Singing Bowl 持有时可选）。
+    pub fn campfire_bowl(&mut self) -> Result<(), &'static str> {
+        if self.phase != RoomPhase::CampfireChoice {
+            return Err("不在篝火选择阶段");
+        }
+        if !self.relics_ctx.has_singing_bowl {
+            return Err("需要吟唱碗");
+        }
+        self.player_max_hp += 2;
+        self.player_hp += 2;
+        self.phase = RoomPhase::RoomDone;
+        Ok(())
+    }
+
+    /// 篝火：提问卡（获得一张随机牌——Question Card 持有时可选）。
+    pub fn campfire_question(&mut self) -> Result<(), &'static str> {
+        if self.phase != RoomPhase::CampfireChoice {
+            return Err("不在篝火选择阶段");
+        }
+        if !self.relics_ctx.has_question_card {
+            return Err("需要提问卡");
+        }
+        let sid = self.random_obtainable_card_sid();
+        self.deck.push(CardInst::new(sid, false, self.uuid_next));
+        self.uuid_next += 1;
+        self.phase = RoomPhase::RoomDone;
+        Ok(())
+    }
+
+    /// 赌徒筹码：本回合手牌全弃重抽（每回合一次——Gambling Chip 持有时可选）。
+    pub fn gambling_redraw(&mut self) -> Result<(), &'static str> {
+        if self.phase != RoomPhase::InBattle {
+            return Err("不在战斗中");
+        }
+        let b = self.battle.as_mut().unwrap();
+        if b.relic_gamble_used {
+            return Err("赌徒筹码：本回合已用");
+        }
+        b.relic_gamble_used = true;
+        let n = b.hand.group.len() as i32;
+        while let Some(c) = b.hand.group.pop() {
+            b.discard_pile.add_top(c);
+        }
+        b.mgr.add_bottom(GameAction::DrawCard { amount: n, end_turn_draw: false });
         Ok(())
     }
 

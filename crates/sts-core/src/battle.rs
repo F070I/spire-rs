@@ -459,6 +459,8 @@ pub struct BattleState {
     pub relic_tongs_used: bool,     // 弯曲钳本回合已升级
     /// 正在打出的卡（sid, 生效费）——attack_info 卡上下文（StrikeDummy/WristBlade）。
     pub playing_card: Option<(usize, i32)>,
+    /// 赌徒筹码本回合已用。
+    pub relic_gamble_used: bool,
     /// 遗物/神龛事实占位（批次 3.6 接入后由 RunState 查询）。
     pub relics_ctx: RelicCtx,
 }
@@ -626,6 +628,11 @@ pub struct RelicCtx {
     pub prismatic_shard: bool, // 棱镜碎片：卡奖混入无色
     pub matryoshka: bool, // 套娃：开箱 50% 附赠随机遗物
     pub tiny_chest: bool, // 小宝箱：每 5 层 +25 金（近似）
+    pub has_peace_pipe: bool, // 和平烟斗：篝火可移除卡
+    pub has_shovel: bool, // 铲子：篝火可挖遗物
+    pub has_singing_bowl: bool, // 吟唱碗：篝火可 +2 上限
+    pub has_question_card: bool, // 提问卡：篝火可得牌
+    pub has_frozen_eye: bool, // 冻结之眼：可查看抽牌堆（UI）
 }
 
 #[allow(clippy::derivable_impls)]
@@ -762,6 +769,11 @@ impl Default for RelicCtx {
             prismatic_shard: false,
             matryoshka: false,
             tiny_chest: false,
+            has_peace_pipe: false,
+            has_shovel: false,
+            has_singing_bowl: false,
+            has_question_card: false,
+            has_frozen_eye: false,
         }
     }
 }
@@ -831,6 +843,7 @@ impl BattleState {
             relic_pen_nib_active: false,
             relic_tongs_used: false,
             playing_card: None,
+            relic_gamble_used: false,
             relics_ctx: RelicCtx::default(),
         };
         for (sid, up) in deck {
@@ -2644,6 +2657,7 @@ impl BattleState {
         }
         // HoveringKite/WarpedTongs/OrangePellets：回合标记重置
         self.relic_kite_used = false;
+        self.relic_gamble_used = false;
         self.relic_tongs_used = false;
         self.relic_pellets_skill = false;
         self.relic_pellets_power = false;
