@@ -123,13 +123,19 @@ pub fn attack_info(
     base: i32,
     ty: DamageType,
 ) -> DamageInfo {
-    DamageInfo::from_card(
+    let mut info = DamageInfo::from_card(
         &b.player.powers,
         b.player_stance,
         &b.monsters[target_monster].creature.powers,
         base,
         ty,
-    )
+    );
+    // PenNib（DoubleDamagePower 语义）：力量入链后整段 ×2
+    if b.relics_ctx.pen_nib && b.relic_pen_nib_active {
+        info.output *= 2;
+        info.base *= 2;
+    }
+    info
 }
 
 /// 高频辅助：全体敌人伤害矩阵（DamageInfo.createDamageMatrix，记录 03 §4a）。

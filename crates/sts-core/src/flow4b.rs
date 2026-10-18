@@ -400,6 +400,17 @@ impl RunState4b {
                 self.gold += 12;
             }
         }
+        // MealTicket.onEnterRoom：进商店回 15
+        if self.relics_ctx.meal_ticket && symbol == '$' {
+            self.player_hp = (self.player_hp + 15).min(self.player_max_hp);
+        }
+        // EternalFeather.onEnterRoom：非商店房 +3 血/5 张主牌组卡
+        if self.relics_ctx.eternal_feather && symbol != '$' {
+            let heal = self.deck.len() as i32 / 5 * 3;
+            if heal > 0 {
+                self.player_hp = (self.player_hp + heal).min(self.player_max_hp);
+            }
+        }
         // floorNum++ + 每层重播种
         self.floor += 1;
         self.rngs = crate::battle::BattleRngs::new(self.seed, self.floor);
@@ -861,6 +872,62 @@ impl RunState4b {
             "Omamori" => self.relics_ctx.omamori = 2,
             "Black Blood" => self.relics_ctx.burning_blood_heal = 12,
             "Girya" => self.relics_ctx.vajra_strength += 1,
+            // —— 批次 5e ——
+            "Akabeko" => self.relics_ctx.akabeko = true,
+            "Bag of Preparation" => self.relics_ctx.bag_of_prep = true,
+            "Ninja Scroll" => self.relics_ctx.ninja_scroll = true,
+            "Symbiotic Virus" => self.relics_ctx.symbiotic_virus = true,
+            "TeardropLocket" => self.relics_ctx.teardrop_locket = true,
+            "Nuclear Battery" => self.relics_ctx.nuclear_battery = true,
+            "Toolbox" => self.relics_ctx.toolbox = true,
+            "Brimstone" => self.relics_ctx.brimstone = true,
+            "HornCleat" => self.relics_ctx.horn_cleat = true,
+            "CaptainsWheel" => self.relics_ctx.captains_wheel = true,
+            "Incense Burner" => self.relics_ctx.incense_burner = true,
+            "Sundial" => self.relics_ctx.sundial = true,
+            "Cloak Clasp" => self.relics_ctx.cloak_clasp = true,
+            "HoveringKite" => self.relics_ctx.hovering_kite = true,
+            "Pen Nib" => self.relics_ctx.pen_nib = true,
+            "Tingsha" => self.relics_ctx.tingsha = true,
+            "Tough Bandages" => self.relics_ctx.tough_bandages = true,
+            "Dead Branch" => self.relics_ctx.dead_branch = true,
+            "Charon's Ashes" => self.relics_ctx.charons_ashes = true,
+            "Gremlin Horn" => self.relics_ctx.gremlin_horn = true,
+            "The Specimen" => self.relics_ctx.the_specimen = true,
+            "Unceasing Top" => self.relics_ctx.unceasing_top = true,
+            "OrangePellets" => self.relics_ctx.orange_pellets = true,
+            "HandDrill" => self.relics_ctx.hand_drill = true,
+            "Magic Flower" => self.relics_ctx.magic_flower = true,
+            "WarpedTongs" => self.relics_ctx.warped_tongs = true,
+            "VioletLotus" => self.relics_ctx.violet_lotus = true,
+            "SacredBark" => self.relics_ctx.sacred_bark = true,
+            "Mark of the Bloom" => self.relics_ctx.mark_of_bloom = true,
+            "Membership Card" => self.relics_ctx.membership_card = true,
+            "Smiling Mask" => self.relics_ctx.smiling_mask = true,
+            "Busted Crown" => {
+                self.relics_ctx.energy_per_turn += 1;
+                self.relics_ctx.busted_crown = true;
+            }
+            "Runic Dome" => {
+                self.relics_ctx.energy_per_turn += 1;
+                self.relics_ctx.runic_dome = true;
+            }
+            "Old Coin" => self.gold += 300,
+            "Potion Belt" => {
+                self.potions.push(None);
+                self.potions.push(None);
+            }
+            "MealTicket" => {
+                self.relics_ctx.meal_ticket = true;
+            }
+            "Darkstone Periapt" => {
+                self.player_max_hp += 6;
+                self.player_hp += 6;
+            }
+            "Eternal Feather" => self.relics_ctx.eternal_feather = true,
+            "PrismaticShard" => {
+                // 三色卡池解锁语义在奖励池（TODO）；此处启用球槽保底
+            }
             "Necronomicon" => {
                 self.relics_ctx.necronomicon = true;
                 let sid = sts_data::gen::CARDS
@@ -1315,6 +1382,15 @@ impl RunState4b {
     }
 
     /// 商店：买卡（index 对应 cards 列表）。
+    /// 商店价格修正（MembershipCard 半价；向上取整——原版 priceDiscount）。
+    pub fn shop_price(&self, price: i32) -> i32 {
+        if self.relics_ctx.membership_card {
+            (price + 1) / 2
+        } else {
+            price
+        }
+    }
+
     pub fn shop_buy_card(&mut self, index: usize) -> Result<(), &'static str> {
         if self.phase != RoomPhase::ShopChoice {
             return Err("不在商店");
@@ -1322,18 +1398,24 @@ impl RunState4b {
         let Some(shop) = self.shop.as_mut() else {
             return Err("商店未生成");
         };
-        let Some((sid, up, price, sold)) = shop.cards.get_mut(index) else {
-            return Err("商品不存在");
+        let (sid, up, price, sold) = {
+            let Some((sid, up, price, sold)) = shop.cards.get_mut(index) else {
+                return Err("商品不存在");
+            };
+            (*sid, *up, *price, *sold)
         };
-        if *sold {
+        if sold {
             return Err("已售出");
         }
-        if self.gold < *price {
+        let price = self.shop_price(price);
+        if self.gold < price {
             return Err("金币不足");
         }
-        self.gold -= *price;
-        *sold = true;
-        self.deck.push(CardInst::new(*sid, *up, self.uuid_next));
+        self.gold -= price;
+        if let Some(shop) = self.shop.as_mut() {
+            shop.cards[index].3 = true;
+        }
+        self.deck.push(CardInst::new(sid, up, self.uuid_next));
         self.uuid_next += 1;
         Ok(())
     }
@@ -1359,6 +1441,7 @@ impl RunState4b {
             *sold = true;
             (*id, *price)
         };
+        let price = self.shop_price(price);
         self.gold -= price;
         self.apply_relic_effect(id);
         self.relics.push(id);
@@ -1370,23 +1453,29 @@ impl RunState4b {
         if self.phase != RoomPhase::ShopChoice {
             return Err("不在商店");
         }
-        let Some(shop) = self.shop.as_mut() else {
-            return Err("商店未生成");
+        let (id, price, sold) = {
+            let Some(shop) = self.shop.as_mut() else {
+                return Err("商店未生成");
+            };
+            let Some((id, price, sold)) = shop.potions.get_mut(index) else {
+                return Err("商品不存在");
+            };
+            (*id, *price, *sold)
         };
-        let Some((id, price, sold)) = shop.potions.get_mut(index) else {
-            return Err("商品不存在");
-        };
-        if *sold {
+        if sold {
             return Err("已售出");
         }
-        if self.gold < *price {
+        let price = self.shop_price(price);
+        if self.gold < price {
             return Err("金币不足");
         }
         let Some(slot) = self.potions.iter().position(|p| p.is_none()) else {
             return Err("药水槽已满");
         };
-        self.gold -= *price;
-        *sold = true;
+        self.gold -= price;
+        if let Some(shop) = self.shop.as_mut() {
+            shop.potions[index].2 = true;
+        }
         self.potions[slot] = Some(id);
         Ok(())
     }
@@ -1396,7 +1485,7 @@ impl RunState4b {
         if self.phase != RoomPhase::ShopChoice {
             return Err("不在商店");
         }
-        let cost = self.shop.as_ref().map(|s| s.purge_cost).unwrap_or(75);
+        let cost = self.shop_price(self.shop.as_ref().map(|s| s.purge_cost).unwrap_or(75));
         if self.gold < cost {
             return Err("金币不足");
         }
@@ -1703,6 +1792,13 @@ impl RunState4b {
     pub fn force_event(&mut self, id: &str) {
         self.event = Some((crate::event::get(id).id, -1));
         self.phase = RoomPhase::EventChoice;
+    }
+
+    /// 测试辅助：生成商店并进入（MembershipCard 等验证用）。
+    pub fn force_shop_for_test(&mut self) {
+        let shop = ShopState::generate(&mut self.rngs.misc, &mut self.card_rng);
+        self.shop = Some(shop);
+        self.phase = RoomPhase::ShopChoice;
     }
 
     /// 测试辅助：按遭遇键直接进战斗（多怪组合走 composition）。

@@ -115,6 +115,8 @@ pub enum GameAction {
     CardRoutine { call: RoutineCall },
     /// 批次 3.10 兜底：未转译动作（审计用描述）。
     Future { desc: &'static str },
+    /// PenNib：本次攻击出牌结束 → 熄灭 ×2 标记（effects 内已消费）。
+    PenNibConsume,
 }
 
 /// 卡牌专属例程调用参数（对齐原版各卡牌 Action 类的构造参数子集）。

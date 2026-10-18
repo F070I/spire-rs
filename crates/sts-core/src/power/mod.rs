@@ -132,6 +132,8 @@ pub enum PowerKind {
     LoseDexterity,
     /// CurlUpPower（防御鼠怪）：受攻击掉血且存活时 +amount 格挡（一次性）。
     CurlUp,
+    /// VigorPower：下一次攻击 +amount 伤（一次性）。
+    Vigor,
     /// 兜底：尚未转译的能力（批次 3.5 逐个消灭；带原版 ID 以便审计）。
     Future,
 }

@@ -423,6 +423,17 @@ pub struct BattleState {
     pub relic_serpent_turns: i32,
     pub relic_emotion_pulse: bool, // 情绪芯片：上回合掉过血
     pub relic_lizard_used: bool,
+    // —— 批次 5e ——
+    pub relic_pen_nib: i32,        // 蘸水笔攻击计数（第 10 次 ×2）
+    pub relic_incense_turns: i32,  // 香炉回合计数
+    pub relic_horn_cleat_turns: i32,
+    pub relic_wheel_turns: i32,
+    pub relic_kite_used: bool,     // 风筝本回合已触发
+    pub relic_pellets_skill: bool, // 橙丸：本回合已打技能/能力/攻击标记
+    pub relic_pellets_power: bool,
+    pub relic_pellets_attack: bool,
+    pub relic_pen_nib_active: bool, // 下一次攻击 ×2（供伤害钩子读取）
+    pub relic_tongs_used: bool,    // 弯曲钳本回合已升级
     /// 遗物/神龛事实占位（批次 3.6 接入后由 RunState 查询）。
     pub relics_ctx: RelicCtx,
 }
@@ -539,6 +550,42 @@ pub struct RelicCtx {
     pub has_molten_egg: bool,     // 熔火之蛋：获得攻击牌自动升级
     pub has_toxic_egg: bool,      // 毒蛋：获得技能牌自动升级
     pub has_frozen_egg: bool,     // 冰蛋：获得能力牌自动升级
+    // —— 批次 5e 遗物第四批 ——
+    pub akabeko: bool,
+    pub bag_of_prep: bool,
+    pub ninja_scroll: bool,
+    pub symbiotic_virus: bool,
+    pub teardrop_locket: bool,
+    pub nuclear_battery: bool,
+    pub toolbox: bool,
+    pub brimstone: bool,
+    pub horn_cleat: bool,
+    pub captains_wheel: bool,
+    pub incense_burner: bool,
+    pub sundial: bool,
+    pub cloak_clasp: bool,
+    pub hovering_kite: bool,
+    pub pen_nib: bool,
+    pub tingsha: bool,
+    pub tough_bandages: bool,
+    pub dead_branch: bool,
+    pub charons_ashes: bool,
+    pub gremlin_horn: bool,
+    pub the_specimen: bool,
+    pub unceasing_top: bool,
+    pub orange_pellets: bool,
+    pub hand_drill: bool,
+    pub magic_flower: bool,
+    pub warped_tongs: bool,
+    pub violet_lotus: bool,
+    pub sacred_bark: bool,
+    pub mark_of_bloom: bool,
+    pub membership_card: bool,
+    pub smiling_mask: bool,
+    pub busted_crown: bool,
+    pub runic_dome: bool,
+    pub meal_ticket: bool,        // 餐券：进商店回 15
+    pub eternal_feather: bool,    // 永恒之羽：非商店房 +3 血/5 卡
 }
 
 #[allow(clippy::derivable_impls)]
@@ -625,6 +672,41 @@ impl Default for RelicCtx {
             has_molten_egg: false,
             has_toxic_egg: false,
             has_frozen_egg: false,
+            akabeko: false,
+            bag_of_prep: false,
+            ninja_scroll: false,
+            symbiotic_virus: false,
+            teardrop_locket: false,
+            nuclear_battery: false,
+            toolbox: false,
+            brimstone: false,
+            horn_cleat: false,
+            captains_wheel: false,
+            incense_burner: false,
+            sundial: false,
+            cloak_clasp: false,
+            hovering_kite: false,
+            pen_nib: false,
+            tingsha: false,
+            tough_bandages: false,
+            dead_branch: false,
+            charons_ashes: false,
+            gremlin_horn: false,
+            the_specimen: false,
+            unceasing_top: false,
+            orange_pellets: false,
+            hand_drill: false,
+            magic_flower: false,
+            warped_tongs: false,
+            violet_lotus: false,
+            sacred_bark: false,
+            mark_of_bloom: false,
+            membership_card: false,
+            smiling_mask: false,
+            busted_crown: false,
+            runic_dome: false,
+            meal_ticket: false,
+            eternal_feather: false,
         }
     }
 }
@@ -683,6 +765,16 @@ impl BattleState {
             relic_serpent_turns: 0,
             relic_emotion_pulse: false,
             relic_lizard_used: false,
+            relic_pen_nib: 0,
+            relic_incense_turns: 0,
+            relic_horn_cleat_turns: 0,
+            relic_wheel_turns: 0,
+            relic_kite_used: false,
+            relic_pellets_skill: false,
+            relic_pellets_power: false,
+            relic_pellets_attack: false,
+            relic_pen_nib_active: false,
+            relic_tongs_used: false,
             relics_ctx: RelicCtx::default(),
         };
         for (sid, up) in deck {
@@ -780,6 +872,29 @@ impl BattleState {
         }
         for a in eot {
             self.mgr.add_bottom(a);
+        }
+        // OrangePellets：同回合打全三类 → 去全部减益（DEBUFF 移除——原版 removeAllDebuffs）
+        if self.relics_ctx.orange_pellets
+            && self.relic_pellets_skill
+            && self.relic_pellets_power
+            && self.relic_pellets_attack
+        {
+            self.player.powers.retain(|p| {
+                !matches!(
+                    p.kind,
+                    PowerKind::Weak
+                        | PowerKind::Vulnerable
+                        | PowerKind::Frail
+                        | PowerKind::Poison
+                )
+            });
+        }
+        // CloakClasp.onPlayerEndTurn：+N 格挡（N=手牌数）
+        if self.relics_ctx.cloak_clasp {
+            let n = self.hand.group.len() as i32;
+            if n > 0 {
+                self.mgr.add_bottom(GameAction::GainBlock { target: TargetRef::Player, amount: n });
+            }
         }
         // StoneCalendar.onPlayerEndTurn：第 7 回合末全体 52 伤（THORNS，原版遗物伤类型）
         if self.relics_ctx.stone_calendar && self.relic_stone_turns == 7 {
@@ -1124,6 +1239,14 @@ impl BattleState {
             self.begin_player_turn();
             return true;
         }
+        // UnceasingTop.onRefreshHand：手牌空且回合未结束 → 抽 1（即时模型等价点）
+        if self.relics_ctx.unceasing_top
+            && self.hand.group.is_empty()
+            && !self.mgr.turn_has_ended
+        {
+            self.mgr.add_bottom(GameAction::DrawCard { amount: 1, end_turn_draw: false });
+            return true;
+        }
         // 全空 → 等待玩家
         self.mgr.phase = Phase::WaitingOnUser;
         self.mgr.has_control = false;
@@ -1252,6 +1375,42 @@ impl BattleState {
         if block > 0 {
             self.player.add_block(block);
         }
+        // —— 批次 5e 消耗系遗物 ——
+        // DeadBranch.onExhaust：每张消耗 → 随机牌入手
+        if self.relics_ctx.dead_branch {
+            let pool: Vec<usize> = sts_data::gen::CARDS
+                .iter()
+                .enumerate()
+                .filter(|(_, c)| {
+                    c.color != sts_data::gen::CardColor::Curse
+                        && matches!(
+                            c.kind,
+                            sts_data::gen::CardType::Attack
+                                | sts_data::gen::CardType::Skill
+                                | sts_data::gen::CardType::Power
+                        )
+                })
+                .map(|(i, _)| i)
+                .collect();
+            let mut r = self.rngs.card_random.copy();
+            for _ in 0..count {
+                let pick = pool[r.random_int_inclusive(pool.len() as i32 - 1) as usize];
+                self.mgr.add_bottom(GameAction::MakeTempCardInHand {
+                    sid: pick,
+                    upgraded: false,
+                    count: 1,
+                });
+            }
+            self.rngs.card_random = r;
+        }
+        // CharonsAshes.onExhaust：全体 3 伤（THORNS）
+        if self.relics_ctx.charons_ashes {
+            let matrix = self.combust_matrix(3 * count);
+            self.mgr.add_bottom(GameAction::DamageAll {
+                matrix,
+                ty: DamageType::Thorns,
+            });
+        }
     }
 
     pub fn first_alive_monster(&self) -> Option<usize> {
@@ -1285,7 +1444,7 @@ impl BattleState {
         }
     }
 
-    /// 弃牌钩子（手动弃牌每张触发）：Tactician +1 能量。
+    /// 弃牌钩子（手动弃牌每张触发）：Tactician +1 能量；批次 5e 弃牌系遗物。
     pub fn on_manual_discard_hook(&mut self, count: i32) {
         if let Some(t) = self
             .player
@@ -1297,6 +1456,26 @@ impl BattleState {
             if t > 0 {
                 self.energy = (self.energy + t * count).min(999);
             }
+        }
+        // Tingsha：每张 → 随机怪 3 伤（THORNS）
+        if self.relics_ctx.tingsha {
+            for _ in 0..count {
+                if let Some(mi) = self.first_alive_monster() {
+                    self.mgr.add_bottom(GameAction::Damage {
+                        target: TargetRef::Monster(mi),
+                        info: crate::damage::DamageInfo::pure(true, 3, DamageType::Thorns),
+                    });
+                }
+            }
+        }
+        // ToughBandages：每张 +3 格挡
+        if self.relics_ctx.tough_bandages {
+            self.player.add_block(3 * count);
+        }
+        // HoveringKite：每回合首次弃牌 → 抽 1
+        if self.relics_ctx.hovering_kite && !self.relic_kite_used {
+            self.relic_kite_used = true;
+            self.mgr.add_bottom(GameAction::DrawCard { amount: 1, end_turn_draw: false });
         }
     }
 
@@ -1840,6 +2019,57 @@ impl BattleState {
                 self.game_hand_size -= 1;
             }
         }
+        // —— 批次 5e 战斗开始遗物 ——
+        if self.relics_ctx.akabeko {
+            self.player.powers.push(Power::new(PowerKind::Vigor, 8));
+        }
+        if self.relics_ctx.bag_of_prep {
+            self.mgr.add_bottom(GameAction::DrawCard { amount: 2, end_turn_draw: false });
+        }
+        if self.relics_ctx.ninja_scroll {
+            self.mgr.add_bottom(GameAction::MakeTempCardInHand {
+                sid: crate::cards::sid_of("Shiv"),
+                upgraded: false,
+                count: 3,
+            });
+        }
+        if self.relics_ctx.symbiotic_virus {
+            self.mgr.add_bottom(GameAction::ChannelOrb { kind: crate::orb::OrbKind::Dark });
+        }
+        if self.relics_ctx.nuclear_battery {
+            self.mgr.add_bottom(GameAction::ChannelOrb { kind: crate::orb::OrbKind::Plasma });
+        }
+        if self.relics_ctx.teardrop_locket {
+            self.mgr.add_bottom(GameAction::ChangeStance { stance: crate::stance::StanceKind::Calm });
+        }
+        if self.relics_ctx.toolbox {
+            let pool: Vec<usize> = sts_data::gen::CARDS
+                .iter()
+                .enumerate()
+                .filter(|(_, c)| {
+                    c.color == sts_data::gen::CardColor::Colorless
+                        && matches!(
+                            c.kind,
+                            sts_data::gen::CardType::Skill | sts_data::gen::CardType::Attack
+                        )
+                })
+                .map(|(i, _)| i)
+                .collect();
+            if !pool.is_empty() {
+                let mut r = self.rngs.card_random.copy();
+                let pick = pool[r.random_int_inclusive(pool.len() as i32 - 1) as usize];
+                self.rngs.card_random = r;
+                self.mgr.add_bottom(GameAction::MakeTempCardInHand {
+                    sid: pick,
+                    upgraded: false,
+                    count: 1,
+                });
+            }
+        }
+        // BustedCrown/RunicDome：+1 能量
+        if self.relics_ctx.busted_crown || self.relics_ctx.runic_dome {
+            self.energy_master += 1;
+        }
     }
 
     /// 战斗开始真怪初始化：开局能力（usePreBattleAction）+ 首招 roll。
@@ -2160,6 +2390,52 @@ impl BattleState {
                 self.mgr.add_bottom(GameAction::DrawCard { amount: 1, end_turn_draw: false });
             }
         }
+        // —— 批次 5e 回合开始遗物 ——
+        // Brimstone：+2 力，全体怪 +1 力
+        if self.relics_ctx.brimstone {
+            self.player.powers.push(Power::new(PowerKind::Strength, 2));
+            for i in 0..self.monsters.len() {
+                if !self.monsters[i].creature.is_dying && !self.monsters[i].creature.is_dead {
+                    self.monsters[i].creature.powers.push(Power::new(PowerKind::Strength, 1));
+                }
+            }
+        }
+        // HornCleat：第 2 回合 +14 格挡
+        if self.relics_ctx.horn_cleat {
+            self.relic_horn_cleat_turns += 1;
+            if self.relic_horn_cleat_turns == 2 {
+                self.player.add_block(14);
+            }
+        }
+        // CaptainsWheel：第 3 回合 +18 格挡
+        if self.relics_ctx.captains_wheel {
+            self.relic_wheel_turns += 1;
+            if self.relic_wheel_turns == 3 {
+                self.player.add_block(18);
+            }
+        }
+        // IncenseBurner：每 6 回合 1 无实体
+        if self.relics_ctx.incense_burner {
+            self.relic_incense_turns += 1;
+            if self.relic_incense_turns % 6 == 0 {
+                self.player.powers.push(Power::new(PowerKind::IntangiblePlayer, 1));
+            }
+        }
+        // HoveringKite/WarpedTongs/OrangePellets：回合标记重置
+        self.relic_kite_used = false;
+        self.relic_tongs_used = false;
+        self.relic_pellets_skill = false;
+        self.relic_pellets_power = false;
+        self.relic_pellets_attack = false;
+        // WarpedTongs：每回合随机手牌升级（战斗内临时升级）
+        if self.relics_ctx.warped_tongs && !self.hand.group.is_empty() {
+            let mut r = self.rngs.card_random.copy();
+            let idx = r.random_int_inclusive(self.hand.group.len() as i32 - 1) as usize;
+            self.rngs.card_random = r;
+            if self.hand.group[idx].can_upgrade() {
+                self.hand.group[idx].apply_upgrade();
+            }
+        }
         // 3-5) 回合开始钩子（遗物/卡/能力 atStartOfTurn）—— TODO 3.5/3.6
         self.mgr.turn += 1;
         self.mgr.skip_monster_turn = false;
@@ -2324,6 +2600,7 @@ impl BattleState {
             }
             GameAction::Heal { target, amount } => match target {
                 TargetRef::Player => {
+                    let amount = self.relic_adjusted_heal(amount);
                     self.player.heal(amount);
                 }
                 TargetRef::Monster(i) => {
@@ -2590,7 +2867,14 @@ impl BattleState {
                     self.evoke_orb();
                 }
             }
-            GameAction::ChangeStance { stance } => self.change_stance(stance),
+            GameAction::ChangeStance { stance } => {
+                let before = self.player_stance;
+                self.change_stance(stance);
+                // VioletLotus.onChangeStance：变姿态 → +1 能量
+                if self.relics_ctx.violet_lotus && self.player_stance != before {
+                    self.mgr.add_bottom(GameAction::GainEnergy { amount: 1 });
+                }
+            }
             GameAction::Scry { amount } => {
                 let _ = amount; // 批次 6 交互（选择屏）
                 // WaveOfTheHandPower.onScry：预见后全体 Weak amount
@@ -2615,6 +2899,9 @@ impl BattleState {
             }
             GameAction::CardRoutine { call } => crate::cards::run_routine(self, &call),
             GameAction::Future { .. } => {}
+            GameAction::PenNibConsume => {
+                self.relic_pen_nib_active = false;
+            }
         }
     }
 
@@ -2636,6 +2923,17 @@ impl BattleState {
             }
         }
         self.check_battle_over();
+    }
+
+    /// 治疗量修正（MagicFlower ×1.5 / MarkOfBloom 归零）。
+    pub fn relic_adjusted_heal(&self, amount: i32) -> i32 {
+        if self.relics_ctx.mark_of_bloom {
+            return 0;
+        }
+        if self.relics_ctx.magic_flower {
+            return (amount as f32 * 1.5).round() as i32;
+        }
+        amount
     }
 
     pub fn exec_damage(&mut self, target: TargetRef, info: DamageInfo) {
@@ -2666,7 +2964,16 @@ impl BattleState {
                 if amount > 0 && has_intangible {
                     amount = 1;
                 }
-                let (mut remain, _broke) = c.decrement_block(info.ty, amount);
+                let (mut remain, broke) = c.decrement_block(info.ty, amount);
+                // HandDrill.onBlockBroken：破格挡 → 2 易伤
+                if broke && self.relics_ctx.hand_drill && info.owner_is_player {
+                    self.mgr.add_bottom(GameAction::ApplyPower {
+                        target: TargetRef::Monster(i),
+                        source: Some(TargetRef::Player),
+                        power: Power::new(PowerKind::Vulnerable, 2),
+                        from_monster: false,
+                    });
+                }
                 // Boot：未格挡攻击伤 1-4 → 5
                 if (1..=4).contains(&remain) && info.ty == DamageType::Normal && self.relics_ctx.boot {
                     remain = 5;
@@ -2732,6 +3039,38 @@ impl BattleState {
                             if !x.creature.is_dying && x.creature.name.starts_with("Gremlin") {
                                 x.escape_next = true;
                             }
+                        }
+                    }
+                }
+                // GremlinHorn.onMonsterDeath：+1 能量 + 抽 1
+                if dying && self.relics_ctx.gremlin_horn {
+                    self.energy = (self.energy + 1).min(999);
+                    self.mgr.add_bottom(GameAction::DrawCard { amount: 1, end_turn_draw: false });
+                }
+                // TheSpecimen.onMonsterDeath：毒转移到最后一只存活怪
+                if dying && self.relics_ctx.the_specimen {
+                    let poison = self.monsters[i]
+                        .creature
+                        .powers
+                        .iter()
+                        .find(|p| p.kind == PowerKind::Poison)
+                        .map(|p| p.amount);
+                    if let Some(amt) = poison {
+                        self.monsters[i]
+                            .creature
+                            .powers
+                            .retain(|p| p.kind != PowerKind::Poison);
+                        if let Some(target) = self
+                            .monsters
+                            .iter_mut()
+                            .enumerate()
+                            .find(|(j, x)| *j != i && !x.creature.is_dying && !x.creature.is_dead)
+                            .map(|(j, _)| j)
+                        {
+                            self.monsters[target]
+                                .creature
+                                .powers
+                                .push(Power::new(PowerKind::Poison, amt));
                         }
                     }
                 }
@@ -3044,6 +3383,24 @@ impl BattleState {
                 source: Some(TargetRef::Player),
                 amount: 1,
             });
+        }
+        // PenNib.onUseCard：第 10 次攻击 → 下一次攻击伤害 ×2
+        if st.kind == CardType::Attack && self.relics_ctx.pen_nib {
+            self.relic_pen_nib += 1;
+            if self.relic_pen_nib >= 10 {
+                self.relic_pen_nib = 0;
+                self.relic_pen_nib_active = true;
+            }
+            // effects() 会在本次出牌的攻击 info 里消费 ×2——打完后熄灭
+            // （多段全段 ×2；下一张攻击恢复正常）
+            self.mgr.add_bottom(GameAction::PenNibConsume);
+        }
+        // OrangePellets：同回合打出技能+能力+攻击 → 回合末去全部减益（end_turn 结算）
+        match st.kind {
+            CardType::Skill => self.relic_pellets_skill = true,
+            CardType::Power => self.relic_pellets_power = true,
+            CardType::Attack => self.relic_pellets_attack = true,
+            _ => {}
         }
         // Nunchaku.onUseCard：每 10 次攻击 +1 能量
         if st.kind == CardType::Attack && self.relics_ctx.nunchaku {
