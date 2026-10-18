@@ -49,6 +49,15 @@
 - **源码路径迁移**：`C:\Users\17366\Desktop\MySlayTheSpire-master`（原
   OneDrive\Desktop 已迁空）。
 
+## 本轮追加（收官验证，2026-10-18）
+
+- **收官（final_audit）**：遗物 **181/181 全覆盖**确认（no-op 登记消化尾量）；
+  全流程 fuzz 冒烟（40 局 × 600 步随机命令：随机节点/出牌/领奖/篝火/事件/
+  商店，不 panic + HP 不变量）；本地四门全绿（31 组测试/clippy 0/rustfmt
+  干净/三平台交叉 check）。
+- **项目收官**：可玩完整版 + 302 测试 + CI 发行链路。剩余可选项：
+  crossterm 换后端、推远端打 v* tag 发版。
+
 ## 本轮追加（批次 5i 篝火扩展，2026-10-18）
 
 - **篝火扩展选项（5i，2c250d4）**：PeacePipe（rp <卡号> 移除）/Shovel（dig 挖
