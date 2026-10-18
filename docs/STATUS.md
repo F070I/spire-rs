@@ -49,6 +49,15 @@
 - **源码路径迁移**：`C:\Users\17366\Desktop\MySlayTheSpire-master`（原
   OneDrive\Desktop 已迁空）。
 
+## 本轮追加（CI 发行，2026-10-18）
+
+- **CI（0aaf9d9）**：release.yml（v* tag → 四矩阵构建 windows-gnu/
+  macos-intel/arm64/linux → test --release → 冒烟 → zip+sha256 → GitHub
+  Release）+ ci.yml（三 OS 测试 + clippy -D warnings + macOS 双目标交叉
+  check）。全库 cargo fmt 清偿（59 文件，行为不变）。README 状态段刷新。
+- 至此项目主线完成：可玩完整版 + 测试守护 + CI 发行链路。剩余为低优先
+  尾量（选择屏遗物 ~25 / 多怪细节 / crossterm 换后端）。
+
 ## 本轮追加（批次 5g 卡上下文，2026-10-18）
 
 - **遗物 5g**：BattleState.playing_card 卡上下文追踪——StrikeDummy（"打击"
