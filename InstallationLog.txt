@@ -1,0 +1,7 @@
+************************************* Invoked: Sun Oct 18 12:41:15 2026
+[0] Arguments: C:\Users\17366\AppData\Local\Temp\WinGet\MSYS2.MSYS2.20260611\msys2-x86_64-20260611.exe, install, --confirm-command, --root, C:\msys64, --root, C:msys64
+[11] Operations sanity check succeeded.
+[15] Using metadata cache from "C:/Users/17366/AppData/Local/cache\\qt-installer-framework\\d75f1c19-3379-3717-ae8d-1404b51494a9"
+[15] Found 0 cached items.
+[29] Loaded control script ":/metadata/installer-config/control_js"
+[30] Warning: The path you have entered is not valid, please make sure to specify a valid target.

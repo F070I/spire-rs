@@ -5,6 +5,7 @@ members = [
     "crates/sts-core",
     "crates/sts-interface",
     "crates/sts-terminal",
+    "crates/sts-desktop",
     "crates/sts-tests",
 ]
 

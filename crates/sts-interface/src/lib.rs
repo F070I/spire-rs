@@ -70,6 +70,17 @@ pub enum PlayerCommand {
     EventChoose {
         index: usize,
     },
+    // —— 桌面 UI 直连（对既有核心 API 的命令化包装）——
+    OpenNeowPick {
+        index: usize,
+    },
+    OpenTreasure,
+    CampfireSmithPick {
+        deck_index: usize,
+    },
+    CampfirePipePick {
+        deck_index: usize,
+    },
     // —— 查看 / 外壳 ——
     ViewDeck,
     CloseOverlay,
@@ -128,8 +139,9 @@ impl CommandResult {
     }
 }
 
-/// 渲染视图骨架。TODO(批次6.1)：TopBarView/BattleView/MapView/SelectionView/OverlayView 全量字段。
-#[derive(Clone, Debug)]
-pub struct GameView {
-    pub screen: sts_data::ScreenKind,
-}
+pub mod view;
+pub use view::{
+    dispatch, power_label, BattleView, CampfireAction, CampfireView, CardView, EnemyView,
+    EventView, GameView, MapEdge, MapNode, MapView, PileView, PotionView, PowerView, RewardView,
+    Screen, ShopEntry, ShopView, TopBar,
+};

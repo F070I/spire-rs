@@ -6,3 +6,6 @@ description = "Slay the Spire (text edition) - UI<->core protocol: PlayerCommand
 
 [dependencies]
 sts-data = { path = "../sts-data" }
+# GameView::capture / dispatch 需要读取 RunState4b 与 BattleState 的公开字段；
+# 方向 interface → core 单向，核心不反向依赖本 crate（架构冻结 §依赖）。
+sts-core = { path = "../sts-core" }
