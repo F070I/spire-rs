@@ -49,6 +49,24 @@
 - **源码路径迁移**：`C:\Users\17366\Desktop\MySlayTheSpire-master`（原
   OneDrive\Desktop 已迁空）。
 
+## 本轮追加（官方本地化 + 绿磷终端整改，2026-10-19）
+
+- **官方中文本地化（0b71261）**：确认反编译项目 zhs/ 全套官方中文存在
+  （cards/relics/potions/events/monsters/powers/characters/stances/ui）。
+  tools/extract_zhs_text.py → gen::zhs_text（649 条：遗物描述/药水描述/
+  事件多屏正文+选项/怪物官方名/能力官方名/角色名/升级描述 104）。
+  text.rs 插值引擎：!D!/!B!/!M! → 实际结算值（战斗内叠力量/敏捷）、NL、
+  *关键词*、UPGRADE_DESCRIPTION。GameView 全路径接官方文本。事件选项
+  数=核心实装分支数才采用官方（§15.5 防假交互），否则回退效果一致文本。
+- **绿磷终端整改**：Green/Gray 双主题替换 Mono/Muted；主菜单（新游戏/
+  继续/退出）+ 角色选择（官方名，未实装角色诚实禁用）；战斗重构
+  （敌人紧凑行式/能量球紧邻手牌/药水独立槽列）。
+- 本地化审计报告要点：卡牌 desc_zhs=官方原文（extract 已有）；事件 title/
+  body=官方、选项在分支数不符时用效果一致文本；遗物/药水描述=官方首次
+  接入；AI 翻译为零。
+- 测试 zh_text.rs 12 项（插值/升级/力量敏捷/全卡无残留占位符/官方名/
+  术语/姿态）；累计 316 全过。Release 3.96 MB。
+
 ## 本轮追加（桌面 UI 重设计，2026-10-19）
 
 - **桌面窗口 UI（4ad7e86）**：新 crate sts-desktop（egui/glow）——独立窗口
