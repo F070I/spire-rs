@@ -2,7 +2,7 @@
 
 > 本文档为 token 预算接近尾声时的交接快照。下个会话/接手者按此继续。
 
-## 已完成（git 最新 commit：f893a35+，283 测试全过，clippy 0）
+## 已完成（git 最新 commit：5g，288 测试全过，clippy 0）
 
 ### 批次 1：地基
 - sts-data::rng：RandomXS128 + JDK LCG + STS Random 包装（基线交叉验证）
@@ -48,6 +48,15 @@
   之后入队（Happy Flower/Art of War 同坑两次）。
 - **源码路径迁移**：`C:\Users\17366\Desktop\MySlayTheSpire-master`（原
   OneDrive\Desktop 已迁空）。
+
+## 本轮追加（批次 5g 卡上下文，2026-10-18）
+
+- **遗物 5g**：BattleState.playing_card 卡上下文追踪——StrikeDummy（"打击"
+  名 +3 伤）/WristBlade（0 费攻击 +4 伤）经 attack_info 生效，零调用点改动；
+  Chemical X（cards::x_value——12 处 X 费读点替换，+2 不付能量）；no-op
+  装饰件显式登记 18 件；Busted Crown 卡奖励 3→1；Dream Catcher 休息得牌。
+  映射 156/181（战斗内机制全覆盖；剩余 25 件为纯选择屏流程类）。
+  测试 +5（relics6.rs）。
 
 ## 本轮追加（批次 5f 遗物尾量，2026-10-18）
 
