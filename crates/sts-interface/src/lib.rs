@@ -139,9 +139,14 @@ impl CommandResult {
     }
 }
 
+pub mod text;
 pub mod view;
+pub use text::{
+    card_desc_raw, character_name_zhs, combat_eff, event_text, monster_name_zhs, potion_text,
+    power_label, relic_text, stance_name_zhs, static_eff,
+};
 pub use view::{
-    dispatch, power_label, BattleView, CampfireAction, CampfireView, CardView, EnemyView,
-    EventView, GameView, MapEdge, MapNode, MapView, PileView, PotionView, PowerView, RewardView,
-    Screen, ShopEntry, ShopView, TopBar,
+    dispatch, BattleView, CampfireAction, CampfireView, CardView, EnemyView, EventView, GameView,
+    MapEdge, MapNode, MapView, PileView, PotionView, PowerView, RewardView, Screen, ShopEntry,
+    ShopView, TopBar,
 };

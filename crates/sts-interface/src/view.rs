@@ -211,55 +211,12 @@ pub struct GameView {
 
 // ---------------------------------------------------------------- 标签辅助
 
-/// PowerKind 的中文短标签（展示用；未收录的能力显示原枚举名，不猜测机制）。
-pub fn power_label(kind: sts_core::power::PowerKind) -> String {
-    use sts_core::power::PowerKind as K;
-    let s = match kind {
-        K::Strength => "力量",
-        K::Dexterity => "敏捷",
-        K::Vulnerable => "易伤",
-        K::Weak => "虚弱",
-        K::Frail => "脆弱",
-        K::Poison => "中毒",
-        K::Artifact => "人工制品",
-        K::Metallicize => "金属化",
-        K::Intangible => "无实体",
-        K::IntangiblePlayer => "无实体",
-        K::Thorns => "荆棘",
-        K::Regenerate => "再生",
-        K::PlatedArmor => "反甲",
-        K::CurlUp => "蜷缩",
-        K::Ritual => "仪式",
-        K::Curiosity => "好奇",
-        K::Barricade => "壁垒",
-        K::DemonForm => "恶魔形态",
-        K::Mantra => "真言",
-        K::Focus => "专注",
-        K::Rage => "怒火",
-        K::AfterImage => "残影",
-        K::NoxiousFumes => "毒雾",
-        K::Combust => "燃烧",
-        K::DarkEmbrace => "暗拥",
-        K::FeelNoPain => "不觉痛楚",
-        K::Corruption => "腐化",
-        K::Echo => "回响",
-        K::Buffer => "缓冲",
-        K::LikeWater => "如水",
-        K::WreathOfFlame => "焰环",
-        K::Establishment => "确立",
-        K::FlameBarrier => "火焰屏障",
-        K::DodgeAndRoll => "翻滚",
-        _ => return format!("{kind:?}"),
-    };
-    s.to_string()
-}
-
 fn power_views(c: &Creature) -> Vec<PowerView> {
     c.powers
         .iter()
         .filter(|p| p.amount > 0)
         .map(|p| PowerView {
-            label: power_label(p.kind),
+            label: crate::power_label(p.kind),
             amount: p.amount,
         })
         .collect()
@@ -278,6 +235,7 @@ fn kind_label(t: CardType) -> &'static str {
 fn card_view(hand_index: usize, sid: usize, upgraded: bool, cost: i32, energy: i32) -> CardView {
     let st = &sts_data::gen::CARDS[sid];
     let needs_target = matches!(st.target, CardTarget::Enemy);
+    let (dmg, blk, magic, _) = crate::static_eff(sid, upgraded);
     CardView {
         hand_index,
         sid,
@@ -287,17 +245,16 @@ fn card_view(hand_index: usize, sid: usize, upgraded: bool, cost: i32, energy: i
         upgraded,
         needs_target,
         affordable: cost >= 0 && energy >= cost,
-        desc: st
-            .desc_zhs
-            .unwrap_or(st.desc_en.unwrap_or(""))
-            .replace("NL", "\n"),
+        desc: crate::card_desc_raw(sid, upgraded, dmg, blk, magic),
     }
 }
 
 fn enemy_view(m: &Monster, index: usize) -> EnemyView {
     EnemyView {
         index,
-        name: m.creature.name.clone(),
+        name: crate::monster_name_zhs(&m.creature.name)
+            .unwrap_or(&m.creature.name)
+            .to_string(),
         hp: m.creature.current_health,
         max_hp: m.creature.max_health,
         block: m.creature.current_block,
@@ -309,12 +266,7 @@ fn enemy_view(m: &Monster, index: usize) -> EnemyView {
 fn battle_view(b: &BattleState) -> BattleView {
     BattleView {
         player_powers: power_views(&b.player),
-        stance: match b.player_stance {
-            sts_core::stance::StanceKind::Neutral => "中立".to_string(),
-            sts_core::stance::StanceKind::Calm => "平静".to_string(),
-            sts_core::stance::StanceKind::Wrath => "愤怒".to_string(),
-            sts_core::stance::StanceKind::Divinity => "神格".to_string(),
-        },
+        stance: crate::stance_name_zhs(b.player_stance).to_string(),
         enemies: b
             .monsters
             .iter()
@@ -327,7 +279,13 @@ fn battle_view(b: &BattleState) -> BattleView {
             .group
             .iter()
             .enumerate()
-            .map(|(i, c)| card_view(i, c.sid, c.upgraded, c.cost_for_turn, b.energy))
+            .map(|(i, c)| {
+                let mut cv = card_view(i, c.sid, c.upgraded, c.cost_for_turn, b.energy);
+                // 战斗内：!D!/!B! 叠加力量/敏捷（原版 applyPowers 展示语义）
+                let (dmg, blk, magic) = crate::combat_eff(c.sid, c.upgraded, &b.player.powers);
+                cv.desc = crate::card_desc_raw(c.sid, c.upgraded, dmg, blk, magic);
+                cv
+            })
             .collect(),
         draw_count: b.draw_pile.group.len(),
         discard_count: b.discard_pile.group.len(),
@@ -338,12 +296,13 @@ fn battle_view(b: &BattleState) -> BattleView {
 
 fn shop_entry_card(index: usize, e: &(usize, bool, i32, bool)) -> ShopEntry {
     let st = &sts_data::gen::CARDS[e.0];
+    let (dmg, blk, magic, _) = crate::static_eff(e.0, e.1);
     ShopEntry {
         index,
         name: st.name_zhs.unwrap_or(st.id).to_string(),
         price: e.2,
         sold: e.3,
-        desc: st.desc_zhs.unwrap_or("").replace("NL", "\n"),
+        desc: crate::card_desc_raw(e.0, e.1, dmg, blk, magic),
     }
 }
 
@@ -351,10 +310,14 @@ fn shop_entry_relic(index: usize, e: &(&'static str, i32, bool)) -> ShopEntry {
     let st = sts_data::gen::RELICS.iter().find(|r| r.id == e.0);
     ShopEntry {
         index,
-        name: st.and_then(|r| r.name_zhs).unwrap_or(e.0).to_string(),
+        name: crate::relic_text(e.0)
+            .map(|(n, _, _)| n.to_string())
+            .unwrap_or_else(|| st.and_then(|r| r.name_zhs).unwrap_or(e.0).to_string()),
         price: e.1,
         sold: e.2,
-        desc: String::new(),
+        desc: crate::relic_text(e.0)
+            .map(|(_, d, _)| d.replace("NL", "\n"))
+            .unwrap_or_default(),
     }
 }
 
@@ -362,11 +325,22 @@ fn shop_entry_potion(index: usize, e: &(&'static str, i32, bool)) -> ShopEntry {
     let st = sts_data::gen::potions::POTIONS.iter().find(|p| p.id == e.0);
     ShopEntry {
         index,
-        name: st.and_then(|p| p.name_zhs).unwrap_or(e.0).to_string(),
+        name: crate::potion_text(e.0)
+            .map(|(n, _)| n.to_string())
+            .unwrap_or_else(|| st.and_then(|p| p.name_zhs).unwrap_or(e.0).to_string()),
         price: e.1,
         sold: e.2,
-        desc: String::new(),
+        desc: crate::potion_text(e.0)
+            .map(|(_, d)| d.replace("NL", "\n"))
+            .unwrap_or_default(),
     }
+}
+
+/// 事件标题：官方名优先；未收录回退接口文本。
+fn name_fallback(id: &str, ev: &sts_core::event::EventDef) -> String {
+    crate::event_text(id)
+        .map(|(n, _, _)| n.to_string())
+        .unwrap_or_else(|| ev.title.to_string())
 }
 
 fn shop_view(shop: &ShopState) -> ShopView {
@@ -555,14 +529,16 @@ impl GameView {
                     slot,
                     id: *p,
                     name: p
-                        .and_then(|id| {
-                            sts_data::gen::potions::POTIONS
-                                .iter()
-                                .find(|s| s.id == id)
-                                .and_then(|s| s.name_zhs)
+                        .and_then(|id| crate::potion_text(id).map(|(n, _)| n.to_string()))
+                        .or_else(|| {
+                            p.and_then(|id| {
+                                sts_data::gen::potions::POTIONS
+                                    .iter()
+                                    .find(|s| s.id == id)
+                                    .and_then(|s| s.name_zhs.map(|s| s.to_string()))
+                            })
                         })
-                        .unwrap_or("空")
-                        .to_string(),
+                        .unwrap_or_else(|| "空".to_string()),
                 })
                 .collect();
             v
@@ -576,29 +552,53 @@ impl GameView {
                 .map(|(i, (sid, up))| card_view(i, *sid, *up, 0, 999))
                 .collect(),
             relic: run.relic_reward.map(|id| {
-                sts_data::gen::RELICS
-                    .iter()
-                    .find(|r| r.id == id)
-                    .and_then(|r| r.name_zhs)
-                    .unwrap_or(id)
-                    .to_string()
+                crate::relic_text(id)
+                    .map(|(n, _, _)| n.to_string())
+                    .unwrap_or_else(|| {
+                        sts_data::gen::RELICS
+                            .iter()
+                            .find(|r| r.id == id)
+                            .and_then(|r| r.name_zhs)
+                            .unwrap_or(id)
+                            .to_string()
+                    })
             }),
             potion: run.potion_reward.map(|id| {
-                sts_data::gen::potions::POTIONS
-                    .iter()
-                    .find(|p| p.id == id)
-                    .and_then(|p| p.name_zhs)
-                    .unwrap_or(id)
-                    .to_string()
+                crate::potion_text(id)
+                    .map(|(n, _)| n.to_string())
+                    .unwrap_or_else(|| {
+                        sts_data::gen::potions::POTIONS
+                            .iter()
+                            .find(|p| p.id == id)
+                            .and_then(|p| p.name_zhs)
+                            .unwrap_or(id)
+                            .to_string()
+                    })
             }),
         });
         let event = (screen == Screen::Event).then(|| {
             let (id, _) = run.event.unwrap_or(("Golden Idol", -1));
             let ev = sts_core::event::get(id);
-            EventView {
-                title: ev.title.to_string(),
-                body: ev.body.to_string(),
-                options: ev.options.iter().map(|o| o.text.to_string()).collect(),
+            // 官方 zhs 文本优先（§15.3）。标题/正文直接采用官方原文；
+            // 选项仅当官方数量与核心实装的分支数一致时采用（§15.5：
+            // 选项必须与真实结果一致——核心简化实装的分支数少于官方时，
+            // 展示官方选项会造成"可选但无效果"的假交互，此时回退到
+            // 与实际效果一致的接口文本，并记录于本地化审计报告）。
+            match crate::event_text(id) {
+                Some((name, body, options))
+                    if !options.is_empty() && options.len() == ev.options.len() =>
+                {
+                    EventView {
+                        title: name.to_string(),
+                        body,
+                        options,
+                    }
+                }
+                _ => EventView {
+                    title: name_fallback(id, ev),
+                    body: ev.body.to_string(),
+                    options: ev.options.iter().map(|o| o.text.to_string()).collect(),
+                },
             }
         });
         let shop =

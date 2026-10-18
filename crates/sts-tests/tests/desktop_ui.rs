@@ -119,9 +119,10 @@ fn gameview_capture_event() {
     let v = GameView::capture(&run);
     assert_eq!(v.screen, Screen::Event);
     let ev = v.event.expect("事件必有 EventView");
-    assert!(!ev.title.is_empty());
-    assert!(!ev.body.is_empty());
-    assert!(!ev.options.is_empty(), "选项来自事件定义");
+    assert_eq!(ev.title, "金神像", "事件标题来自官方 zhs 文本");
+    assert!(ev.body.contains("金神像"), "正文来自官方文本");
+    // 官方选项 5 个 vs 核心实装 2 个 → 选项回退到与效果一致的接口文本
+    assert_eq!(ev.options.len(), 2, "选项数与核心实装分支一致（§15.5）");
 }
 
 #[test]

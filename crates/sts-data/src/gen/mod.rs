@@ -11,6 +11,7 @@ pub mod potions;
 pub mod powers;
 pub mod relics;
 pub mod types;
+pub mod zhs_text;
 
 pub use cards::{CardStatic, CARDS};
 pub use cards::{

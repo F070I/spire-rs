@@ -16,8 +16,10 @@ use sts_interface::{dispatch, CampfireOption, GameView, PlayerCommand, Screen, S
 
 #[derive(Clone, Copy, PartialEq)]
 enum ThemeMode {
-    Mono,
-    Muted,
+    /// 单色绿磷终端
+    Green,
+    /// 灰度单色终端
+    Gray,
 }
 
 struct Palette {
@@ -37,38 +39,37 @@ struct Palette {
     block_bar: Color32,
 }
 
-const MONO: Palette = Palette {
-    bg: Color32::from_rgb(0x11, 0x11, 0x11),
-    panel: Color32::from_rgb(0x16, 0x16, 0x16),
-    panel2: Color32::from_rgb(0x1C, 0x1C, 0x1C),
+const GREEN: Palette = Palette {
+    bg: Color32::from_rgb(0x05, 0x0A, 0x06),
+    panel: Color32::from_rgb(0x08, 0x12, 0x0A),
+    panel2: Color32::from_rgb(0x0C, 0x1A, 0x0F),
+    separator: Color32::from_rgb(0x1E, 0x4A, 0x28),
+    text: Color32::from_rgb(0x63, 0xD4, 0x77),
+    text_dim: Color32::from_rgb(0x3F, 0x94, 0x4F),
+    text_faint: Color32::from_rgb(0x2A, 0x66, 0x36),
+    accent: Color32::from_rgb(0x9B, 0xF0, 0xA8),
+    warn: Color32::from_rgb(0xC9, 0xD9, 0x6B),
+    danger: Color32::from_rgb(0xE8, 0x7C, 0x6E),
+    ok: Color32::from_rgb(0x63, 0xD4, 0x77),
+    hp_bar: Color32::from_rgb(0x2F, 0x8A, 0x40),
+    block_bar: Color32::from_rgb(0x4C, 0xB8, 0x63),
+};
+
+const GRAY: Palette = Palette {
+    bg: Color32::from_rgb(0x0A, 0x0A, 0x0A),
+    panel: Color32::from_rgb(0x10, 0x10, 0x10),
+    panel2: Color32::from_rgb(0x16, 0x16, 0x16),
     separator: Color32::from_rgb(0x33, 0x33, 0x33),
-    text: Color32::from_rgb(0xDD, 0xDD, 0xDD),
-    text_dim: Color32::from_rgb(0x99, 0x99, 0x99),
-    text_faint: Color32::from_rgb(0x66, 0x66, 0x66),
-    accent: Color32::from_rgb(0xCC, 0xCC, 0xCC),
-    warn: Color32::from_rgb(0xBB, 0x99, 0x66),
-    danger: Color32::from_rgb(0xAA, 0x55, 0x55),
-    ok: Color32::from_rgb(0x88, 0x88, 0x88),
-    hp_bar: Color32::from_rgb(0x88, 0x88, 0x88),
-    block_bar: Color32::from_rgb(0xBB, 0xBB, 0xBB),
+    text: Color32::from_rgb(0xD6, 0xD6, 0xD6),
+    text_dim: Color32::from_rgb(0x96, 0x96, 0x96),
+    text_faint: Color32::from_rgb(0x60, 0x60, 0x60),
+    accent: Color32::from_rgb(0xEE, 0xEE, 0xEE),
+    warn: Color32::from_rgb(0xAA, 0xAA, 0xAA),
+    danger: Color32::from_rgb(0x88, 0x88, 0x88),
+    ok: Color32::from_rgb(0xC0, 0xC0, 0xC0),
+    hp_bar: Color32::from_rgb(0x80, 0x80, 0x80),
+    block_bar: Color32::from_rgb(0xB0, 0xB0, 0xB0),
 };
-
-const MUTED: Palette = Palette {
-    bg: Color32::from_rgb(0x11, 0x13, 0x18),
-    panel: Color32::from_rgb(0x17, 0x1A, 0x20),
-    panel2: Color32::from_rgb(0x1D, 0x21, 0x28),
-    separator: Color32::from_rgb(0x30, 0x36, 0x40),
-    text: Color32::from_rgb(0xD8, 0xDC, 0xE3),
-    text_dim: Color32::from_rgb(0x92, 0x9A, 0xA6),
-    text_faint: Color32::from_rgb(0x62, 0x6B, 0x78),
-    accent: Color32::from_rgb(0x83, 0xB7, 0xB3),
-    warn: Color32::from_rgb(0xC9, 0xA9, 0x62),
-    danger: Color32::from_rgb(0xA5, 0x54, 0x4E),
-    ok: Color32::from_rgb(0x6E, 0x9A, 0x84),
-    hp_bar: Color32::from_rgb(0x8F, 0x4A, 0x45),
-    block_bar: Color32::from_rgb(0x5E, 0x7C, 0xA8),
-};
-
 // ---------------------------------------------------------------- 应用状态
 
 #[derive(Clone, Copy, PartialEq)]
@@ -79,7 +80,45 @@ enum DeckMode {
     PickPurge,
 }
 
+#[derive(Clone, Copy, PartialEq)]
+enum AppScreen {
+    /// 主菜单（新游戏/继续/退出）+ 角色选择
+    Menu,
+    /// 游戏进行中
+    Game,
+}
+
+#[derive(Clone, Copy, PartialEq)]
+enum Character {
+    Ironclad,
+    Silent,
+    Defect,
+    Watcher,
+}
+
+impl Character {
+    fn id(self) -> &'static str {
+        match self {
+            Character::Ironclad => "Ironclad",
+            Character::Silent => "Silent",
+            Character::Defect => "Defect",
+            Character::Watcher => "Watcher",
+        }
+    }
+    fn all() -> [Character; 4] {
+        [
+            Character::Ironclad,
+            Character::Silent,
+            Character::Defect,
+            Character::Watcher,
+        ]
+    }
+}
+
 struct SpireApp {
+    /// Menu = 游戏未启动；Game = run 有效
+    screen: AppScreen,
+    character: Character,
     run: sts_core::flow4b::RunState4b,
     view: GameView,
     theme: ThemeMode,
@@ -101,15 +140,16 @@ struct SpireApp {
 impl SpireApp {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
         install_fonts(&cc.egui_ctx);
-        let mut run = sts_core::flow4b::RunState4b::new(chrono_seed());
-        run.open_neow();
+        let run = sts_core::flow4b::RunState4b::new(chrono_seed());
         let view = GameView::capture(&run);
         let mut log = VecDeque::new();
-        log.push_back("欢迎来到尖塔。Neow 在此恭候。".into());
+        log.push_back("spire-rs —— 文字版杀戮尖塔。".into());
         Self {
+            screen: AppScreen::Menu,
+            character: Character::Ironclad,
             run,
             view,
-            theme: ThemeMode::Muted,
+            theme: ThemeMode::Green,
             log,
             targeting: None,
             sel_card: None,
@@ -122,8 +162,8 @@ impl SpireApp {
 
     fn pal(&self) -> &'static Palette {
         match self.theme {
-            ThemeMode::Mono => &MONO,
-            ThemeMode::Muted => &MUTED,
+            ThemeMode::Green => &GREEN,
+            ThemeMode::Gray => &GRAY,
         }
     }
 
@@ -131,6 +171,43 @@ impl SpireApp {
         self.log.push_back(line.into());
         while self.log.len() > 200 {
             self.log.pop_front();
+        }
+    }
+
+    /// 新游戏：选角启动（当前核心仅铁甲战士有完整内容——诚实告知）。
+    fn start_game(&mut self) {
+        if self.character != Character::Ironclad {
+            self.log(format!(
+                "✗ {}：核心尚未实装该角色的卡池/初始卡组/遗物，当前仅铁甲战士可玩",
+                crate_name_zhs(self.character.id())
+            ));
+            return;
+        }
+        let mut run = sts_core::flow4b::RunState4b::new(chrono_seed());
+        run.open_neow();
+        self.run = run;
+        self.view = GameView::capture(&self.run);
+        self.screen = AppScreen::Game;
+        self.log(format!(
+            "新的攀塔开始（{}）。Neow 在此恭候。",
+            crate_name_zhs(self.character.id())
+        ));
+    }
+
+    /// 继续：读档。
+    fn continue_game(&mut self) {
+        let path = save_path();
+        match std::fs::read_to_string(&path) {
+            Ok(json) => match sts_core::flow4b::RunState4b::load_json(&json) {
+                Some(loaded) => {
+                    self.run = loaded;
+                    self.view = GameView::capture(&self.run);
+                    self.screen = AppScreen::Game;
+                    self.log("读档成功，欢迎回来。");
+                }
+                None => self.log("读档失败：存档损坏"),
+            },
+            Err(_) => self.log("读档失败：无存档文件"),
         }
     }
 
@@ -216,6 +293,16 @@ impl SpireApp {
 impl eframe::App for SpireApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         apply_theme(ctx, self.pal());
+        if self.screen == AppScreen::Menu {
+            egui::CentralPanel::default()
+                .frame(
+                    egui::Frame::none()
+                        .fill(self.pal().bg)
+                        .inner_margin(egui::Margin::same(10.0_f32)),
+                )
+                .show(ctx, |ui| draw_menu(ui, self));
+            return;
+        }
         handle_keys(self, ctx);
 
         // 顶栏
@@ -278,6 +365,96 @@ impl eframe::App for SpireApp {
     }
 }
 
+// ---------------------------------------------------------------- 主菜单
+
+fn crate_name_zhs(id: &str) -> &'static str {
+    sts_data::gen::zhs_text::CHARACTER_NAMES
+        .iter()
+        .find(|(k, _)| *k == id)
+        .map(|(_, n)| *n)
+        .unwrap_or("")
+}
+
+fn draw_menu(ui: &mut egui::Ui, app: &mut SpireApp) {
+    let p = app.pal();
+    ui.add_space(ui.available_height() * 0.12);
+    ui.vertical_centered(|ui| {
+        ui.heading(
+            egui::RichText::new("SPIRE-RS")
+                .color(p.accent)
+                .size(36.0_f32)
+                .strong(),
+        );
+        ui.label(egui::RichText::new("文字版杀戮尖塔").color(p.text_dim));
+        ui.add_space(20.0);
+        ui.set_min_width(400.0);
+        ui.label(egui::RichText::new("选择角色").color(p.text_dim).small());
+        for c in Character::all() {
+            let name = crate_name_zhs(c.id());
+            let selected = app.character == c;
+            let available = c == Character::Ironclad;
+            let text = if selected {
+                format!("▸ {name}")
+            } else {
+                format!("  {name}")
+            };
+            let hint = if available {
+                egui::RichText::new(text).color(if selected { p.accent } else { p.text })
+            } else {
+                egui::RichText::new(format!("{text}（未实装）")).color(p.text_faint)
+            };
+            if ui
+                .add_enabled(
+                    available,
+                    egui::Button::new(hint)
+                        .min_size(Vec2::new(300.0_f32, 30.0_f32))
+                        .stroke(Stroke::new(
+                            if selected { 1.2_f32 } else { 0.0_f32 },
+                            p.accent,
+                        )),
+                )
+                .clicked()
+            {
+                app.character = c;
+            }
+        }
+        ui.add_space(14.0);
+        if ui
+            .add(
+                egui::Button::new(egui::RichText::new("开始新游戏").color(p.accent))
+                    .min_size(Vec2::new(300.0_f32, 34.0_f32)),
+            )
+            .clicked()
+        {
+            app.start_game();
+        }
+        if ui
+            .add(
+                egui::Button::new(egui::RichText::new("继续游戏").color(p.text))
+                    .min_size(Vec2::new(300.0_f32, 34.0_f32)),
+            )
+            .clicked()
+        {
+            app.continue_game();
+        }
+        if ui
+            .add(
+                egui::Button::new(egui::RichText::new("退出").color(p.text_dim))
+                    .min_size(Vec2::new(300.0_f32, 30.0_f32)),
+            )
+            .clicked()
+        {
+            std::process::exit(0);
+        }
+        ui.add_space(16.0);
+        ui.label(
+            egui::RichText::new("单色矢量终端 · 游戏逻辑忠于原版反编译实现")
+                .small()
+                .color(p.text_faint),
+        );
+    });
+}
+
 // ---------------------------------------------------------------- 顶栏 / 底栏 / 侧栏
 
 fn draw_top_bar(ui: &mut egui::Ui, app: &mut SpireApp) {
@@ -312,14 +489,14 @@ fn draw_top_bar(ui: &mut egui::Ui, app: &mut SpireApp) {
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             if ui
                 .small_button(match app.theme {
-                    ThemeMode::Muted => "黑白",
-                    ThemeMode::Mono => "彩色",
+                    ThemeMode::Green => "灰度",
+                    ThemeMode::Gray => "绿磷",
                 })
                 .clicked()
             {
                 app.theme = match app.theme {
-                    ThemeMode::Muted => ThemeMode::Mono,
-                    ThemeMode::Mono => ThemeMode::Muted,
+                    ThemeMode::Green => ThemeMode::Gray,
+                    ThemeMode::Gray => ThemeMode::Green,
                 };
             }
             if ui.small_button("存档").clicked() {
@@ -329,6 +506,10 @@ fn draw_top_bar(ui: &mut egui::Ui, app: &mut SpireApp) {
                     Ok(()) => app.log(format!("已存档到 {}", path.display())),
                     Err(e) => app.log(format!("存档失败：{e}")),
                 }
+            }
+            if ui.small_button("主菜单").clicked() {
+                app.screen = AppScreen::Menu;
+                app.log("返回主菜单（进度保留在内存，可继续游戏回到）");
             }
             if ui.small_button("读档").clicked() {
                 let path = save_path();
@@ -704,8 +885,111 @@ fn draw_battle(ui: &mut egui::Ui, app: &mut SpireApp) {
     let Some(b) = app.view.battle.clone() else {
         return;
     };
+
+    // ---- 敌人区（紧凑行式，细线分隔）----
+    ui.label(
+        egui::RichText::new("── 敌人 ──")
+            .small()
+            .color(p.text_faint),
+    );
+    for e in &b.enemies {
+        let targeting = app.targeting.is_some();
+        let (rect, resp) =
+            ui.allocate_exact_size(Vec2::new(ui.available_width(), 74.0_f32), Sense::click());
+        if targeting {
+            // 悬停提示通过 painter 文本太复杂——用 resp.on_hover_text 形式
+        }
+        let hover = ui.rect_contains_pointer(rect);
+        ui.painter()
+            .rect_filled(rect, 2.0_f32, if hover { p.panel2 } else { p.panel });
+        if targeting {
+            ui.painter()
+                .rect_stroke(rect, 2.0_f32, Stroke::new(1.2_f32, p.accent));
+        }
+        // HP 条背景
+        let bar = Rect::from_min_size(
+            Pos2::new(rect.right() - 210.0_f32, rect.top() + 12.0_f32),
+            Vec2::new(200.0_f32, 8.0_f32),
+        );
+        ui.painter().rect_filled(bar, 2.0_f32, p.separator);
+        let frac = if e.max_hp > 0 {
+            (e.hp as f32 / e.max_hp as f32).clamp(0.0_f32, 1.0_f32)
+        } else {
+            0.0_f32
+        };
+        if frac > 0.0_f32 {
+            ui.painter().rect_filled(
+                Rect::from_min_size(bar.min, Vec2::new(bar.width() * frac, bar.height())),
+                2.0_f32,
+                p.hp_bar,
+            );
+        }
+        ui.painter()
+            .rect_stroke(bar, 2.0_f32, Stroke::new(0.8_f32, p.separator));
+        ui.painter().text(
+            Pos2::new(bar.center().x, bar.bottom() + 11.0_f32),
+            Align2::CENTER_CENTER,
+            format!("{}/{}", e.hp, e.max_hp),
+            FontId::monospace(11.0_f32),
+            p.text_dim,
+        );
+
+        ui.painter().text(
+            Pos2::new(rect.left() + 12.0_f32, rect.top() + 16.0_f32),
+            Align2::LEFT_CENTER,
+            &e.name,
+            FontId::monospace(15.0_f32),
+            p.text,
+        );
+        ui.painter().text(
+            Pos2::new(rect.left() + 12.0_f32, rect.top() + 40.0_f32),
+            Align2::LEFT_CENTER,
+            &e.intent,
+            FontId::monospace(13.0_f32),
+            intent_color(p, &e.intent),
+        );
+        let mut pw_text = String::new();
+        if e.block > 0 {
+            pw_text.push_str(&format!("格挡 {}  ", e.block));
+        }
+        for pw in &e.powers {
+            pw_text.push_str(&format!("{} {}+  ", pw.label, pw.amount));
+        }
+        if !pw_text.is_empty() {
+            ui.painter().text(
+                Pos2::new(rect.left() + 12.0_f32, rect.top() + 60.0_f32),
+                Align2::LEFT_CENTER,
+                pw_text.trim_end(),
+                FontId::monospace(11.0_f32),
+                p.text_dim,
+            );
+        }
+        let resp = if targeting {
+            resp.on_hover_text("点击 = 指定目标")
+        } else {
+            resp.on_hover_text("点击查看状态详情")
+        };
+        if resp.clicked() {
+            if targeting {
+                app.play_on_target(e.index);
+            } else {
+                app.sel_enemy = if app.sel_enemy == Some(e.index) {
+                    None
+                } else {
+                    Some(e.index)
+                };
+            }
+        }
+        ui.separator();
+    }
+
+    // ---- 玩家状态行 ----
     ui.horizontal(|ui| {
-        ui.label(egui::RichText::new(format!("姿态 {}", b.stance)).color(p.text_dim));
+        ui.label(
+            egui::RichText::new(format!("你的状态：{}", b.stance))
+                .small()
+                .color(p.text_dim),
+        );
         for pw in &b.player_powers {
             ui.label(
                 egui::RichText::new(format!("{} {}+", pw.label, pw.amount))
@@ -713,154 +997,106 @@ fn draw_battle(ui: &mut egui::Ui, app: &mut SpireApp) {
                     .color(p.text_dim),
             );
         }
-        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            if ui.button("抽牌堆").clicked() {
-                app.show_pile = Some(sts_interface::PileKind::Draw);
+    });
+    ui.separator();
+
+    // ---- 手牌操作区：能量球 + 药水槽 + 手牌 ----
+    ui.horizontal(|ui| {
+        // 能量球（紧邻手牌，出牌时直接可见）
+        let (er, _) = ui.allocate_exact_size(Vec2::new(64.0_f32, 64.0_f32), Sense::hover());
+        let ec = er.center();
+        ui.painter().circle_filled(ec, 28.0_f32, p.panel2);
+        ui.painter()
+            .circle_stroke(ec, 28.0_f32, Stroke::new(2.0_f32, p.accent));
+        if let (Some(e), Some(em)) = (app.view.top.energy, app.view.top.energy_max) {
+            ui.painter().text(
+                ec,
+                Align2::CENTER_CENTER,
+                format!("{e}/{em}"),
+                FontId::monospace(16.0_f32),
+                p.accent,
+            );
+        }
+
+        ui.vertical(|ui| {
+            // 药水独立槽位（纵向列）
+            for pot in &b.potions {
+                let label = if pot.id.is_some() {
+                    pot.name.clone()
+                } else {
+                    "空".into()
+                };
+                let btn = egui::Button::new(egui::RichText::new(label).small())
+                    .min_size(Vec2::new(88.0_f32, 18.0_f32))
+                    .fill(if pot.id.is_some() { p.panel2 } else { p.panel });
+                if ui
+                    .add_enabled(pot.id.is_some(), btn)
+                    .on_hover_text(if pot.id.is_some() {
+                        "点击使用（默认目标 0）"
+                    } else {
+                        "空药水槽"
+                    })
+                    .clicked()
+                {
+                    app.do_cmd(PlayerCommand::UsePotion {
+                        slot: pot.slot,
+                        target: Some(0),
+                    });
+                }
             }
-            if ui.button("弃牌堆").clicked() {
-                app.show_pile = Some(sts_interface::PileKind::Discard);
-            }
-            if ui.button("消耗堆").clicked() {
-                app.show_pile = Some(sts_interface::PileKind::Exhaust);
-            }
-            if ui
-                .add(
-                    egui::Button::new(egui::RichText::new("结束回合").strong().color(p.accent))
-                        .min_size(Vec2::new(110.0_f32, 30.0_f32)),
-                )
-                .clicked()
-            {
-                app.do_cmd(PlayerCommand::EndTurn);
+        });
+
+        // 手牌（主操作区）
+        ui.vertical(|ui| {
+            ui.label(
+                egui::RichText::new(format!(
+                    "抽 {} · 弃 {} · 耗 {}",
+                    b.draw_count, b.discard_count, b.exhaust_count
+                ))
+                .small()
+                .color(p.text_faint),
+            );
+            ui.horizontal_wrapped(|ui| {
+                for c in &b.hand {
+                    let selected = app.sel_card == Some(c.hand_index);
+                    let targeting_this = app.targeting == Some(c.hand_index);
+                    let mut text = format!(
+                        "{}
+{}费 · {}",
+                        c.name, c.cost, c.kind_label
+                    );
+                    if c.upgraded {
+                        text.push_str(" +");
+                    }
+                    let btn = egui::Button::new(egui::RichText::new(text).color(if c.affordable {
+                        p.text
+                    } else {
+                        p.text_faint
+                    }))
+                    .min_size(Vec2::new(150.0_f32, 52.0_f32))
+                    .stroke(Stroke::new(
+                        if targeting_this {
+                            1.4_f32
+                        } else if selected {
+                            1.0_f32
+                        } else {
+                            0.0_f32
+                        },
+                        p.accent,
+                    ))
+                    .fill(if c.affordable { p.panel2 } else { p.panel });
+                    let resp = ui.add(btn).on_hover_text(&c.desc);
+                    if resp.clicked() {
+                        app.sel_card = Some(c.hand_index);
+                        app.try_play(c.hand_index);
+                    }
+                }
+            });
+            if app.targeting.is_some() {
+                ui.label(egui::RichText::new("点击一个敌人指定目标（Esc 取消）").color(p.accent));
             }
         });
     });
-    ui.separator();
-
-    // 敌人区
-    ui.label(egui::RichText::new("敌人").color(p.text_dim));
-    ui.horizontal_wrapped(|ui| {
-        for e in &b.enemies {
-            let targeting = app.targeting.is_some();
-            let frame = egui::Frame::none()
-                .fill(p.panel2)
-                .stroke(Stroke::new(
-                    if targeting { 1.4_f32 } else { 0.0_f32 },
-                    p.accent,
-                ))
-                .inner_margin(8.0)
-                .rounding(4.0);
-            frame.show(ui, |ui| {
-                ui.set_min_width(200.0);
-                let resp = ui
-                    .allocate_response(Vec2::new(200.0_f32, 96.0_f32), Sense::click())
-                    .on_hover_text("点击查看详情；目标选择中点击=指定目标");
-                if resp.clicked() {
-                    if targeting {
-                        app.play_on_target(e.index);
-                    } else {
-                        app.sel_enemy = if app.sel_enemy == Some(e.index) {
-                            None
-                        } else {
-                            Some(e.index)
-                        };
-                    }
-                }
-                ui.vertical(|ui| {
-                    ui.label(egui::RichText::new(&e.name).strong().color(p.text));
-                    hp_bar(ui, p, e.hp, e.max_hp);
-                    ui.label(
-                        egui::RichText::new(format!("HP {}/{} · 格挡 {}", e.hp, e.max_hp, e.block))
-                            .small()
-                            .color(p.text_dim),
-                    );
-                    ui.label(egui::RichText::new(&e.intent).color(intent_color(p, &e.intent)));
-                    for pw in &e.powers {
-                        ui.label(
-                            egui::RichText::new(format!("{} {}+", pw.label, pw.amount))
-                                .small()
-                                .color(p.text_dim),
-                        );
-                    }
-                });
-            });
-        }
-    });
-
-    ui.separator();
-
-    // 药水
-    ui.horizontal(|ui| {
-        ui.label(egui::RichText::new("药水").color(p.text_dim));
-        for pot in &b.potions {
-            let name = if pot.id.is_some() {
-                pot.name.clone()
-            } else {
-                "空".into()
-            };
-            if ui
-                .add_enabled(
-                    pot.id.is_some(),
-                    egui::Button::new(egui::RichText::new(name).small()),
-                )
-                .clicked()
-            {
-                app.do_cmd(PlayerCommand::UsePotion {
-                    slot: pot.slot,
-                    target: Some(0),
-                });
-            }
-        }
-    });
-
-    ui.separator();
-    ui.label(
-        egui::RichText::new(format!(
-            "抽 {} · 弃 {} · 耗 {}",
-            b.draw_count, b.discard_count, b.exhaust_count
-        ))
-        .small()
-        .color(p.text_faint),
-    );
-    ui.add_space(4.0);
-
-    // 手牌
-    ui.label(egui::RichText::new("手牌").color(p.text_dim));
-    ui.horizontal_wrapped(|ui| {
-        for c in &b.hand {
-            let selected = app.sel_card == Some(c.hand_index);
-            let targeting_this = app.targeting == Some(c.hand_index);
-            let mut text = format!("{}\n{}费 · {}", c.name, c.cost, c.kind_label);
-            if c.upgraded {
-                text.push_str(" +");
-            }
-            let btn = egui::Button::new(egui::RichText::new(text).color(if c.affordable {
-                p.text
-            } else {
-                p.text_faint
-            }))
-            .min_size(Vec2::new(150.0_f32, 52.0_f32))
-            .stroke(Stroke::new(
-                if targeting_this {
-                    1.4_f32
-                } else if selected {
-                    1.0_f32
-                } else {
-                    0.0_f32
-                },
-                p.accent,
-            ))
-            .fill(if c.affordable { p.panel2 } else { p.panel });
-            let resp = ui.add(btn).on_hover_text(&c.desc);
-            if resp.clicked() {
-                app.sel_card = Some(c.hand_index);
-                app.try_play(c.hand_index);
-            }
-        }
-    });
-    if let Some(i) = app.targeting {
-        ui.label(egui::RichText::new("点击一个敌人指定目标（Esc 取消）").color(p.accent));
-        let _ = i;
-    }
 }
 
 fn intent_color(p: &Palette, intent: &str) -> Color32 {
@@ -871,26 +1107,6 @@ fn intent_color(p: &Palette, intent: &str) -> Color32 {
     } else {
         p.text_dim
     }
-}
-
-fn hp_bar(ui: &mut egui::Ui, p: &Palette, hp: i32, max: i32) {
-    let size = Vec2::new(184.0_f32, 8.0_f32);
-    let (rect, _) = ui.allocate_exact_size(size, Sense::hover());
-    ui.painter().rect_filled(rect, 2.0, p.separator);
-    let frac = if max > 0 {
-        (hp as f32 / max as f32).clamp(0.0, 1.0)
-    } else {
-        0.0
-    };
-    if frac > 0.0 {
-        ui.painter().rect_filled(
-            Rect::from_min_size(rect.min, Vec2::new(rect.width() * frac, rect.height())),
-            2.0,
-            p.hp_bar,
-        );
-    }
-    ui.painter()
-        .rect_stroke(rect, 2.0, Stroke::new(1.0_f32, p.separator));
 }
 
 // ---------------------------------------------------------------- 地图
