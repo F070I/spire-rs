@@ -122,7 +122,6 @@ fn act23_weighted_tables_cover_individuals() {
         "Maw",
         "Nemesis",
         "Writhing Mass",
-        "Giant Head",
         "Spire Shield",
         "Spire Spear",
     ] {

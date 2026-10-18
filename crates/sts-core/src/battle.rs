@@ -194,6 +194,11 @@ pub enum SpecialAi {
     HiveDeath,
     /// Gremlin Leader：每 3 回合召唤一只小怪（占位：+1 力给自己）
     Summoner,
+    /// Giant Head：4 回合倒计时（瞪视 Weak/计数 13 伤 50/50）→ 死亡凝视
+    /// 30 伤起每回合 +5（源码 count 5→1 后 IT_IS_TIME，startingDeathDmg-count*5）
+    GiantHead,
+    /// Maw：咆哮强化递增（base + step×次数——源码 strUp 3 起每次 +2）
+    EscalatingBuff { base: i32, step: i32 },
     // ---- 批次 4c 真怪状态机（monsters::build_real 构造；exec_real_move 驱动）----
     /// Hexaghost 六火完整：ACTIVATE→DIVIDER(6×玩家HP/12+1)→按 orb_count 轮转
     /// SEAR/TACKLE/INFLAME/INFERNO；Inferno 后灼伤升级。数值按升阶定格（A4/A19）。
@@ -616,6 +621,11 @@ pub struct RelicCtx {
     pub strike_dummy: bool,      // 打击假人："打击"名攻击 +3 伤
     pub wrist_blade: bool,       // 腕刃：0 费攻击 +4 伤
     pub has_dream_catcher: bool, // 噩梦捕手：休息时获得随机牌
+    pub prayer_wheel: bool, // 祈祷轮：普通战卡奖 +1
+    pub black_star: bool, // 黑星：精英掉稀有遗物（单槽近似）
+    pub prismatic_shard: bool, // 棱镜碎片：卡奖混入无色
+    pub matryoshka: bool, // 套娃：开箱 50% 附赠随机遗物
+    pub tiny_chest: bool, // 小宝箱：每 5 层 +25 金（近似）
 }
 
 #[allow(clippy::derivable_impls)]
@@ -747,6 +757,11 @@ impl Default for RelicCtx {
             strike_dummy: false,
             wrist_blade: false,
             has_dream_catcher: false,
+            prayer_wheel: false,
+            black_star: false,
+            prismatic_shard: false,
+            matryoshka: false,
+            tiny_chest: false,
         }
     }
 }
@@ -1192,6 +1207,25 @@ impl BattleState {
                 self.monsters.push(acid);
                 return true;
             }
+            // GiantHead：4 回合倒计时（瞪视/计数 50-50）→ 死亡凝视 +5/回合
+            if sp == Some(SpecialAi::GiantHead) {
+                if ai_turn <= 4 {
+                    let num = self.rngs.ai.random_int_inclusive(99);
+                    if num < 50 {
+                        // GLARE：Weak 1 + 0 伤（源码纯 DEBUFF）
+                        self.monsters[mi].script = vec![Some(0)];
+                        self.player
+                            .powers
+                            .push(Power::new(PowerKind::Weak, 1));
+                    } else {
+                        self.monsters[mi].script = vec![Some(13)];
+                    }
+                } else {
+                    // IT_IS_TIME：30 + (超出回合数)×5
+                    let dmg: i32 = 30 + (ai_turn as i32 - 5) * 5;
+                    self.monsters[mi].script = vec![Some(dmg)];
+                }
+            }
             // Gremlin Leader：每 3 回合召唤 2 只哥布林（存活小怪 < 3 时）
             if sp == Some(SpecialAi::Summoner) && ai_turn > 0 && ai_turn % 3 == 0 {
                 let minions = self
@@ -1238,6 +1272,27 @@ impl BattleState {
                             .iter()
                             .position(|mv| mv.is_none())
                             .unwrap_or(m.move_idx);
+                    }
+                    // Nemesis 相位：无无实体时获得 1（源码 takeTurn 内 !hasPower 检查）
+                    Some(SpecialAi::PhaseShift) => {
+                        if !m
+                            .creature
+                            .powers
+                            .iter()
+                            .any(|p| p.kind == PowerKind::Intangible)
+                        {
+                            m.creature.powers.push(Power::new(PowerKind::Intangible, 1));
+                        }
+                    }
+                    // Maw 咆哮：0 伤招 → 力量递增（base + step×次数）
+                    Some(SpecialAi::EscalatingBuff { base, step }) => {
+                        if m.script.first() == Some(&Some(0)) {
+                            let n = m.brain.orb_count;
+                            m.creature
+                                .powers
+                                .push(Power::new(PowerKind::Strength, base + step * n as i32));
+                            m.brain.orb_count = n.saturating_add(1);
+                        }
                     }
                     // Lagavulin 沉睡：前 3 回合防御
                     Some(SpecialAi::SleepyWakeup) if ai_turn <= 3 => {

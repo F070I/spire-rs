@@ -413,6 +413,10 @@ impl RunState4b {
                 self.gold += 12;
             }
         }
+        // TinyChest：每 5 层 +25 金（原版每 5 房开宝箱——近似为金）
+        if self.relics_ctx.tiny_chest && self.floor % 5 == 0 {
+            self.gold += 25;
+        }
         // MealTicket.onEnterRoom：进商店回 15
         if self.relics_ctx.meal_ticket && symbol == '$' {
             self.player_hp = (self.player_hp + 15).min(self.player_max_hp);
@@ -563,6 +567,8 @@ impl RunState4b {
             "Gremlin Nob" => Some(SpecialAi::Anger),
             "Gremlin Leader" => Some(SpecialAi::Summoner),
             "Darkling" => Some(SpecialAi::HiveDeath),
+            "Giant Head" => Some(SpecialAi::GiantHead),
+            "Maw" => Some(SpecialAi::EscalatingBuff { base: 3, step: 2 }),
             _ => None,
         }
     }
@@ -638,17 +644,50 @@ impl RunState4b {
                     self.player_hp = (self.player_hp + 5).min(self.player_max_hp);
                 }
             }
-            // 卡奖：cardRng 从本职业池抽 3（简化：池=红卡）；Busted Crown -2
-            let reward_n = if self.relics_ctx.busted_crown { 1 } else { 3 };
+            // 卡奖：cardRng 从本职业池抽 3（简化：池=红卡）；Busted Crown -2；
+            // Prayer Wheel 普通战 +1
+            let reward_n = if self.relics_ctx.busted_crown {
+                1
+            } else if self.relics_ctx.prayer_wheel {
+                4
+            } else {
+                3
+            };
             let mut rewards = Vec::new();
             for _ in 0..reward_n {
-                let sid = self.roll_reward_card();
+                let sid = if self.relics_ctx.prismatic_shard
+                    && self.rngs.card_random.random_int_inclusive(99) < 30
+                {
+                    // Prismatic Shard：~30% 无色卡
+                    let pool: Vec<usize> = sts_data::gen::CARDS
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, c)| {
+                            c.color == sts_data::gen::CardColor::Colorless
+                                && matches!(
+                                    c.kind,
+                                    sts_data::gen::CardType::Attack
+                                        | sts_data::gen::CardType::Skill
+                                        | sts_data::gen::CardType::Power
+                                )
+                        })
+                        .map(|(i, _)| i)
+                        .collect();
+                    pool[self.rngs.card_random.random_int_inclusive(pool.len() as i32 - 1)
+                        as usize]
+                } else {
+                    self.roll_reward_card()
+                };
                 rewards.push((sid, false));
             }
             self.card_reward = rewards;
             // 遗物掉落：精英必掉、普通 0（原版普通战不掉遗物）；tier 掷骰 relicRng（<50 C / <83 U / else R）
             if symbol_is_elite_or_boss(&self.map, &self.current) {
-                let roll = self.rngs.misc.random_int_inclusive(99);
+                let roll = if self.relics_ctx.black_star {
+                    99 // BlackStar：精英遗物保底稀有（多遗物需多槽——近似）
+                } else {
+                    self.rngs.misc.random_int_inclusive(99)
+                };
                 let tier = if roll < 50 {
                     "COMMON"
                 } else if roll < 83 {
@@ -958,6 +997,11 @@ impl RunState4b {
             | "SsserpentHead" | "MutagenicStrength" | "GoldenEye" | "Yang" | "WingedGreaves"
             | "PureWater" | "White Beast Statue" | "Snake Skull" | "Cables" => {} // 无战斗内机制（原版即无钩子或纯文本）
             "Dream Catcher" => self.relics_ctx.has_dream_catcher = true,
+            "Prayer Wheel" => self.relics_ctx.prayer_wheel = true,
+            "Black Star" => self.relics_ctx.black_star = true,
+            "PrismaticShard" => self.relics_ctx.prismatic_shard = true,
+            "Matryoshka" => self.relics_ctx.matryoshka = true,
+            "Tiny Chest" => self.relics_ctx.tiny_chest = true,
             "DollysMirror" => {
                 // 复制随机牌组卡（原版选择）
                 if let Some(c) = self.deck.last().cloned() {
@@ -978,9 +1022,6 @@ impl RunState4b {
                         *slot = Some(pool[i]);
                     }
                 }
-            }
-            "PrismaticShard" => {
-                // 三色卡池解锁语义在奖励池（TODO）；此处启用球槽保底
             }
             "Necronomicon" => {
                 self.relics_ctx.necronomicon = true;
@@ -1627,6 +1668,12 @@ impl RunState4b {
             return Err("不在宝箱阶段");
         }
         self.take_relic_reward();
+        // Matryoshka.onChestOpen：50% 附赠随机遗物（原版第二奖励——直接入包）
+        if self.relics_ctx.matryoshka && self.rngs.misc.random_bool_chance(0.5) {
+            let id = ["Vajra", "Orichalcum", "Girya"][self.rngs.misc.random_int_inclusive(2) as usize];
+            self.apply_relic_effect(id);
+            self.relics.push(id);
+        }
         self.phase = RoomPhase::RoomDone;
         Ok(())
     }

@@ -761,7 +761,7 @@ pub static WEIGHTED: &[WeightedMoves] = &[
         moves: &[
             (25, 0, 40, 1, 1),
             (5, 0, 30, 1, 2),
-            (-1, 0, 15, 0, 1),
+            (0, 0, 15, 0, 1),
             (13, 0, 15, 1, 1),
         ],
     },
@@ -779,11 +779,6 @@ pub static WEIGHTED: &[WeightedMoves] = &[
             (13, 0, 24, 1, 1),
             (20, 0, 10, 0, 1),
         ],
-    },
-    // Giant Head：瞪视 40%/数数 13 45%/致死一击 30 15%
-    WeightedMoves {
-        id: "Giant Head",
-        moves: &[(-1, 0, 40, 1, 1), (13, 0, 45, 1, 1), (30, 0, 15, 0, 1)],
     },
     // Spire Shield：猛击 12 35%/盾击 10+10 格挡 25%/强化 30 格挡 40%
     WeightedMoves {
