@@ -49,6 +49,14 @@
 - **源码路径迁移**：`C:\Users\17366\Desktop\MySlayTheSpire-master`（原
   OneDrive\Desktop 已迁空）。
 
+## 本轮追加（批次 5h 细节收尾，2026-10-18）
+
+- **多怪细节 + 奖励流（5h）**：Giant Head 倒计时（瞪视/计数→死亡凝视 +5/回合）、
+  Maw 咆哮递增（EscalatingBuff）、Nemesis PhaseShift 补接线（原从未生效）；
+  Prayer Wheel（卡奖 3→4）/Black Star（精英保底稀有）/Prismatic Shard
+  （卡奖 30% 无色）/Matryoshka（开箱 50% 附赠）/Tiny Chest（每 5 层 +25 金）。
+  测试 +6，累计 294。遗物映射 165/181。
+
 ## 本轮追加（CI 发行，2026-10-18）
 
 - **CI（0aaf9d9）**：release.yml（v* tag → 四矩阵构建 windows-gnu/
