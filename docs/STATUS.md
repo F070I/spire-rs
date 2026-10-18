@@ -2,7 +2,7 @@
 
 > 本文档为 token 预算接近尾声时的交接快照。下个会话/接手者按此继续。
 
-## 已完成（git 最新 commit：e1b4290，276 测试全过，clippy 0）
+## 已完成（git 最新 commit：f893a35+，283 测试全过，clippy 0）
 
 ### 批次 1：地基
 - sts-data::rng：RandomXS128 + JDK LCG + STS Random 包装（基线交叉验证）
@@ -48,6 +48,22 @@
   之后入队（Happy Flower/Art of War 同坑两次）。
 - **源码路径迁移**：`C:\Users\17366\Desktop\MySlayTheSpire-master`（原
   OneDrive\Desktop 已迁空）。
+
+## 本轮追加（批次 5f 遗物尾量，2026-10-18）
+
+- **遗物 5f（f893a35 + id 修复）**：damage.rs 拆 raw f32 出口（card_damage_raw/
+  monster_calculate_damage_raw——纸系乘子取整前折入）；Paper Frog（attack_info
+  重算 ×1.75/1.5）/Paper Krane（怪物出伤两处折入 ×0.6/0.75）；TheAbacus（洗牌
+  +6 块）/Golden Idol（战斗金 ×5/4）/Bloody Idol（得金回 5）/DollysMirror
+  （复制随机卡）/Cauldron（3 药水）；**5 处 id 错位修复**（CloakClasp/
+  ClockworkSouvenir/Runic Cube/Paper Crane/Pandora's Box——效果此前从未生效）
+  + HolyWater 补漏 + Ring of the Snake（前 2 回合 +2 抽）。映射 132/181。
+- 剩余 ~48 件：no-op 装饰（Circlet/masks/Spirit Poop/Red Circlet 等 ~15）、
+  选择屏流程（Orrery/PeacePipe/Shovel/Dream Catcher/Question Card/
+  Matryoshka/Prayer Wheel/Gambling Chip/Frozen Eye/The Courier/Black Star
+  等 ~20）、伤害链卡上下文（StrikeDummy/WristBlade/Chemical X/Snake Skull
+  等 ~8）、商店/奖励流（PrismaticShard/Busted Crown 奖励数/White Beast 等）。
+  测试 +7（relics5.rs）。
 
 ## 本轮追加（批次 5e 遗物第四批，2026-10-18）
 
