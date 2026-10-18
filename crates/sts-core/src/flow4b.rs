@@ -673,7 +673,10 @@ impl RunState4b {
                         })
                         .map(|(i, _)| i)
                         .collect();
-                    pool[self.rngs.card_random.random_int_inclusive(pool.len() as i32 - 1)
+                    pool[self
+                        .rngs
+                        .card_random
+                        .random_int_inclusive(pool.len() as i32 - 1)
                         as usize]
                 } else {
                     self.roll_reward_card()
@@ -1733,7 +1736,10 @@ impl RunState4b {
         while let Some(c) = b.hand.group.pop() {
             b.discard_pile.add_top(c);
         }
-        b.mgr.add_bottom(GameAction::DrawCard { amount: n, end_turn_draw: false });
+        b.mgr.add_bottom(GameAction::DrawCard {
+            amount: n,
+            end_turn_draw: false,
+        });
         Ok(())
     }
 
@@ -1760,7 +1766,8 @@ impl RunState4b {
         self.take_relic_reward();
         // Matryoshka.onChestOpen：50% 附赠随机遗物（原版第二奖励——直接入包）
         if self.relics_ctx.matryoshka && self.rngs.misc.random_bool_chance(0.5) {
-            let id = ["Vajra", "Orichalcum", "Girya"][self.rngs.misc.random_int_inclusive(2) as usize];
+            let id =
+                ["Vajra", "Orichalcum", "Girya"][self.rngs.misc.random_int_inclusive(2) as usize];
             self.apply_relic_effect(id);
             self.relics.push(id);
         }

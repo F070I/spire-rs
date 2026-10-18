@@ -5,8 +5,7 @@ use sts_core::flow4b::RunState4b;
 use sts_core::power::PowerKind;
 
 fn battle_with(monsters: Vec<Monster>, r: RelicCtx) -> sts_core::battle::BattleState {
-    let deck: Vec<(usize, bool)> =
-        (0..10).map(|_| (sid("Defend_R"), false)).collect();
+    let deck: Vec<(usize, bool)> = (0..10).map(|_| (sid("Defend_R"), false)).collect();
     let mut b = sts_core::battle::BattleState::new(80, 3, deck, monsters, 5);
     b.relics_ctx = r;
     b.start_battle();
@@ -16,7 +15,10 @@ fn battle_with(monsters: Vec<Monster>, r: RelicCtx) -> sts_core::battle::BattleS
 }
 
 fn sid(id: &str) -> usize {
-    sts_data::gen::CARDS.iter().position(|c| c.id == id).expect(id)
+    sts_data::gen::CARDS
+        .iter()
+        .position(|c| c.id == id)
+        .expect(id)
 }
 
 #[test]

@@ -1,6 +1,6 @@
 //! 批次 5i 测试：篝火四扩展选项 + 赌徒筹码 + 冻结之眼 + 奥瑞瑞。
 
-use sts_core::flow4b::{RunState4b, RoomPhase};
+use sts_core::flow4b::{RoomPhase, RunState4b};
 
 fn new_run() -> RunState4b {
     let mut run = RunState4b::new(71);

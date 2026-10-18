@@ -623,16 +623,16 @@ pub struct RelicCtx {
     pub strike_dummy: bool,      // 打击假人："打击"名攻击 +3 伤
     pub wrist_blade: bool,       // 腕刃：0 费攻击 +4 伤
     pub has_dream_catcher: bool, // 噩梦捕手：休息时获得随机牌
-    pub prayer_wheel: bool, // 祈祷轮：普通战卡奖 +1
-    pub black_star: bool, // 黑星：精英掉稀有遗物（单槽近似）
-    pub prismatic_shard: bool, // 棱镜碎片：卡奖混入无色
-    pub matryoshka: bool, // 套娃：开箱 50% 附赠随机遗物
-    pub tiny_chest: bool, // 小宝箱：每 5 层 +25 金（近似）
-    pub has_peace_pipe: bool, // 和平烟斗：篝火可移除卡
-    pub has_shovel: bool, // 铲子：篝火可挖遗物
-    pub has_singing_bowl: bool, // 吟唱碗：篝火可 +2 上限
+    pub prayer_wheel: bool,      // 祈祷轮：普通战卡奖 +1
+    pub black_star: bool,        // 黑星：精英掉稀有遗物（单槽近似）
+    pub prismatic_shard: bool,   // 棱镜碎片：卡奖混入无色
+    pub matryoshka: bool,        // 套娃：开箱 50% 附赠随机遗物
+    pub tiny_chest: bool,        // 小宝箱：每 5 层 +25 金（近似）
+    pub has_peace_pipe: bool,    // 和平烟斗：篝火可移除卡
+    pub has_shovel: bool,        // 铲子：篝火可挖遗物
+    pub has_singing_bowl: bool,  // 吟唱碗：篝火可 +2 上限
     pub has_question_card: bool, // 提问卡：篝火可得牌
-    pub has_frozen_eye: bool, // 冻结之眼：可查看抽牌堆（UI）
+    pub has_frozen_eye: bool,    // 冻结之眼：可查看抽牌堆（UI）
 }
 
 #[allow(clippy::derivable_impls)]
@@ -1227,9 +1227,7 @@ impl BattleState {
                     if num < 50 {
                         // GLARE：Weak 1 + 0 伤（源码纯 DEBUFF）
                         self.monsters[mi].script = vec![Some(0)];
-                        self.player
-                            .powers
-                            .push(Power::new(PowerKind::Weak, 1));
+                        self.player.powers.push(Power::new(PowerKind::Weak, 1));
                     } else {
                         self.monsters[mi].script = vec![Some(13)];
                     }
