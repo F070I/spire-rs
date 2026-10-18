@@ -103,7 +103,7 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
                     id: "CollectAction",
                     target: None,
                     amount: 0,
-                    amount2: b.energy,
+                    amount2: crate::cards::x_value(b),
                     card_uuid: card.uuid,
                     sid: card.sid,
                     upgraded: card.upgraded,

@@ -897,8 +897,8 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
                 call: RoutineCall {
                     id: "WhirlwindAction",
                     target: None,
-                    amount: b.energy,
-                    amount2: b.energy,
+                    amount: crate::cards::x_value(b),
+                    amount2: crate::cards::x_value(b),
                     card_uuid: card.uuid,
                     sid: card.sid,
                     upgraded: card.upgraded,

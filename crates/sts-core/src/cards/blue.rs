@@ -429,7 +429,7 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
                     id: "MulticastAction",
                     target: None,
                     amount: 0,
-                    amount2: b.energy,
+                    amount2: crate::cards::x_value(b),
                     card_uuid: card.uuid,
                     sid: card.sid,
                     upgraded: card.upgraded,
@@ -521,7 +521,7 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
                     id: "ReinforcedBodyAction",
                     target: None,
                     amount: card.eff_block(),
-                    amount2: b.energy,
+                    amount2: crate::cards::x_value(b),
                     card_uuid: card.uuid,
                     sid: card.sid,
                     upgraded: card.upgraded,
@@ -695,7 +695,7 @@ pub fn effects(b: &mut BattleState, card: &CardInst, target: Option<usize>, eb: 
             });
         }
         "Tempest" => {
-            for _ in 0..b.energy {
+            for _ in 0..crate::cards::x_value(b) {
                 eb.bot(GameAction::ChannelOrb {
                     kind: crate::orb::OrbKind::Lightning,
                 });

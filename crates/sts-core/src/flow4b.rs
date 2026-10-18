@@ -623,9 +623,10 @@ impl RunState4b {
                     self.player_hp = (self.player_hp + 5).min(self.player_max_hp);
                 }
             }
-            // 卡奖：cardRng 从本职业池抽 3（简化：池=红卡）
+            // 卡奖：cardRng 从本职业池抽 3（简化：池=红卡）；Busted Crown -2
+            let reward_n = if self.relics_ctx.busted_crown { 1 } else { 3 };
             let mut rewards = Vec::new();
-            for _ in 0..3 {
+            for _ in 0..reward_n {
                 let sid = self.roll_reward_card();
                 rewards.push((sid, false));
             }
@@ -939,6 +940,16 @@ impl RunState4b {
             "Paper Crane" => self.relics_ctx.paper_krane = true,
             "TheAbacus" => self.relics_ctx.abacus = true,
             "Ring of the Snake" => self.relics_ctx.ring_of_snake = true,
+            "Chemical X" => self.relics_ctx.chemical_x = true,
+            "StrikeDummy" => self.relics_ctx.strike_dummy = true,
+            "WristBlade" => self.relics_ctx.wrist_blade = true,
+            // —— no-op 装饰/流程类（显式登记——审计可见）——
+            "Circlet" | "Spirit Poop" | "Red Circlet" | "Nloth's Gift" | "NeowsBlessing"
+            | "Odd Mushroom" | "Nilry's Codex" | "FaceOfCleric" | "GremlinMask"
+            | "SsserpentHead" | "MutagenicStrength" | "GoldenEye" | "Yang"
+            | "WingedGreaves" | "PureWater" | "White Beast Statue" | "Snake Skull"
+            | "Cables" => {} // 无战斗内机制（原版即无钩子或纯文本）
+            "Dream Catcher" => self.relics_ctx.has_dream_catcher = true,
             "DollysMirror" => {
                 // 复制随机牌组卡（原版选择）
                 if let Some(c) = self.deck.last().cloned() {
@@ -1561,6 +1572,12 @@ impl RunState4b {
             heal += 15; // RegalPillow
         }
         self.player_hp += heal;
+        // DreamCatcher.onRest：休息时获得一张随机牌
+        if self.relics_ctx.has_dream_catcher {
+            let sid = self.random_obtainable_card_sid();
+            self.deck.push(CardInst::new(sid, false, self.uuid_next));
+            self.uuid_next += 1;
+        }
         self.phase = RoomPhase::RoomDone;
         Ok(())
     }

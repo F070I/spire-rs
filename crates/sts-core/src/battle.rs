@@ -434,6 +434,8 @@ pub struct BattleState {
     pub relic_pellets_attack: bool,
     pub relic_pen_nib_active: bool, // 下一次攻击 ×2（供伤害钩子读取）
     pub relic_tongs_used: bool,    // 弯曲钳本回合已升级
+    /// 正在打出的卡（sid, 生效费）——attack_info 卡上下文（StrikeDummy/WristBlade）。
+    pub playing_card: Option<(usize, i32)>,
     /// 遗物/神龛事实占位（批次 3.6 接入后由 RunState 查询）。
     pub relics_ctx: RelicCtx,
 }
@@ -592,6 +594,10 @@ pub struct RelicCtx {
     pub golden_idol: bool,        // 金像：战斗金 ×1.25
     pub bloody_idol: bool,        // 血像：得金回 5
     pub ring_of_snake: bool,      // 蛇环：前 2 回合多抽 2（观者开局）
+    pub chemical_x: bool,         // 化学 X：X 费卡 +2
+    pub strike_dummy: bool,       // 打击假人："打击"名攻击 +3 伤
+    pub wrist_blade: bool,        // 腕刃：0 费攻击 +4 伤
+    pub has_dream_catcher: bool,  // 噩梦捕手：休息时获得随机牌
 }
 
 #[allow(clippy::derivable_impls)]
@@ -719,6 +725,10 @@ impl Default for RelicCtx {
             golden_idol: false,
             bloody_idol: false,
             ring_of_snake: false,
+            chemical_x: false,
+            strike_dummy: false,
+            wrist_blade: false,
+            has_dream_catcher: false,
         }
     }
 }
@@ -787,6 +797,7 @@ impl BattleState {
             relic_pellets_attack: false,
             relic_pen_nib_active: false,
             relic_tongs_used: false,
+            playing_card: None,
             relics_ctx: RelicCtx::default(),
         };
         for (sid, up) in deck {
@@ -3411,9 +3422,12 @@ impl BattleState {
         };
         let card = self.hand.group[hand_pos].clone();
         let st = card.st();
+        // 卡上下文（attack_info 的 StrikeDummy/WristBlade 判定）
+        self.playing_card = Some((card.sid, card.eff_cost()));
 
         // canUse 复核（autoplay 卡豁免路径 TODO 2.4：dontTriggerOnUseCard + 强制 UseCard）
         if self.can_use(&card).is_err() {
+            self.playing_card = None;
             return;
         }
         let target = item.target;

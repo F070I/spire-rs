@@ -117,6 +117,11 @@ pub fn sid_of(id: &str) -> usize {
 }
 
 /// 高频辅助：对目标的攻击 DamageInfo（打出瞬间重算，记录 09 §1 阶段C）。
+/// X 费卡的 X 值快照（Chemical X：+2——原版 boost 仅作用于卡面，不付能量）。
+pub fn x_value(b: &BattleState) -> i32 {
+    b.energy + if b.relics_ctx.chemical_x { 2 } else { 0 }
+}
+
 pub fn attack_info(
     b: &BattleState,
     target_monster: usize,
@@ -130,6 +135,21 @@ pub fn attack_info(
         base,
         ty,
     );
+    // StrikeDummy：带"打击"名的攻击 +3 伤；WristBlade：0 费攻击 +4 伤
+    if let Some((psid, pcost)) = b.playing_card {
+        let pid = &gen::CARDS[psid].id;
+        let mut bonus = 0;
+        if b.relics_ctx.strike_dummy && pid.contains("Strike") {
+            bonus += 3;
+        }
+        if b.relics_ctx.wrist_blade && pcost == 0 {
+            bonus += 4;
+        }
+        if bonus > 0 {
+            info.output += bonus;
+            info.base += bonus;
+        }
+    }
     // PaperFrog：目标易伤 75% 增伤（替代 50%）——raw 链重算折入
     if b.relics_ctx.paper_frog
         && b.monsters[target_monster]
