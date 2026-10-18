@@ -22,13 +22,15 @@ jobs:
             bin: sts.exe
             archive: sts-windows-x86_64.zip
           - name: macOS-intel
-            os: macos-13
+            os: macos-15-intel
             target: x86_64-apple-darwin
+            deploy: "12.0"
             bin: sts
             archive: sts-macos-x86_64.zip
           - name: macOS-apple-silicon
             os: macos-latest
             target: aarch64-apple-darwin
+            deploy: "12.0"
             bin: sts
             archive: sts-macos-aarch64.zip
           - name: linux-x86_64
@@ -44,6 +46,12 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+
+      # macOS：显式钉最低部署版本——Apple 链接器默认取构建机系统版本，
+      # 不钉会导致产物要求 runner 的系统（如 15.x）而在旧系统拒启
+      - name: Pin deployment target (macOS)
+        if: startsWith(matrix.os, 'macos')
+        run: echo "MACOSX_DEPLOYMENT_TARGET=${{ matrix.deploy }}" >> "$GITHUB_ENV"
 
       # Windows 用 GNU 目标（本仓库零依赖，gnu 工具链即可；避免 MSVC link 环境差异）
       - name: Install mingw-w64 (windows-gnu)
@@ -70,6 +78,28 @@ jobs:
         shell: bash
         run: |
           printf 'q\n' | "target/${{ matrix.target }}/release/${{ matrix.bin }}" >/dev/null 2>&1 || true
+
+      # macOS：机器验证兼容性（不做口头承诺）
+      # 1) rustc 对该目标的默认部署版本记入日志供核查
+      # 2) 产物 LC_BUILD_VERSION.minos 必须恰为部署目标
+      # 3) 链接库白名单：仅 libSystem/libgcc_s（零依赖断言）
+      - name: Verify macOS 12 compatibility
+        if: startsWith(matrix.os, 'macos')
+        shell: bash
+        run: |
+          BIN="target/${{ matrix.target }}/release/${{ matrix.bin }}"
+          echo "rustc default deployment target:"
+          rustc --print deployment-target --target ${{ matrix.target }} || true
+          minos=$(otool -l "$BIN" | awk '/cmd LC_BUILD_VERSION/{f=1} f && /minos/{print $2; exit}')
+          echo "binary minos=$minos (expected ${{ matrix.deploy }})"
+          test "$minos" = "${{ matrix.deploy }}" || {
+            echo "ERROR: minimum OS version is $minos, expected ${{ matrix.deploy }}"; exit 1; }
+          echo "--- linked libraries ---"
+          otool -L "$BIN"
+          if otool -L "$BIN" | tail -n +2 | grep -vE "/usr/lib/libSystem|/usr/lib/libgcc_s"; then
+            echo "ERROR: unexpected linked library (breaks zero-dep macOS 12 claim)"; exit 1
+          fi
+          echo "OK: minos ${{ matrix.deploy }}, linked libs whitelisted"
 
       - name: Package
         shell: bash
