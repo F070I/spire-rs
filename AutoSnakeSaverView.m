@@ -95,7 +95,7 @@ static NSString * const kModule = @"com.autosnakesaver.monterey.intel";
       @[@"slow",@"normal",@"fast"], @[@"auto",@"30",@"60",@"120",@"144",@"165",@"240",@"custom"]
     ];
     ScreenSaverDefaults *d = [ScreenSaverDefaults defaultsForModuleWithName:kModule];
-    for (NSInteger i=0;i<popups.count;i++) [d setObject:values[i][popups[i].indexOfSelectedItem] forKey:keys[i]];
+    for (NSInteger i=0;i<popups.count;i++) [d setObject:values[i][((NSPopUpButton *)popups[i]).indexOfSelectedItem] forKey:keys[i]];
     NSInteger fps = self.customFpsField.stringValue.integerValue;
     fps = MAX(15, MIN(360, fps > 0 ? fps : 90));
     [d setObject:[NSString stringWithFormat:@"%ld",(long)fps] forKey:@"fpsCustom"];

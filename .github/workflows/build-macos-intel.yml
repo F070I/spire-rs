@@ -25,7 +25,16 @@ jobs:
 
       - name: Build .saver for Intel macOS 12+
         shell: bash
-        run: bash ./build-intel.sh
+        run: bash ./build-intel.sh 2>&1 | tee build-intel.log
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-intel-log
+          path: build-intel.log
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Upload .saver download
         uses: actions/upload-artifact@v4
