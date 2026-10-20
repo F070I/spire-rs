@@ -1,0 +1,36 @@
+name: Build Intel macOS Screen Saver
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-intel:
+    # GitHub 官方提供的 Intel x86_64 macOS 构建机；与你 Mac 上安装 Xcode 无关。
+    runs-on: macos-15-intel
+    timeout-minutes: 20
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Show build environment
+        run: |
+          uname -m
+          xcodebuild -version
+          xcode-select -p
+
+      - name: Build .saver for Intel macOS 12+
+        shell: bash
+        run: bash ./build-intel.sh
+
+      - name: Upload .saver download
+        uses: actions/upload-artifact@v4
+        with:
+          name: AutoSnakeSaver-v21-Intel-macOS12
+          path: dist/AutoSnakeSaverIntel-macOS12-Intel.zip
+          if-no-files-found: error
+          retention-days: 30

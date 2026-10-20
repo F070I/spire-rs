@@ -1,0 +1,35 @@
+// !$*UTF8*$!
+{
+ archiveVersion = 1;
+ classes = {};
+ objectVersion = 56;
+ objects = {
+  A10000000000000000000001 /* Project object */ = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = 1; LastUpgradeCheck = 1430; TargetAttributes = {A10000000000000000000010 = {CreatedOnToolsVersion = 14.3; }; }; }; buildConfigurationList = A10000000000000000000020; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base, zh_CN); mainGroup = A10000000000000000000002; productRefGroup = A10000000000000000000003; projectDirPath = ""; projectRoot = ""; targets = (A10000000000000000000010); };
+  A10000000000000000000002 = {isa = PBXGroup; children = (A10000000000000000000004, A10000000000000000000005, A10000000000000000000006); sourceTree = "<group>"; };
+  A10000000000000000000003 = {isa = PBXGroup; children = (A10000000000000000000011); name = Products; sourceTree = "<group>"; };
+  A10000000000000000000004 = {isa = PBXGroup; children = (A10000000000000000000007, A10000000000000000000008); name = Sources; sourceTree = "<group>"; };
+  A10000000000000000000005 = {isa = PBXGroup; children = (A10000000000000000000009); name = Resources; sourceTree = "<group>"; };
+  A10000000000000000000006 = {isa = PBXGroup; children = (A10000000000000000000012, A10000000000000000000013); name = Frameworks; sourceTree = "<group>"; };
+  A10000000000000000000007 = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AutoSnakeSaverView.m; sourceTree = "<group>"; };
+  A10000000000000000000008 = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AutoSnakeSaverView.h; sourceTree = "<group>"; };
+  A10000000000000000000009 = {isa = PBXFileReference; lastKnownFileType = folder; path = AutoSnakeWeb; sourceTree = "<group>"; };
+  A10000000000000000000011 = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AutoSnakeSaverIntel.saver; sourceTree = BUILT_PRODUCTS_DIR; };
+  A10000000000000000000012 = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ScreenSaver.framework; path = System/Library/Frameworks/ScreenSaver.framework; sourceTree = SDKROOT; };
+  A10000000000000000000013 = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
+  A10000000000000000000014 = {isa = PBXBuildFile; fileRef = A10000000000000000000007; };
+  A10000000000000000000015 = {isa = PBXBuildFile; fileRef = A10000000000000000000009; settings = {ATTRIBUTES = ( ); }; };
+  A10000000000000000000016 = {isa = PBXBuildFile; fileRef = A10000000000000000000012; };
+  A10000000000000000000017 = {isa = PBXBuildFile; fileRef = A10000000000000000000013; };
+  A10000000000000000000018 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000014); runOnlyForDeploymentPostprocessing = 0; };
+  A10000000000000000000019 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000015); runOnlyForDeploymentPostprocessing = 0; };
+  A1000000000000000000001A = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000016, A10000000000000000000017); runOnlyForDeploymentPostprocessing = 0; };
+  A10000000000000000000010 = {isa = PBXNativeTarget; buildConfigurationList = A10000000000000000000021; buildPhases = (A10000000000000000000018, A1000000000000000000001A, A10000000000000000000019); buildRules = (); dependencies = (); name = AutoSnakeSaverIntel; productName = AutoSnakeSaverIntel; productReference = A10000000000000000000011; productType = "com.apple.product-type.bundle"; };
+  A10000000000000000000020 = {isa = XCConfigurationList; buildConfigurations = (A10000000000000000000022, A10000000000000000000023); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+  A10000000000000000000021 = {isa = XCConfigurationList; buildConfigurations = (A10000000000000000000024, A10000000000000000000025); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+  A10000000000000000000022 = {isa = XCBuildConfiguration; buildSettings = {MACOSX_DEPLOYMENT_TARGET = 12.0; SDKROOT = macosx; }; name = Debug; };
+  A10000000000000000000023 = {isa = XCBuildConfiguration; buildSettings = {MACOSX_DEPLOYMENT_TARGET = 12.0; SDKROOT = macosx; }; name = Release; };
+  A10000000000000000000024 = {isa = XCBuildConfiguration; buildSettings = {ARCHS = x86_64; CODE_SIGNING_ALLOWED = NO; CLANG_ENABLE_OBJC_ARC = YES; INFOPLIST_FILE = Info.plist; MACOSX_DEPLOYMENT_TARGET = 12.0; PRODUCT_BUNDLE_IDENTIFIER = com.autosnakesaver.monterey.intel; PRODUCT_NAME = AutoSnakeSaverIntel; SKIP_INSTALL = NO; SUPPORTED_PLATFORMS = macosx; WRAPPER_EXTENSION = saver; }; name = Debug; };
+  A10000000000000000000025 = {isa = XCBuildConfiguration; buildSettings = {ARCHS = x86_64; CODE_SIGNING_ALLOWED = NO; CLANG_ENABLE_OBJC_ARC = YES; INFOPLIST_FILE = Info.plist; MACOSX_DEPLOYMENT_TARGET = 12.0; PRODUCT_BUNDLE_IDENTIFIER = com.autosnakesaver.monterey.intel; PRODUCT_NAME = AutoSnakeSaverIntel; SKIP_INSTALL = NO; SUPPORTED_PLATFORMS = macosx; WRAPPER_EXTENSION = saver; }; name = Release; };
+ };
+ rootObject = A10000000000000000000001;
+}
