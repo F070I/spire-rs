@@ -7,7 +7,7 @@ on:
       - 'v*'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   tests:
@@ -93,3 +93,25 @@ jobs:
           path: artifacts/*.zip
           if-no-files-found: error
           retention-days: 30
+
+  release:
+    # 把双架构 zip 发到触发 tag 的 GitHub Release，资产可匿名下载（本机无 PAT 拿 Artifact）
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download both architecture artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: YujiaSignIn-macOS-*
+          merge-multiple: true
+      - name: Upload zips to the GitHub Release of this tag
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          tag_name: ${{ github.ref_name }}
+      - name: Degrade to run summary when release upload failed
+        if: failure()
+        run: |
+          echo 'Release upload failed; artifacts remain downloadable from the run page' >> "$GITHUB_STEP_SUMMARY"
