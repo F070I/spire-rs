@@ -95,7 +95,7 @@ jobs:
           retention-days: 30
 
   release:
-    # 把双架构 zip 发到触发 tag 的 GitHub Release，资产可匿名下载（本机无 PAT 拿 Artifact）
+    # 双架构 zip 发到 tag 的 GitHub Release（匿名可下载），并推 yujia-dist 分支兜底（本机 SSH 可拉取）
     needs: build
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
@@ -106,12 +106,39 @@ jobs:
           path: dist
           pattern: YujiaSignIn-macOS-*
           merge-multiple: true
+      - name: Rename to ASCII asset names (GitHub mangles CJK filenames)
+        run: |
+          cd dist
+          for f in *.zip; do
+            case "$f" in
+              *arm64*)  mv "$f" YujiaSignIn-macOS-arm64.zip ;;
+              *x86_64*) mv "$f" YujiaSignIn-macOS-x86_64.zip ;;
+              *) echo "unexpected file: $f"; exit 1 ;;
+            esac
+          done
+          ls -l
+      - name: Replace any earlier release on this tag (clean assets, tag itself stays)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          rid=$(gh api "repos/${{ github.repository }}/releases/tags/${{ github.ref_name }}" --jq '.id' 2>/dev/null || true)
+          if [ -n "$rid" ]; then
+            gh api -X DELETE "repos/${{ github.repository }}/releases/$rid" || true
+          fi
       - name: Upload zips to the GitHub Release of this tag
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*.zip
           tag_name: ${{ github.ref_name }}
-      - name: Degrade to run summary when release upload failed
-        if: failure()
+      - name: Also push zips to yujia-dist branch
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          echo 'Release upload failed; artifacts remain downloadable from the run page' >> "$GITHUB_STEP_SUMMARY"
+          cd dist
+          git init -q
+          git config user.name yujia-ci
+          git config user.email actions@github.com
+          git checkout -q -b yujia-dist
+          git add .
+          git commit -qm "macOS app zips ${{ github.ref_name }}"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" HEAD:yujia-dist
