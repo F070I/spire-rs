@@ -1,0 +1,19 @@
+services:
+  signin:
+    build: .
+    image: yujia-signin
+    container_name: yujia-signin
+    restart: unless-stopped
+    init: true                 # PID 1 信号转发，便于正常停止/重启
+    stop_grace_period: 20s
+    environment:
+      - TZ=Asia/Shanghai          # 签到时刻按此时区计算
+      - SIGNIN_TIME=09:05         # 每天 09:05 签到，可改
+      - YUJIA_CONFIG_DIR=/data    # token/记录/日志持久化到挂载目录
+      - YUJIA_WEB=1               # 附带启动 Web 面板线程
+      - YUJIA_WEB_PORT=8765
+    volumes:
+      - ./data:/data
+    ports:
+      # 面板只向宿主机本机回环地址暴露，不暴露到局域网
+      - "127.0.0.1:8765:8765"

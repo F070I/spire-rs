@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+build/
+dist/
+output/
+artifacts/
+*.spec
+config.json
+records.db*
+*token*
+*.log
+.DS_Store
