@@ -91,12 +91,14 @@ static NSString *YJEscape(NSString *s) {
                       styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable)
                       backing:NSBackingStoreBuffered defer:NO];
     self.window.title = @"寓+签到 · 管理中心";
+    // Match the lightweight Aqua dashboard even when system appearance is dark.
+    self.window.appearance = [NSAppearance appearanceNamed:NSAppearanceNameAqua];
     self.window.minSize = NSMakeSize(850, 570);
     [self.window center];
 
     NSView *root = self.window.contentView;
     root.wantsLayer = YES;
-    root.layer.backgroundColor = [NSColor colorWithCalibratedRed:0.04 green:0.07 blue:0.13 alpha:1.0].CGColor;
+    root.layer.backgroundColor = [NSColor colorWithCalibratedRed:0.97 green:0.97 blue:0.98 alpha:1.0].CGColor;
 
     NSVisualEffectView *top = [[NSVisualEffectView alloc] init];
     top.translatesAutoresizingMaskIntoConstraints = NO;

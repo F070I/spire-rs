@@ -96,8 +96,8 @@ def _meta_set(key, value):
 
 def signin_time():
     """生效签到时刻。优先级：面板设置（meta schedule_time）> 环境变量 SIGNIN_TIME > 默认 09:05。
-    面板修改后调度器每次触发都会重新读取，无需重启；重装 launchd（install_launchd.sh）
-    会清掉面板覆盖，改用命令行指定的时间。"""
+    面板修改后调度器每次触发都会重新读取，无需重启；重装 launchd
+    不会清除记录数据库中的面板计划。"""
     for source in ("meta", "env"):
         raw = _meta_get("schedule_time") if source == "meta" \
             else os.environ.get("SIGNIN_TIME")

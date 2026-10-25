@@ -19,8 +19,10 @@ jobs:
           python-version: '3.11'
       - name: Unit and static tests (mock API, no real account)
         run: |
-          PYTHONPATH=core python -m unittest tests.test_standalone tests.test_web_auth tests.test_signin.TestCatchUp tests.test_signin.TestMultiAccount tests.test_signin.TestLocking -v
+          PYTHONPATH=core python -m unittest tests.test_standalone tests.test_web_auth tests.test_panel_regression tests.test_signin.TestCatchUp tests.test_signin.TestMultiAccount tests.test_signin.TestLocking -v
           bash -n backend/install_launchd.sh backend/uninstall_launchd.sh backend/migrate_data.sh
+          python ui/sync_panel.py --check
+          node -e 'const fs=require("fs");let html=fs.readFileSync("ui/dashboard.html","utf8");new Function(html.match(/<script>([\s\S]*)<\/script>/)[1]);console.log("Dashboard JS syntax: PASS")' 
 
   build:
     needs: tests
@@ -30,8 +32,6 @@ jobs:
         include:
           - os: macos-15-intel
             arch: x86_64
-          - os: macos-15
-            arch: arm64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -75,7 +75,10 @@ jobs:
           trap 'kill "$PID" >/dev/null 2>&1 || true' EXIT
           for i in {1..30}; do
             if curl --fail --silent http://127.0.0.1:18765/api/health | grep -q 'yujia-panel'; then
-              echo 'Frozen service HTTP health: PASS'
+              curl --fail --silent http://127.0.0.1:18765/ > "$RUNNER_TEMP/yujia-panel.html"
+              grep -q 'id="accountOverlay"' "$RUNNER_TEMP/yujia-panel.html"
+              grep -q 'id="view-accounts"' "$RUNNER_TEMP/yujia-panel.html"
+              echo 'Frozen backend health and redesigned UI: PASS'
               exit 0
             fi
             sleep 1

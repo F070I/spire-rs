@@ -12,6 +12,7 @@ import threading
 import unittest
 import urllib.error
 import urllib.request
+from unittest import mock
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE)
@@ -117,6 +118,92 @@ class TestLanAccess(unittest.TestCase):
             os.environ.pop("YUJIA_WEB_PORT", None)
             httpd.shutdown()
             httpd.server_close()
+
+
+class TestAccountAddResponse(unittest.TestCase):
+    """端到端验证：寓+登录失败不是局域网认证失败，成功时仍可保存账号。"""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(prefix="yj-add-")
+        self.orig_paths = (y.CONFIG_DIR, y.CONFIG_PATH, y.LOG_PATH)
+        self.orig_env = {k: os.environ.get(k) for k in ("YUJIA_WEB_BIND", "YUJIA_WEB_PASSWORD")}
+        y.CONFIG_DIR = self.tmp.name
+        y.CONFIG_PATH = os.path.join(self.tmp.name, "config.json")
+        y.LOG_PATH = os.path.join(self.tmp.name, "signin.log")
+        os.environ.pop("YUJIA_WEB_BIND", None)
+        os.environ.pop("YUJIA_WEB_PASSWORD", None)
+        self.httpd = web_panel.build_server(0)
+        self.port = self.httpd.server_address[1]
+        self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
+        self.thread.start()
+        with urllib.request.urlopen(self.url("/api/state"), timeout=5) as r:
+            self.token = json.load(r)["panel_token"]
+
+    def tearDown(self):
+        self.httpd.shutdown()
+        self.httpd.server_close()
+        self.thread.join(timeout=2)
+        y.CONFIG_DIR, y.CONFIG_PATH, y.LOG_PATH = self.orig_paths
+        for k, v in self.orig_env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+        self.tmp.cleanup()
+
+    def url(self, path):
+        return "http://127.0.0.1:%s%s" % (self.port, path)
+
+    def add_account(self):
+        payload = json.dumps({"name": "testaccount", "user_id": "test-id", "password": "not-real-password",
+                              "area_id": "GL"}).encode("utf-8")
+        request = urllib.request.Request(self.url("/api/accounts/add"), data=payload, method="POST",
+                  headers={"Content-Type": "application/json", "X-Panel-Token": self.token})
+        try:
+            with urllib.request.urlopen(request, timeout=5) as r:
+                return r.status, json.load(r)
+        except urllib.error.HTTPError as e:
+            return e.code, json.loads(e.read().decode("utf-8"))
+
+    def test_upstream_login_failure_is_422_with_reason_and_no_account(self):
+        with mock.patch.object(y, "do_login", return_value=(None, {"Code": "fail", "Message": "账号或密码不正确"})):
+            status, body = self.add_account()
+        self.assertEqual(status, 422)
+        self.assertEqual(body["error_type"], "account_login_failed")
+        self.assertIn("账号或密码不正确", body["error"])
+        self.assertNotIn("局域网", body["error"])
+        self.assertEqual(y.load_accounts(), [])
+
+    def test_upstream_failure_without_message_explained(self):
+        with mock.patch.object(y, "do_login", return_value=(None, {})):
+            status, body = self.add_account()
+        self.assertEqual(status, 422)
+        self.assertIn("服务器没有提供具体原因", body["error"])
+
+    def test_successful_login_saves_account(self):
+        public = {"UserID": "test-id", "UserName": "Mock Person", "EmpNo": "E123", "AreaID": "GL"}
+        secrets = {"AccessToken": "unit-test-token", "RefreshToken": "unit-test-refresh"}
+        with mock.patch.object(y, "do_login", return_value=((public, secrets), {"Code": "ok"})):
+            status, body = self.add_account()
+        self.assertEqual(status, 200)
+        self.assertTrue(body["ok"])
+        self.assertEqual(len(y.load_accounts()), 1)
+        self.assertEqual(y.load_accounts()[0]["public"]["UserID"], "test-id")
+
+    def test_save_failure_is_not_reported_as_login_or_lan_error(self):
+        public = {"UserID": "test-id", "AreaID": "GL"}
+        with mock.patch.object(y, "do_login", return_value=((public, {"AccessToken": "dummy"}), {"Code": "ok"})), \
+             mock.patch.object(y, "save_accounts", side_effect=PermissionError("read-only")):
+            status, body = self.add_account()
+        self.assertEqual(status, 500)
+        self.assertEqual(body["error_type"], "account_save_failed")
+        self.assertIn("保存账号失败", body["error"])
+        self.assertNotIn("局域网", body["error"])
+
+    def test_frontend_does_not_blindly_replace_401_with_lan_error(self):
+        page = web_panel.PAGE
+        self.assertNotIn('if(r.status===401){alert("需要登录', page)
+        self.assertIn('j.error==="需要登录（局域网访问模式）"', page)
 
 
 if __name__ == "__main__":
