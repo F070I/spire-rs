@@ -62,6 +62,7 @@ cat > "$WEB" <<EOF
     <key>EnvironmentVariables</key><dict>
         <key>YUJIA_CONFIG_DIR</key><string>$ESC_DATA</string>
         <key>YUJIA_WEB_PORT</key><string>$PORT</string>
+        <key>YUJIA_MANAGED_BY_LAUNCHD</key><string>1</string>
     </dict>
     <key>KeepAlive</key><true/>
     <key>RunAtLoad</key><true/>

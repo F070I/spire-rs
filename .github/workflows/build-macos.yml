@@ -17,9 +17,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Install QR dependency for tests
+        run: python -m pip install 'qrcode>=8,<9'
       - name: Unit and static tests (mock API, no real account)
         run: |
-          PYTHONPATH=core python -m unittest tests.test_standalone tests.test_web_auth tests.test_panel_regression tests.test_signin.TestCatchUp tests.test_signin.TestMultiAccount tests.test_signin.TestLocking -v
+          PYTHONPATH=core python -m unittest tests.test_standalone tests.test_web_auth tests.test_panel_regression tests.test_lan_settings tests.test_signin.TestCatchUp tests.test_signin.TestMultiAccount tests.test_signin.TestLocking -v
           bash -n backend/install_launchd.sh backend/uninstall_launchd.sh backend/migrate_data.sh
           python ui/sync_panel.py --check
           node -e 'const fs=require("fs");let html=fs.readFileSync("ui/dashboard.html","utf8");new Function(html.match(/<script>([\s\S]*)<\/script>/)[1]);console.log("Dashboard JS syntax: PASS")' 
@@ -39,11 +41,11 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install packaging dependencies
-        run: python -m pip install 'pyinstaller>=6,<7' certifi
+        run: python -m pip install 'pyinstaller>=6,<7' certifi 'qrcode>=8,<9'
       - name: Freeze Python backend (no Python needed on users' Macs)
         run: |
           python -m PyInstaller --noconfirm --clean --onedir --name YujiaService \
-            --paths core --hidden-import=certifi --collect-data certifi \
+            --paths core --hidden-import=certifi --hidden-import=qrcode.image.svg --collect-data certifi \
             core/service_entry.py
       - name: Build native Cocoa and WebKit window, assemble app
         run: |
@@ -78,6 +80,8 @@ jobs:
               curl --fail --silent http://127.0.0.1:18765/ > "$RUNNER_TEMP/yujia-panel.html"
               grep -q 'id="accountOverlay"' "$RUNNER_TEMP/yujia-panel.html"
               grep -q 'id="view-accounts"' "$RUNNER_TEMP/yujia-panel.html"
+              grep -q 'id="view-network"' "$RUNNER_TEMP/yujia-panel.html"
+              curl --fail --silent http://127.0.0.1:18765/api/network | grep -q '"enabled": false' 
               echo 'Frozen backend health and redesigned UI: PASS'
               exit 0
             fi
@@ -98,7 +102,7 @@ jobs:
           retention-days: 30
 
   release:
-    # 双架构 zip 发到 tag 的 GitHub Release（匿名可下载），并推 yujia-dist 分支兜底（本机 SSH 可拉取）
+    # zip 发到 tag 的 GitHub Release（匿名可下载），并推 yujia-dist 分支兜底（本机 SSH 可拉取）
     needs: build
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest

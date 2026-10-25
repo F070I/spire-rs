@@ -10,7 +10,7 @@ ENV TZ=Asia/Shanghai \
 WORKDIR /app
 COPY core/yujia_signin.py core/signin_core.py core/web_panel.py core/run_daily.py ./
 
-RUN pip install --no-cache-dir certifi && mkdir -p /data
+RUN pip install --no-cache-dir certifi "qrcode>=8,<9" && mkdir -p /data
 VOLUME /data
 
 # 长驻容器：内部调度器每天 SIGNIN_TIME 执行签到 + Web 面板线程，日志走 docker logs

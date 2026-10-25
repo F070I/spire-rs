@@ -64,7 +64,8 @@ class TestLanAccess(unittest.TestCase):
 
     @staticmethod
     def _get(url, auth=None):
-        headers = {}
+        # Simulate a LAN browser's Host header; local loopback access is intentionally passwordless.
+        headers = {"Host": "192.168.10.40"}
         if auth:
             headers["Authorization"] = "Basic " + base64.b64encode(
                 auth.encode()).decode()
@@ -98,7 +99,7 @@ class TestLanAccess(unittest.TestCase):
         try:
             req = urllib.request.Request(
                 "http://127.0.0.1:%d/api/run" % port, data=b"{}", method="POST",
-                headers={"Content-Type": "application/json",
+                headers={"Content-Type": "application/json", "Host": "192.168.10.40",
                          "Authorization": "Basic " + base64.b64encode(
                              b"panel:secret-pw").decode()})
             with self.assertRaises(urllib.error.HTTPError) as cm:

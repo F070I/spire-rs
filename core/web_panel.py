@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""本地 Web 管理面板（仅监听 127.0.0.1，默认 http://127.0.0.1:8765）。
+"""本地 Web 管理面板（默认仅 127.0.0.1，可在 App 内开启密码保护的局域网访问）。
 
 安全设计：
 - 只绑定 127.0.0.1；Host 头校验（防 DNS rebinding）
@@ -13,6 +13,13 @@
 import base64
 import hmac
 import json
+import hashlib
+import ipaddress
+import io
+import secrets
+import socket
+import tempfile
+import time
 import os
 import re
 import subprocess
@@ -28,13 +35,141 @@ MAX_BODY = 64 * 1024
 LOOPBACK = ("127.0.0.1", "localhost", "::1")
 
 
-def web_password():
-    return os.environ.get("YUJIA_WEB_PASSWORD") or ""
+# Settings stored independently from sign-in accounts. The password is NEVER
+# returned to the browser and is persisted only as a salted PBKDF2 hash.
+NETWORK_FILENAME = "network.json"
+NETWORK_ROUNDS = 260000
+
+
+def _network_path():
+    return os.path.join(y.CONFIG_DIR, NETWORK_FILENAME)
+
+
+def _read_network():
+    try:
+        with open(_network_path(), encoding="utf-8") as handle:
+            settings = json.load(handle)
+        return settings if isinstance(settings, dict) else {}
+    except (OSError, ValueError, TypeError):
+        return {}
+
+
+def _network_env_managed():
+    return "YUJIA_WEB_BIND" in os.environ or "YUJIA_WEB_PASSWORD" in os.environ
+
+
+def _network_config():
+    if _network_env_managed():
+        bind = os.environ.get("YUJIA_WEB_BIND") or "127.0.0.1"
+        return {"enabled": bind not in LOOPBACK, "bind": bind,
+                "legacy_password": os.environ.get("YUJIA_WEB_PASSWORD") or "",
+                "managed_externally": True}
+    settings = _read_network()
+    enabled = settings.get("enabled") is True
+    return {"enabled": enabled, "bind": "0.0.0.0" if enabled else "127.0.0.1",
+            "salt": settings.get("salt"), "password_hash": settings.get("password_hash"),
+            "managed_externally": False}
 
 
 def lan_mode():
-    """是否开启局域网访问（绑定非回环地址）。"""
-    return (os.environ.get("YUJIA_WEB_BIND") or "127.0.0.1") not in LOOPBACK
+    return _network_config()["enabled"]
+
+
+def _has_credential(config):
+    return bool(config.get("legacy_password") or (config.get("salt") and config.get("password_hash")))
+
+
+def _hash_password(password, salt):
+    return hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"),
+                               bytes.fromhex(salt), NETWORK_ROUNDS).hex()
+
+
+def _password_ok(password, config):
+    if config.get("legacy_password"):
+        return hmac.compare_digest(password.encode("utf-8"), config["legacy_password"].encode("utf-8"))
+    try:
+        return hmac.compare_digest(_hash_password(password, config["salt"]), config["password_hash"])
+    except (KeyError, ValueError, TypeError):
+        return False
+
+
+def _write_network(enabled, password):
+    os.makedirs(y.CONFIG_DIR, mode=0o700, exist_ok=True)
+    old = _read_network()
+    result = {"enabled": enabled}
+    if password:
+        result["salt"] = secrets.token_hex(16)
+        result["password_hash"] = _hash_password(password, result["salt"])
+    else:
+        result.update({k: old[k] for k in ("salt", "password_hash") if k in old})
+    if enabled and not _has_credential(result):
+        raise ValueError("请先设置不少于 10 位的访问密码")
+    fd, tmp = tempfile.mkstemp(prefix=".network-", dir=y.CONFIG_DIR)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            os.fchmod(handle.fileno(), 0o600)
+            json.dump(result, handle)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp, _network_path())
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+
+
+def _local_addresses():
+    addresses = []
+    try:
+        if sys.platform == "darwin":
+            output = subprocess.run(["/sbin/ifconfig"], capture_output=True, text=True,
+                                    timeout=2, check=False).stdout
+            candidates = re.findall(r"\binet (\d+\.\d+\.\d+\.\d+)\b", output)
+        else:
+            candidates = [item[4][0] for item in socket.getaddrinfo(
+                socket.gethostname(), None, socket.AF_INET)]
+        for ip in candidates:
+            obj = ipaddress.ip_address(ip)
+            if obj.is_private and not obj.is_loopback and not obj.is_link_local and ip not in addresses:
+                addresses.append(ip)
+    except (OSError, ValueError, subprocess.SubprocessError, socket.gaierror):
+        pass
+    return addresses
+
+
+def _network_public_status(config=None):
+    config = config or _network_config()
+    port = int(os.environ.get("YUJIA_WEB_PORT", "8765"))
+    ips = _local_addresses() if config["enabled"] else []
+    return {"enabled": config["enabled"], "managed_externally": config["managed_externally"],
+            "has_password": _has_credential(config), "port": port,
+            "addresses": ["http://%s:%d" % (ip, port) for ip in ips],
+            "local_address": "http://127.0.0.1:%d" % port,
+            "username": os.environ.get("YUJIA_WEB_USER", "panel") if config["managed_externally"] else "panel"}
+
+
+def _is_local_client(client_ip):
+    try:
+        return ipaddress.ip_address(client_ip).is_loopback
+    except ValueError:
+        return False
+
+
+def _request_host(headers):
+    try:
+        return urllib.parse.urlsplit("http://" + (headers.get("Host") or "")).hostname or ""
+    except ValueError:
+        return ""
+
+
+def _restart_panel_after_response():
+    # launchd KeepAlive restarts only the Web process; the daily schedule is untouched.
+    if os.environ.get("YUJIA_MANAGED_BY_LAUNCHD") == "1":
+        def finish():
+            time.sleep(1.2)
+            os._exit(0)
+        threading.Thread(target=finish, daemon=True).start()
+        return True
+    return False
 
 
 def _tail_log(lines=200):
@@ -71,29 +206,34 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _host_ok(self):
-        host = (self.headers.get("Host") or "").split(":")[0]
+        host = _request_host(self.headers)
         if host in LOOPBACK:
-            return True
-        # 局域网模式已有口令保护（防 DNS rebinding 的作用由口令接管）
-        return lan_mode() and bool(web_password())
+            return _is_local_client(self.client_address[0])
+        if not self.server.network_config["enabled"]:
+            return False
+        # Accept only literal private IPs, never attacker-controlled DNS names.
+        try:
+            addr = ipaddress.ip_address(host)
+            return addr.is_private and not addr.is_loopback and not addr.is_link_local
+        except ValueError:
+            return False
 
     def _auth_ok(self):
-        """局域网模式必须通过 Basic Auth；本机模式不要求。"""
-        pwd = web_password()
-        if not pwd:
+        config = self.server.network_config
+        # The native app always uses 127.0.0.1, even when LAN mode is enabled.
+        if _is_local_client(self.client_address[0]) and _request_host(self.headers) in LOOPBACK:
             return True
+        if not config["enabled"] or not _has_credential(config):
+            return False
         header = self.headers.get("Authorization") or ""
         if not header.startswith("Basic "):
             return False
         try:
-            userpass = base64.b64decode(header[6:].strip()).decode("utf-8")
+            userpass = base64.b64decode(header[6:].strip(), validate=True).decode("utf-8")
         except (ValueError, UnicodeDecodeError):
             return False
-        user, _, passwd = userpass.partition(":")
-        user_ok = hmac.compare_digest(user.encode("utf-8"),
-                                      os.environ.get("YUJIA_WEB_USER", "panel").encode("utf-8"))
-        pass_ok = hmac.compare_digest(passwd.encode("utf-8"), pwd.encode("utf-8"))
-        return user_ok and pass_ok
+        user, sep, passwd = userpass.partition(":")
+        return bool(sep) and hmac.compare_digest(user, "panel" if not config["managed_externally"] else os.environ.get("YUJIA_WEB_USER", "panel")) and _password_ok(passwd, config)
 
     def _deny_auth(self):
         body = json.dumps({"error": "需要登录（局域网访问模式）"}, ensure_ascii=False).encode("utf-8")
@@ -125,16 +265,39 @@ class Handler(BaseHTTPRequestHandler):
 
     # ---------- 路由 ----------
     def do_GET(self):
-        if not self._auth_ok():
-            return self._deny_auth()
         if not self._host_ok():
             return self._json({"error": "forbidden host"}, 403)
+        if not self._auth_ok():
+            return self._deny_auth()
         parsed = urllib.parse.urlparse(self.path)
         path, qs = parsed.path, urllib.parse.parse_qs(parsed.query)
         if path == "/" or path == "/index.html":
             return self._html(PAGE.replace("__PORT__", self.server.server_address[1].__str__()))
         if path == "/api/health":
             return self._json({"ok": True, "service": "yujia-panel"})
+        if path == "/api/network":
+            return self._json(_network_public_status(self.server.network_config))
+        if path == "/api/network/qr":
+            urls = _network_public_status(self.server.network_config)["addresses"]
+            if not urls:
+                return self._json({"error": "没有可用的局域网访问地址"}, 404)
+            try:
+                import qrcode
+                import qrcode.image.svg
+                qr = qrcode.make(urls[0], image_factory=qrcode.image.svg.SvgPathImage)
+                buffer = io.BytesIO()
+                qr.save(buffer)
+                body = buffer.getvalue()
+            except ImportError:
+                return self._json({"error": "未安装二维码组件"}, 503)
+            self.send_response(200)
+            self.send_header("Content-Type", "image/svg+xml")
+            self.send_header("Content-Security-Policy", "default-src 'none'; sandbox")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(body)
+            return
         if path == "/api/state":
             return self._json(core.state_snapshot(include_token=True))
         if path == "/api/history":
@@ -170,10 +333,10 @@ class Handler(BaseHTTPRequestHandler):
         return self._json({"error": "not found"}, 404)
 
     def do_POST(self):
-        if not self._auth_ok():
-            return self._deny_auth()
         if not self._host_ok():
             return self._json({"error": "forbidden host"}, 403)
+        if not self._auth_ok():
+            return self._deny_auth()
         if not self._token_ok():
             return self._json({"error": "invalid panel token（请刷新页面）"}, 403)
         path = urllib.parse.urlparse(self.path).path
@@ -186,6 +349,28 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"error": y.sanitize_text(str(e))[:250]}, 502)
 
     def _dispatch_post(self, path, data):
+        if path == "/api/network":
+            if not (_is_local_client(self.client_address[0]) and
+                    _request_host(self.headers) in LOOPBACK):
+                return self._json({"error": "请在 Mac 本机 App 内修改局域网设置"}, 403)
+            if _network_env_managed():
+                return self._json({"error": "当前由 Docker / 环境变量管理网络设置，请修改部署配置"}, 409)
+            enabled = data.get("enabled")
+            password = data.get("password", "")
+            if not isinstance(enabled, bool) or not isinstance(password, str):
+                return self._json({"error": "请求参数不正确"}, 400)
+            if password and (len(password) < 10 or len(password) > 128 or "\n" in password):
+                return self._json({"error": "访问密码需为 10–128 位，不能包含换行符"}, 400)
+            try:
+                _write_network(enabled, password)
+            except ValueError as exc:
+                return self._json({"error": str(exc)}, 400)
+            except OSError:
+                return self._json({"error": "局域网设置保存失败，请检查应用数据目录权限"}, 500)
+            restarting = _restart_panel_after_response()
+            return self._json({"ok": True, "restarting": restarting,
+                               "restart_required": not restarting,
+                               "enabled": enabled})
         if path == "/api/run":
             name = (data.get("account") or "").strip() or None
             if name:
@@ -371,6 +556,24 @@ PAGE = r"""<!DOCTYPE html>
 .overlay{position:fixed;z-index:20;inset:0;background:rgba(23,28,39,.35);backdrop-filter:blur(6px);display:flex;justify-content:flex-end}.sheet{width:min(480px,100%);height:100%;overflow:auto;background:#fff;box-shadow:-14px 0 40px #17203520;padding:30px 33px;animation:slide .2s ease-out}@keyframes slide{from{transform:translateX(20px);opacity:.85}to{transform:none;opacity:1}}.sheet-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:24px}.sheet-head h2{font-size:21px;letter-spacing:-.5px;margin:0}.sheet-copy{font-size:12px;color:var(--secondary);margin:-12px 0 27px}.sheet-actions{display:flex;gap:9px;align-items:center;margin-top:27px}.sheet-msg{font-size:12px;margin-top:15px;color:var(--red);min-height:18px;overflow-wrap:anywhere}.sheet-divider{height:1px;background:var(--line);margin:24px 0}.toast{position:fixed;right:22px;bottom:22px;z-index:30;border:1px solid #dfe8f4;padding:13px 18px;max-width:min(400px,calc(100vw - 32px));border-radius:13px;background:#fff;box-shadow:0 8px 28px #1f32441a;font-size:12px;overflow-wrap:anywhere}.toast.error{border-color:#f0cdcf;color:#a33d40}.inline-error{color:var(--red);font-size:12px}
 @media(max-width:1160px){.shell{grid-template-columns:190px minmax(0,1fr)}.sidebar{padding-inline:10px}.topbar{padding-inline:24px}.main{padding-inline:24px}.hero{grid-template-columns:1fr 1fr}.hero-primary{padding:23px}.hero-side{padding:23px}.stat-row{gap:9px}.stat{padding:15px}.overview-cols{grid-template-columns:1fr}}@media(max-width:780px){.shell{display:block}.sidebar{position:sticky;height:auto;top:0;z-index:10;display:block;padding:10px 16px;border-right:0;border-bottom:1px solid var(--line);background:rgba(248,248,250,.96);backdrop-filter:blur(14px)}.identity{padding:0;display:inline-flex}.appmark{width:29px;height:29px;border-radius:9px;font-size:14px}.appname{font-size:12px}.appcaption,.nav-label,.sidebar-foot{display:none}.nav{display:flex;gap:4px;overflow:auto;margin-top:9px}.nav-item{white-space:nowrap;font-size:11px;gap:5px;padding:7px 10px}.nav-icon{width:14px;height:14px;flex-basis:14px}.nav-icon svg{width:14px;height:14px}.nav-count{display:none}.topbar{height:49px;padding:0 16px}.main{padding:27px 16px 50px}.page-heading{align-items:flex-start;flex-direction:column}.page-heading h1{font-size:25px}.hero{grid-template-columns:1fr}.hero-primary{min-height:auto}.stat-row{grid-template-columns:1fr 1fr}.settings-grid{grid-template-columns:1fr}.top-status{display:none}}@media(max-width:470px){.stat-row{grid-template-columns:1fr}.heading-buttons{width:100%}.heading-buttons .btn{flex:1}.surface-pad{padding:17px}.hero-primary,.hero-side{padding:21px}.sheet{padding:24px 20px}.topbar .btn{min-height:31px;padding:5px 9px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+
+/* Network settings: quiet macOS-style controls, no intrusive settings modal. */
+.network-layout{display:grid;grid-template-columns:minmax(0,1.16fr) minmax(245px,.84fr);gap:16px}
+.network-toggle{display:flex;gap:18px;align-items:center;justify-content:space-between;padding:17px 0 23px}
+.network-toggle h2{font-size:15px;font-weight:680;margin:0 0 4px}
+.switch{position:relative;display:inline-block;width:47px;height:29px;flex:0 0 47px;cursor:pointer}
+.switch input{position:absolute;inset:0;margin:0;opacity:0;cursor:pointer}
+.switch-track{display:block;background:#d8d8df;width:47px;height:29px;border-radius:24px;transition:background .17s}
+.switch-track:after{content:"";position:absolute;width:23px;height:23px;left:3px;top:3px;background:#fff;border-radius:100%;box-shadow:0 1px 4px #0002;transition:transform .17s}
+.switch input:checked+.switch-track{background:#1b83ee}.switch input:checked+.switch-track:after{transform:translateX(18px)}
+.switch input:focus-visible+.switch-track{outline:3px solid #80baff;outline-offset:3px}
+.switch input:disabled+.switch-track{opacity:.48}
+.network-address{display:grid;gap:9px;margin-top:12px}.address-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 13px;background:#f5f7fa;border:1px solid var(--line);border-radius:11px}
+.address-row a{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#175dbb;font-size:12px;overflow-wrap:anywhere}
+.network-qr{display:flex;justify-content:center;align-items:center;min-height:180px;margin:15px auto;background:#fff;border:1px solid var(--line);border-radius:14px;max-width:210px}
+.network-qr img{width:165px;height:165px;display:block}
+.network-note{font-size:12px;color:var(--secondary);line-height:1.8}
+@media(max-width:850px){.network-layout{grid-template-columns:1fr}}
 </style></head><body>
 <div class="shell">
   <aside class="sidebar" aria-label="主导航">
@@ -380,6 +583,7 @@ PAGE = r"""<!DOCTYPE html>
       <button type="button" class="nav-item" data-view="accounts"><span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-1a6 6 0 0 1 12 0v1M17 11a3 3 0 0 0 0-6M17 14a5 5 0 0 1 4 5v1"/></svg></span>账号管理 <span class="nav-count" id="navAccountCount">0</span></button>
       <button type="button" class="nav-item" data-view="schedule"><span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 2v6M17 2v6M3 10h18M8 15h3"/></svg></span>签到计划</button>
       <button type="button" class="nav-item" data-view="history"><span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6l4 2"/></svg></span>执行记录</button>
+      <button type="button" class="nav-item" data-view="network"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M2 9a15 15 0 0 1 20 0M5 13a10 10 0 0 1 14 0M9 17a5 5 0 0 1 6 0"/><circle cx="12" cy="20" r="1"/></svg></span>局域网访问</button>
       <button type="button" class="nav-item" data-view="logs"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 3h11l3 3v15H5zM8 10h8M8 14h8M8 18h6"/></svg></span>运行日志</button>
     </nav>
     <div class="sidebar-foot"><div class="service-line"><span class="service-dot" id="serviceDot"></span><span id="sideService">正在连接本机服务</span></div><div class="side-note">数据仅保存在你的设备中</div></div>
@@ -413,6 +617,25 @@ PAGE = r"""<!DOCTYPE html>
         <div class="surface"><div class="table-scroll"><table id="histTable"><thead><tr><th>时间</th><th>账号</th><th>来源</th><th>结果</th><th>核验</th><th>金币变化</th><th>信息</th></tr></thead><tbody><tr><td colspan="7" class="empty">正在加载…</td></tr></tbody></table></div></div>
         <div class="section-title"><h2>最近事件</h2><span class="small">仅展示最近 12 条</span></div><div class="surface surface-pad" id="events"><div class="empty">暂无风险事件</div></div>
       </section>
+      <section class="view" id="view-network" hidden>
+        <div class="page-heading"><div><div class="eyebrow">CONNECTIVITY</div><h1>局域网访问</h1><p class="lede">用手机或同一网络里的其他电脑，随时打开这台 Mac 的签到面板。</p></div><span class="pill mut" id="lanBadge">仅本机</span></div>
+        <div class="network-layout">
+          <div class="surface surface-pad">
+            <div class="network-toggle"><div><h2>允许局域网设备访问</h2><div class="network-note">开启后，其他设备需要输入访问密码；本机 App 不需要。</div></div>
+              <label class="switch" title="允许局域网访问"><input id="lanEnabled" type="checkbox" aria-label="允许局域网访问"><span class="switch-track"></span></label></div>
+            <div class="form-row"><label for="lanPassword">访问密码</label><input class="field" id="lanPassword" type="password" minlength="10" autocomplete="new-password" placeholder="至少 10 位；已设置时留空表示不修改"><div class="form-note">这是管理面板的独立密码，不是寓+账号密码。账号和签到记录不会重置。</div></div>
+            <div class="setting-line"><div><div class="setting-name">登录用户名</div><div class="setting-detail">远程浏览器打开时会提示输入</div></div><strong id="lanUsername">panel</strong></div>
+            <div class="banner blue" id="lanWarning">请仅在可信的家庭或办公局域网开启。当前通过 HTTP 访问，通信未加密；不要开放到公网。</div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px"><button id="lanSave" class="btn primary" type="button">保存网络设置</button><span class="small" id="lanSaveMessage" role="status"></span></div>
+          </div>
+          <div class="surface surface-pad"><div class="section-in"><h2>手机访问</h2><span class="pill mut" id="lanReachable">尚未开启</span></div>
+            <div class="network-note" id="lanDescription">开启访问后，会自动显示 Mac 的局域网地址与二维码。</div>
+            <div class="network-address" id="lanAddresses"></div>
+            <div class="network-qr" id="lanQR" hidden><img id="lanQRImage" alt="局域网访问二维码"></div>
+            <p class="network-note" style="margin:12px 0 0">手机和 Mac 需在同一个网络，且网络不能开启设备隔离。Mac 睡眠或关机时无法访问。</p>
+          </div>
+        </div>
+      </section>
       <section class="view" id="view-logs" hidden>
         <div class="page-heading"><div><div class="eyebrow">DIAGNOSTICS</div><h1>运行日志</h1><p class="lede">遇到网络异常、签到失败时，可以在这里查看详细信息。</p></div><div class="heading-buttons"><button class="btn" id="btnLogs" type="button">↻ 刷新日志</button></div></div><div class="surface"><pre class="logbox" id="logs">加载中…</pre></div>
       </section>
@@ -438,7 +661,7 @@ const pill=(s,extra="")=>{const [c,t]=STATUS[s]||["mut",s||"未知"];return `<sp
 function toast(msg,error=false){const t=$("toast");t.textContent=msg;t.classList.toggle("error",error);t.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.hidden=true,4800)}
 async function api(path,opt){let r;try{r=await fetch(path,{cache:"no-store",...opt})}catch(e){throw new Error("无法连接本地管理服务，请检查后台是否运行")};const j=await r.json().catch(()=>({}));if(!r.ok){if(r.status===401&&j.error==="需要登录（局域网访问模式）"){throw new Error("管理面板需要访问口令，请在局域网浏览器中登录（本机 App 无需密码）")};throw Object.assign(new Error(j.error||("请求失败（HTTP "+r.status+"）")),{status:r.status,data:j})}return j}
 async function post(path,body){if(!TOKEN)throw new Error("面板还未初始化，请刷新后重试");return api(path,{method:"POST",headers:{"Content-Type":"application/json","X-Panel-Token":TOKEN},body:JSON.stringify(body||{})})}
-function showView(name){if(!["overview","accounts","schedule","history","logs"].includes(name))return;document.querySelectorAll(".view").forEach(el=>el.hidden=el.id!=="view-"+name);document.querySelectorAll(".nav-item").forEach(el=>{const yes=el.dataset.view===name;el.classList.toggle("active",yes);el.setAttribute("aria-current",yes?"page":"false")});const names={overview:"概览",accounts:"账号管理",schedule:"签到计划",history:"执行记录",logs:"运行日志"};$("crumb").textContent="工作空间 / "+names[name];if(name==="history")loadHistory();if(name==="logs")loadLogs();window.scrollTo({top:0,behavior:"instant"})}
+function showView(name){if(!["overview","accounts","schedule","history","network","logs"].includes(name))return;document.querySelectorAll(".view").forEach(el=>el.hidden=el.id!=="view-"+name);document.querySelectorAll(".nav-item").forEach(el=>{const yes=el.dataset.view===name;el.classList.toggle("active",yes);el.setAttribute("aria-current",yes?"page":"false")});const names={overview:"概览",accounts:"账号管理",schedule:"签到计划",history:"执行记录",network:"局域网访问",logs:"运行日志"};$("crumb").textContent="工作空间 / "+names[name];if(name==="history")loadHistory();if(name==="logs")loadLogs();if(name==="network")loadNetwork();window.scrollTo({top:0,behavior:"instant"})}
 function activityMarkup(s){const rows=(s.recent_runs||[]).slice(0,4);return rows.map(r=>{const ok=["success","already_checked_in"].includes(r.status);return `<div class="timeline-item"><span class="timeline-dot ${ok?"good":"bad"}"></span><div class="timeline-copy"><div class="timeline-title">${esc(r.account_name)} · ${esc((STATUS[r.status]||[0,r.status||"未知"])[1])}</div><div class="timeline-sub">${esc(r.finished_at||r.started_at||"—")} · ${esc(r.source||"未知来源")}</div></div></div>`}).join("")||`<div class="empty">暂无执行记录</div>`}
 function makeTrend(series){if(!series||series.length<2)return `<span class="small">积累两天以上的数据后显示趋势</span>`;const w=500,h=115,vals=series.map(p=>Number(p.coins)||0);const lo=Math.min(...vals),hi=Math.max(...vals),ran=hi-lo||1;const points=vals.map((v,i)=>[12+i*(w-24)/(vals.length-1),h-14-(v-lo)/ran*(h-31)]);const path=points.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ");return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="最近金币趋势"><path d="M 0 ${h-12} H ${w}" stroke="#edf0f4" stroke-width="1"/><path d="${path}" fill="none" stroke="#398bef" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${points.map(([x,y])=>`<circle cx="${x}" cy="${y}" r="3.2" fill="#fff" stroke="#398bef" stroke-width="2"/>`).join("")}</svg>`}
 const formatDate=v=>{if(!v)return "—";return String(v).replace("T"," ").slice(0,19)};
@@ -458,6 +681,58 @@ async function loadState(){try{const s=await api("/api/state");renderState(s);re
 async function loadHistory(){try{const filter=$("histFilter").value;const s=await api("/api/history?limit=50"+(filter?"&status="+encodeURIComponent(filter):""));$("histTable").querySelector("tbody").innerHTML=(s.rows||[]).map(r=>`<tr><td>${esc(formatDate(r.finished_at||r.started_at))}</td><td>${esc(r.account_name)}</td><td>${esc(unk(r.source))}</td><td>${pill(r.status)}${r.error_type?`<div class="small">${esc(r.error_type)}</div>`:""}</td><td>${r.verified?"已核验":"—"}</td><td>${esc(unk(r.score_before))} → ${esc(unk(r.score_after))}</td><td style="max-width:280px;white-space:normal">${esc((r.message||"").slice(0,180))}</td></tr>`).join("")||`<tr><td colspan="7" class="empty">没有符合条件的记录</td></tr>`}catch(e){toast("读取历史失败："+e.message,true)}}
 async function loadLogs(){try{const j=await api("/api/logs?lines=250");$("logs").textContent=j.text||"暂无日志"}catch(e){$("logs").textContent="无法读取日志："+e.message}}
 async function refreshAll(){await loadState();await Promise.all([loadHistory(),loadLogs()])}
+let networkReady=false, networkEditing=false;
+async function loadNetwork(){
+  try{
+    const n=await api("/api/network");
+    networkReady=true;
+    if(!networkEditing)$("lanEnabled").checked=!!n.enabled;
+    $("lanUsername").textContent=n.username||"panel";
+    $("lanSave").disabled=!!n.managed_externally;
+    $("lanEnabled").disabled=!!n.managed_externally;
+    $("lanPassword").disabled=!!n.managed_externally;
+    $("lanBadge").textContent=n.enabled?"已开启":"仅本机";
+    $("lanBadge").className="pill "+(n.enabled?"ok":"mut");
+    $("lanReachable").textContent=n.enabled?"已开启":"尚未开启";
+    $("lanReachable").className="pill "+(n.enabled?"ok":"mut");
+    if(n.managed_externally)$("lanSaveMessage").textContent="当前由 Docker / 环境变量管理，设置在部署配置中修改。";
+    const addrs=$("lanAddresses");addrs.replaceChildren();
+    if(n.enabled&&n.addresses?.length){
+      $("lanDescription").textContent="在同一 Wi-Fi 的设备上打开以下地址，使用用户名 "+(n.username||"panel")+" 和设置的密码登录。";
+      for(const url of n.addresses){
+        const row=document.createElement("div");row.className="address-row";
+        const link=document.createElement("a");link.href=url;link.target="_blank";link.rel="noopener noreferrer";link.textContent=url;
+        const copy=document.createElement("button");copy.type="button";copy.className="btn small";copy.textContent="复制";
+        copy.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(url);toast("访问地址已复制")}catch(_){toast("请长按或选择地址复制")}});
+        row.append(link,copy);addrs.append(row);
+      }
+      $("lanQRImage").src="/api/network/qr?refresh="+Date.now();$("lanQR").hidden=false;
+    }else{
+      $("lanQR").hidden=true;
+      $("lanDescription").textContent=n.enabled?"已开启，但尚未识别到 Mac 的有效局域网 IPv4 地址。请检查网络连接。":"开启后，这里会显示局域网地址和手机扫码二维码。";
+    }
+  }catch(e){$("lanSaveMessage").textContent="读取网络设置失败："+e.message}
+}
+async function saveNetwork(){
+  if(!networkReady)return;
+  const button=$("lanSave"),msg=$("lanSaveMessage");
+  button.disabled=true;msg.textContent="正在保存…";
+  try{
+    const value=!!$("lanEnabled").checked,password=$("lanPassword").value;
+    const response=await post("/api/network",{enabled:value,password});
+    $("lanPassword").value="";networkEditing=false;
+    msg.textContent=response.restarting?"设置已保存，网页服务正在自动重启…":"设置已保存，需要重新启动网页后台后生效";
+    toast("局域网设置已保存");
+    if(response.restarting){
+      for(let i=0;i<12;i++){
+        await new Promise(resolve=>setTimeout(resolve,1000));
+        try{const n=await api("/api/network");if(n.enabled===value){await loadNetwork();msg.textContent="设置已生效";break}}catch(_){/* background restarts */}
+      }
+    }
+  }catch(e){msg.textContent="保存失败："+e.message;toast(msg.textContent,true)}finally{button.disabled=false}
+}
+$("lanEnabled").addEventListener("change",()=>{networkEditing=true});
+$("lanSave").addEventListener("click",saveNetwork);
 async function setSchedule(){const t=$("f_time").value.trim(),m=$("schedMsg"),b=$("btnSchedule");if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(t)){m.textContent="请选择有效的签到时间";return}b.disabled=true;m.textContent="正在保存计划…";try{const r=await post("/api/schedule",{time:t});m.textContent=r.message+(r.plist_synced===false?" · 后台配置尚未同步，请点 App 顶部的启动/修复":"");toast("签到计划已保存");await loadState()}catch(e){m.textContent="保存失败："+e.message;toast(m.textContent,true)}finally{b.disabled=false}}
 async function togglePause(){const b=$("btnPause");b.disabled=true;try{await post("/api/paused",{paused:b.dataset.paused!=="true"});await loadState();toast("计划状态已更新")}catch(e){toast(e.message,true)}finally{b.disabled=false}}
 async function runAll(){const b=$("btnRun");b.disabled=true;$("btnRunSchedule").disabled=true;try{await post("/api/run");toast("已提交签到任务，可在概览查看状态");await loadState();await loadHistory()}catch(e){toast(e.message,true)}finally{b.disabled=false;$("btnRunSchedule").disabled=false}}
@@ -484,13 +759,15 @@ def build_server(port=None):
     局域网访问需同时设置 YUJIA_WEB_BIND（如 0.0.0.0）与 YUJIA_WEB_PASSWORD，缺密码拒绝启动。"""
     if port is None:
         port = int(os.environ.get("YUJIA_WEB_PORT", "8765"))
-    bind = os.environ.get("YUJIA_WEB_BIND") or "127.0.0.1"
-    if bind not in LOOPBACK and not web_password():
+    config = _network_config()
+    bind = config["bind"]
+    if config["enabled"] and not _has_credential(config):
         raise SystemExit("拒绝启动：YUJIA_WEB_BIND=%s 为非本机回环地址，"
-                         "必须同时设置 YUJIA_WEB_PASSWORD（浏览器访问口令）" % bind)
+                         "必须先在 App 设置访问密码（或配置 YUJIA_WEB_PASSWORD）" % bind)
     core.init_storage()
     httpd = ThreadingHTTPServer((bind, port), Handler)
     httpd.daemon_threads = True
+    httpd.network_config = config
     return httpd
 
 
@@ -503,7 +780,7 @@ def serve(args=None, foreground=True):
     addr = httpd.server_address[0]
     y.log("Web 管理面板已启动：http://%s:%d %s" % (
         addr, port,
-        "（局域网模式，密码保护）" if lan_mode() else "（仅监听本机回环地址）"))
+        "（局域网模式，密码保护）" if httpd.network_config["enabled"] else "（仅监听本机回环地址）"))
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

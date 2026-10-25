@@ -10,3 +10,4 @@ records.db*
 *token*
 *.log
 .DS_Store
+network.json

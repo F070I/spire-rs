@@ -194,8 +194,11 @@ static NSString *YJEscape(NSString *s) {
     NSString *runtime = [[[self.project stringByDeletingLastPathComponent]
                           stringByAppendingPathComponent:@"runtime/YujiaService/YujiaService"] stringByStandardizingPath];
     NSString *mode = [name isEqualToString:@"com.yujia.signin"] ? @"--if-due" : @"--panel";
-    return [args isKindOfClass:[NSArray class]] && args.count >= 2 &&
+    BOOL correct = [args isKindOfClass:[NSArray class]] && args.count >= 2 &&
            [args[0] isEqualToString:runtime] && [args[1] isEqualToString:mode];
+    if ([name isEqualToString:@"com.yujia.signinweb"])
+        correct = correct && [data[@"EnvironmentVariables"][@"YUJIA_MANAGED_BY_LAUNCHD"] isEqualToString:@"1"];
+    return correct;
 }
 
 - (BOOL)healthyBackend {
